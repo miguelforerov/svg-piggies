@@ -1,19 +1,17 @@
 ---
-import "../styles/global.css";
+import Base from "@/layouts/Base.astro";
+import TestAddToCart from "@/layouts/functional-components/cart/TestAddToCart";
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-    <h1 class="text-4xl font-bold text-pink-500">
+<Base title="SVGPiggies">
+  <div class="container mx-auto px-4 py-20">
+    <h1 class="text-5xl font-bold">
       SVGPiggies
     </h1>
-	</body>
-</html>
+
+    <p class="mt-4 text-lg">
+      Our new store
+    </p>
+  </div>
+  <TestAddToCart client:load />
+</Base>
