@@ -6,14 +6,14 @@
 
 @theme {
   /* === Colors === */
-  --color-primary: #121212;
+  --color-primary: #FF7FB0;
   --color-body: #fff;
-  --color-border: #eaeaea;
-  --color-light: #f2f2f2;
+  --color-border: #FF9FC4;
+  --color-light: #FFF7FB;
   --color-dark: #000;
-  --color-text: #444;
-  --color-text-dark: #000;
-  --color-text-light: #666;
+  --color-text: #2f2f2f;
+  --color-text-dark: #D94B87;
+  --color-text-light: #FF7FB0;
 
   /* === Darkmode Colors === */
   --color-darkmode-primary: #fff;

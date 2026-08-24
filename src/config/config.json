@@ -1,15 +1,15 @@
 {
   "site": {
-    "title": "Storeplate",
+    "title": "SVG Piggies",
     "base_url": "https://storeplate.vercel.app/",
     "base_path": "/",
     "trailing_slash": false,
     "favicon": "/images/favicon.png",
     "logo": "/images/logo.png",
-    "logo_darkmode": "/images/logo-darkmode.png",
-    "logo_width": "150",
-    "logo_height": "33",
-    "logo_text": "Storeplate"
+    "logo_darkmode": "/images/logo.png",
+    "logo_width": "120",
+    "logo_height": "120",
+    "logo_text": "SVG Piggies"
   },
 
   "announcement": {
