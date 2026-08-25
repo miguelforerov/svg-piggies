@@ -1,7 +1,8 @@
 {
   "name": "svg-piggies",
-  "type": "module",
   "version": "0.0.1",
+  "private": true,
+  "type": "module",
   "engines": {
     "node": ">=22.12.0"
   },
@@ -9,11 +10,21 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "db:start": "docker compose up -d postgres",
+    "db:stop": "docker compose stop postgres",
+    "db:create": "docker compose up -d postgres && dbmate --wait migrate",
+    "db:migrate:new": "dbmate new",
+    "db:migrate": "dbmate migrate",
+    "db:migrate:rollback": "dbmate rollback",
+    "db:migrate:status": "dbmate status"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.2.4",
     "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "dbmate": "2.35.0"
   }
 }
