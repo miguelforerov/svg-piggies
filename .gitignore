@@ -22,3 +22,9 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+node_modules/
+
+# Local database credentials and environment overrides.
+.env
+.env.local
+.env.*.local
