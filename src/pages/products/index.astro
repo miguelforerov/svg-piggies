@@ -1,0 +1,27 @@
+---
+import Base from "@/layouts/Base.astro";
+import ProductGrid from "@/layouts/functional-components/ProductGrid";
+import { products } from "@/data/products";
+
+const activeProducts = products.filter(
+  (product) => product.status === "active",
+);
+---
+
+<Base title="Products" meta_title="Products | SVG Piggies">
+  <section class="section">
+    <div class="container">
+      <div class="mb-10 text-center">
+        <h1 class="h2">Our Products</h1>
+        <p class="mt-4">
+          Discover our collection of digital designs.
+        </p>
+      </div>
+
+      <ProductGrid
+        client:load
+        initialProducts={activeProducts}
+      />
+    </div>
+  </section>
+</Base>
