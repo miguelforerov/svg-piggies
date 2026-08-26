@@ -1,24 +1,19 @@
 {
   "main": [
     {
+      "name": "pinterest",
+      "icon": "FaPinterest",
+      "link": "https://www.pinterest.com/svgpiggies/"
+    },
+    {
+      "name": "instagram",
+      "icon": "FaInstagram",
+      "link": "https://www.instagram.com/svgpiggies/"
+    },
+    {
       "name": "facebook",
       "icon": "FaFacebook",
-      "link": "https://www.facebook.com/"
-    },
-    {
-      "name": "x",
-      "icon": "FaXTwitter",
-      "link": "https://x.com/"
-    },
-    {
-      "name": "github",
-      "icon": "FaGithub",
-      "link": "https://www.github.com/"
-    },
-    {
-      "name": "linkedin",
-      "icon": "FaLinkedin",
-      "link": "https://www.linkedin.com/"
+      "link": "https://www.facebook.com/svgpiggies/"
     }
   ]
 }
