@@ -1,0 +1,127 @@
+---
+import Base from "@/layouts/Base.astro";
+import ProductGallery from "@/layouts/functional-components/product/ProductGallery";
+import { AddToCart } from "@/layouts/functional-components/cart/AddToCart";
+import ProductGrid from "@/layouts/functional-components/ProductGrid";
+import { products, getRelatedProducts } from "@/data/products";
+import SocialShare from "@/layouts/functional-components/SocialShare";
+
+export function getStaticPaths() {
+  const activeProducts = products.filter(
+    (product) => product.status === "active",
+  );
+
+  return activeProducts.map((product) => ({
+    params: {
+      slug: product.slug,
+    },
+    props: {
+      product,
+    },
+  }));
+}
+
+const { product } = Astro.props;
+const relatedProducts = getRelatedProducts(product.id);
+
+---
+
+<Base title={`${product.title} | SVG Piggies`}>
+  <section class="md:section-sm">
+    <div class="container">
+      <div class="row justify-center">
+
+        {/* right side contents */}
+        <div class="col-10 md:col-8 lg:col-6">
+          <ProductGallery
+            client:only="react"
+            images={product.images}
+          />
+        </div>
+
+        {/* left side contents */}
+        <div class="col-10 md:col-8 lg:col-5 md:ml-7 py-6 lg:py-0">
+
+          <h1 class="text-3xl md:h2 mb-2 md:mb-6">
+            {product.title}
+          </h1>
+
+          <div class="flex gap-2 items-center">
+            <h4 class="text-text-light max-md:h2">
+              ${product.price.toFixed(2)}
+            </h4>
+          </div>
+
+          {/* Variant selector
+              Not available yet because our product model
+              does not have variants.
+          */}
+
+          <div class="flex gap-4 mt-8 md:mt-10 mb-6">
+            <AddToCart
+              client:only="react"
+              productId={product.id}
+              stylesClass="btn max-md:btn-sm btn-primary"
+            />
+          </div>
+
+          {/* Payment / delivery
+              Will be added later.
+          */}
+
+          <hr class="my-6 border border-border" />
+
+          <div class="flex gap-3 items-center mb-6">
+            <h5 class="max-md:text-base text-text-gray">Share:</h5>
+
+            <SocialShare
+              client:load
+              title={product.title}
+              imageUrl={product.images[0]?.url}
+            />
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* Description of a product */}
+  {
+    product.description && (
+      <section>
+        <div class="container">
+          <div class="row">
+            <div class="col-10 lg:col-11 mx-auto mt-12">
+              <div class="prose max-w-none">
+                <h2 class="mb-6">Description</h2>
+                <p>{product.description}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {/* Related Products section */}
+
+  {
+    relatedProducts.length > 0 && (
+        <section class="section">
+          <div class="container">
+
+            <div class="text-center mb-6 md:mb-14">
+              <h2 class="mb-2">Related Products</h2>
+            </div>
+
+            <ProductGrid
+              client:load
+              initialProducts={relatedProducts}
+            />
+
+          </div>
+        </section>
+      )
+  }
+</Base>
