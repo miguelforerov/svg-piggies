@@ -1,0 +1,73 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "svg-piggies-api",
+  "main": "./backend/build/worker.mjs",
+  "compatibility_date": "2026-08-25",
+  "workers_dev": true,
+  "build": {
+    "command": "npm run worker:build"
+  },
+  "vars": {
+    "APP_ENV": "development",
+    "AUTH_MODE": "development",
+    "DATABASE_NAME": "svg_piggies_development",
+    "CORS_ALLOWED_ORIGIN": "http://localhost:4321",
+    "DOWNLOAD_URL_TTL_SECONDS": "900"
+  },
+  "secrets": {
+    "required": [
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET"
+    ]
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      // Replace this value with the production Hyperdrive configuration ID.
+      // Local development uses the CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE variable.
+      "id": "00000000000000000000000000000000"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "PRODUCT_FILES",
+      "bucket_name": "svg-piggies-product-files",
+      "preview_bucket_name": "svg-piggies-product-files-preview"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "env": {
+    "production": {
+      "vars": {
+        "APP_ENV": "production",
+        "AUTH_MODE": "cloudflare_access",
+        "CLOUDFLARE_ACCESS_TEAM_DOMAIN": "https://replace-me.cloudflareaccess.com",
+        "CLOUDFLARE_ACCESS_AUD": "replace-with-access-application-aud",
+        "DATABASE_NAME": "svg_piggies",
+        "CORS_ALLOWED_ORIGIN": "https://replace-with-storefront-domain.example",
+        "DOWNLOAD_URL_TTL_SECONDS": "900"
+      },
+      "secrets": {
+        "required": [
+          "STRIPE_SECRET_KEY",
+          "STRIPE_WEBHOOK_SECRET"
+        ]
+      },
+      "hyperdrive": [
+        {
+          "binding": "HYPERDRIVE",
+          // Replace this with a Hyperdrive configuration whose database is svg_piggies.
+          "id": "00000000000000000000000000000000"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "PRODUCT_FILES",
+          "bucket_name": "svg-piggies-product-files"
+        }
+      ]
+    }
+  }
+}

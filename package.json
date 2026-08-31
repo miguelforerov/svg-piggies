@@ -11,11 +11,18 @@
     "build": "node scripts/themeGenerator.js && astro build",
     "preview": "astro preview",
     "astro": "astro",
+    "backend:dev": "cd backend && set -a && . ../.env && set +a && go run ./cmd/api",
+    "backend:generate": "cd backend && go generate ./api",
+    "backend:test": "cd backend && go test ./...",
+    "worker:build": "cd backend && go run github.com/syumai/workers/cmd/workers-assets-gen -mode=go && GOOS=js GOARCH=wasm go build -ldflags='-s -w' -o ./build/app.wasm ./cmd/api",
+    "worker:dev": "wrangler dev",
+    "worker:deploy": "wrangler deploy --env production",
     "db:start": "docker compose up -d postgres",
     "db:stop": "docker compose stop postgres",
-    "db:create": "docker compose up -d postgres && dbmate --wait migrate",
+    "db:create": "docker compose up -d postgres && dbmate --wait migrate && dbmate -e TEST_DATABASE_URL migrate",
     "db:migrate:new": "dbmate new",
     "db:migrate": "dbmate migrate",
+    "db:migrate:test": "dbmate -e TEST_DATABASE_URL migrate",
     "db:migrate:rollback": "dbmate rollback",
     "db:migrate:status": "dbmate status"
   },
@@ -37,6 +44,7 @@
   },
   "devDependencies": {
     "concurrently": "^10.0.5",
-    "dbmate": "2.35.0"
+    "dbmate": "2.35.0",
+    "wrangler": "4.115.0"
   }
 }

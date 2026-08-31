@@ -2,13 +2,14 @@ services:
   postgres:
     image: postgres:${POSTGRES_VERSION:-17}-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-svg_piggies}
+      POSTGRES_DB: ${POSTGRES_DB:-svg_piggies_development}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/10-init-databases.sql:ro
     healthcheck:
       test:
         - CMD-SHELL
