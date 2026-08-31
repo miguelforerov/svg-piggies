@@ -23,8 +23,17 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 node_modules/
+dist/
+.astro/
+.wrangler/
+backend/build/
 
 # Local database credentials and environment overrides.
 .env
 .env.local
 .env.*.local
+
+# Local Cloudflare Worker secrets.
+.dev.vars
+.dev.vars.*
+!.dev.vars.example

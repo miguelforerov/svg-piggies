@@ -1,0 +1,4 @@
+# Copy this file to .dev.vars for local Worker development.
+# Never use production Stripe credentials locally or commit .dev.vars.
+STRIPE_SECRET_KEY="sk_test_replace_me"
+STRIPE_WEBHOOK_SECRET="whsec_replace_me"

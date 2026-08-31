@@ -16,13 +16,27 @@ Cloudflare, Neon, and Stripe.
 - Go backend deployed with Cloudflare Workers: API and server-side logic for
   checkout orchestration, authentication, Stripe webhooks, entitlement checks,
   and signed downloads.
+- The Go backend compiles to WebAssembly for Workers. Cloudflare-specific code
+  stays in the Worker entry point so application logic remains standard,
+  testable Go.
+- `backend/api/openapi.yaml` is the HTTP contract. `oapi-codegen` generates a
+  strict `net/http` server interface; handwritten handlers adapt that interface
+  to the application services.
+- Cloudflare Access protects `/admin/*` and `/api/admin/*` in deployed
+  environments. The Go API independently validates the Access assertion JWT;
+  local development uses an explicitly restricted authentication bypass.
 - Hyperdrive: PostgreSQL connection pool between Workers and Neon.
 - Neon PostgreSQL: durable application and commerce state.
+- The Go data layer uses `pgx`: a small native pool for local development and
+  request-scoped connections through Hyperdrive in the Worker.
 - Stripe: checkout and payment processing.
 - Cloudflare R2: private digital-product files, including SVG, PNG, PDF, and
   ZIP assets.
 
 ## Data model
+
+The PostgreSQL databases are named `svg_piggies` in production,
+`svg_piggies_development` in development, and `svg_piggies_test` in tests.
 
 Neon owns records for:
 
