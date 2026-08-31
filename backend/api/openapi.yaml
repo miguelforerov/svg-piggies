@@ -139,6 +139,30 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /api/products/{slug}:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        description: Product slug.
+        schema:
+          type: string
+    get:
+      operationId: getProductBySlug
+      summary: Get a product by slug
+      tags: [products]
+      responses:
+        "200":
+          description: Product found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /api/admin/products:
     get:
       operationId: getProducts

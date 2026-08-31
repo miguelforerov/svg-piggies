@@ -208,11 +208,12 @@ func newProductTestHandler(service *productServiceStub) http.Handler {
 }
 
 type productServiceStub struct {
-	list   func(context.Context) ([]products.Product, error)
-	get    func(context.Context, string) (products.Product, error)
-	create func(context.Context, products.CreateProductInput) (products.Product, error)
-	update func(context.Context, string, products.UpdateProductInput) (products.Product, error)
-	delete func(context.Context, string) error
+	list             func(context.Context) ([]products.Product, error)
+	get              func(context.Context, string) (products.Product, error)
+	getProductBySlug func(context.Context, string) (products.Product, error)
+	create           func(context.Context, products.CreateProductInput) (products.Product, error)
+	update           func(context.Context, string, products.UpdateProductInput) (products.Product, error)
+	delete           func(context.Context, string) error
 }
 
 func (s *productServiceStub) GetProducts(ctx context.Context) ([]products.Product, error) {
@@ -230,6 +231,16 @@ func (s *productServiceStub) GetProduct(
 		return products.Product{}, errors.New("unexpected GetProduct call")
 	}
 	return s.get(ctx, id)
+}
+
+func (s *productServiceStub) GetProductBySlug(
+	ctx context.Context,
+	slug string,
+) (products.Product, error) {
+	if s.getProductBySlug != nil {
+		return s.getProductBySlug(ctx, slug)
+	}
+	return products.Product{}, products.ErrNotFound
 }
 
 func (s *productServiceStub) CreateProduct(

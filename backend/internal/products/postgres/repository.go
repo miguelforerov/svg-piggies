@@ -70,6 +70,21 @@ func (r *Repository) Get(ctx context.Context, id string) (products.Product, erro
 	`, id))
 }
 
+func (r *Repository) GetBySlug(ctx context.Context, slug string) (products.Product, error) {
+	connection, err := r.provider.Acquire(ctx)
+	if err != nil {
+		return products.Product{}, err
+	}
+	defer release(connection)
+
+	return scanProduct(connection.QueryRow(ctx, `
+		SELECT id::text, title, slug, description, price::text, status::text,
+		       created_at, updated_at
+		FROM products
+		WHERE slug = $1
+	`, slug))
+}
+
 func (r *Repository) Create(
 	ctx context.Context,
 	input products.CreateProductInput,

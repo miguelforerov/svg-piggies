@@ -47,6 +47,7 @@ type ProductTypeService interface {
 type ProductService interface {
 	GetProducts(ctx context.Context) ([]products.Product, error)
 	GetProduct(ctx context.Context, id string) (products.Product, error)
+	GetProductBySlug(ctx context.Context, slug string) (products.Product, error)
 	CreateProduct(
 		ctx context.Context,
 		input products.CreateProductInput,

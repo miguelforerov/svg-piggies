@@ -319,6 +319,9 @@ type ServerInterface interface {
 	// GetHealth Check API health
 	// (GET /api/health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
+	// GetProductBySlug Get a product by slug
+	// (GET /api/products/{slug})
+	GetProductBySlug(w http.ResponseWriter, r *http.Request, slug string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -836,6 +839,32 @@ func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// GetProductBySlug operation middleware
+func (siw *ServerInterfaceWrapper) GetProductBySlug(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", r.PathValue("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProductBySlug(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -962,6 +991,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/admin/collections/{collectionId}", wrapper.DeleteCollection)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/collections/{collectionId}", wrapper.GetCollection)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/admin/collections/{collectionId}", wrapper.UpdateCollection)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/products/{slug}", wrapper.GetProductBySlug)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/products", wrapper.GetProducts)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products", wrapper.CreateProduct)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/admin/products/{productId}", wrapper.DeleteProduct)
@@ -2653,6 +2683,58 @@ func (response GetHealth200JSONResponse) VisitGetHealthResponse(w http.ResponseW
 	return err
 }
 
+type GetProductBySlugRequestObject struct {
+	Slug string `json:"slug"`
+}
+
+type GetProductBySlugResponseObject interface {
+	VisitGetProductBySlugResponse(w http.ResponseWriter) error
+}
+
+type GetProductBySlug200JSONResponse Product
+
+func (response GetProductBySlug200JSONResponse) VisitGetProductBySlugResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductBySlug404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetProductBySlug404JSONResponse) VisitGetProductBySlugResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductBySlug500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response GetProductBySlug500JSONResponse) VisitGetProductBySlugResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// GetCollections List collections
@@ -2721,6 +2803,9 @@ type StrictServerInterface interface {
 	// GetHealth Check API health
 	// (GET /api/health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
+	// GetProductBySlug Get a product by slug
+	// (GET /api/products/{slug})
+	GetProductBySlug(ctx context.Context, request GetProductBySlugRequestObject) (GetProductBySlugResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -3371,6 +3456,32 @@ func (sh *strictHandler) GetHealth(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetHealthResponseObject); ok {
 		if err := validResponse.VisitGetHealthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProductBySlug operation middleware
+func (sh *strictHandler) GetProductBySlug(w http.ResponseWriter, r *http.Request, slug string) {
+	var request GetProductBySlugRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProductBySlug(ctx, request.(GetProductBySlugRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProductBySlug")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProductBySlugResponseObject); ok {
+		if err := validResponse.VisitGetProductBySlugResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

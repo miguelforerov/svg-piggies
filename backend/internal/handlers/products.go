@@ -57,6 +57,28 @@ func (s *Server) GetProduct(
 	return generated.GetProduct200JSONResponse(response), nil
 }
 
+func (s *Server) GetProductBySlug(
+	ctx context.Context,
+	request generated.GetProductBySlugRequestObject,
+) (generated.GetProductBySlugResponseObject, error) {
+	product, err := s.products.GetProductBySlug(ctx, request.Slug)
+	if err != nil {
+		if errors.Is(err, products.ErrNotFound) {
+			return generated.GetProductBySlug404JSONResponse{
+				NotFoundJSONResponse: generated.NotFoundJSONResponse(productNotFoundError()),
+			}, nil
+		}
+		return nil, err
+	}
+
+	response, err := toAPIProduct(product)
+	if err != nil {
+		return nil, err
+	}
+
+	return generated.GetProductBySlug200JSONResponse(response), nil
+}
+
 func (s *Server) CreateProduct(
 	ctx context.Context,
 	request generated.CreateProductRequestObject,

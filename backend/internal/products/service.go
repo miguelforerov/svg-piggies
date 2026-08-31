@@ -45,6 +45,20 @@ func (s *Service) GetProduct(ctx context.Context, id string) (Product, error) {
 	return product, nil
 }
 
+func (s *Service) GetProductBySlug(ctx context.Context, slug string) (Product, error) {
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return Product{}, fmt.Errorf("%w: slug is required", ErrInvalidInput)
+	}
+
+	product, err := s.repository.GetBySlug(ctx, slug)
+	if err != nil {
+		return Product{}, fmt.Errorf("get product by slug %s: %w", slug, err)
+	}
+
+	return product, nil
+}
+
 func (s *Service) CreateProduct(
 	ctx context.Context,
 	input CreateProductInput,

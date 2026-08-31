@@ -51,6 +51,39 @@ func TestGetProductTrimsID(t *testing.T) {
 	}
 }
 
+func TestGetProductBySlugTrimsSlug(t *testing.T) {
+	t.Parallel()
+
+	want := Product{
+		ID:    "product-id",
+		Title: "Party Pig",
+		Slug:  "party-pig",
+	}
+
+	repository := &repositoryStub{
+		getBySlug: func(_ context.Context, slug string) (Product, error) {
+			if slug != want.Slug {
+				t.Fatalf("GetBySlug() slug = %q, want %q", slug, want.Slug)
+			}
+			return want, nil
+		},
+	}
+
+	service := newTestService(t, repository)
+
+	got, err := service.GetProductBySlug(
+		context.Background(),
+		" party-pig ",
+	)
+	if err != nil {
+		t.Fatalf("GetProductBySlug() error = %v", err)
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("GetProductBySlug() = %#v, want %#v", got, want)
+	}
+}
+
 func TestCreateProductValidatesAndDefaultsStatus(t *testing.T) {
 	t.Parallel()
 
@@ -247,6 +280,13 @@ func TestProductValidationErrors(t *testing.T) {
 				return service.DeleteProduct(context.Background(), "")
 			},
 		},
+		{
+			name: "missing slug for product lookup",
+			run: func() error {
+				_, err := service.GetProductBySlug(context.Background(), " ")
+				return err
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -287,11 +327,12 @@ func newTestService(t *testing.T, repository Repository) *Service {
 }
 
 type repositoryStub struct {
-	list   func(context.Context) ([]Product, error)
-	get    func(context.Context, string) (Product, error)
-	create func(context.Context, CreateProductInput) (Product, error)
-	update func(context.Context, string, UpdateProductInput) (Product, error)
-	delete func(context.Context, string) error
+	list      func(context.Context) ([]Product, error)
+	get       func(context.Context, string) (Product, error)
+	getBySlug func(context.Context, string) (Product, error)
+	create    func(context.Context, CreateProductInput) (Product, error)
+	update    func(context.Context, string, UpdateProductInput) (Product, error)
+	delete    func(context.Context, string) error
 }
 
 func (r *repositoryStub) List(ctx context.Context) ([]Product, error) {
@@ -306,6 +347,13 @@ func (r *repositoryStub) Get(ctx context.Context, id string) (Product, error) {
 		return Product{}, nil
 	}
 	return r.get(ctx, id)
+}
+
+func (r *repositoryStub) GetBySlug(ctx context.Context, slug string) (Product, error) {
+	if r.getBySlug != nil {
+		return r.getBySlug(ctx, slug)
+	}
+	return Product{}, nil
 }
 
 func (r *repositoryStub) Create(ctx context.Context, input CreateProductInput) (Product, error) {
