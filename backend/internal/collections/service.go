@@ -42,6 +42,19 @@ func (s *Service) GetCollection(ctx context.Context, id string) (Collection, err
 	return collection, nil
 }
 
+func (s *Service) GetCollectionBySlug(ctx context.Context, slug string) (Collection, error) {
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return Collection{}, fmt.Errorf("%w: slug is required", ErrInvalidInput)
+	}
+
+	collection, err := s.repository.GetBySlug(ctx, slug)
+	if err != nil {
+		return Collection{}, fmt.Errorf("get collection by slug %s: %w", slug, err)
+	}
+	return collection, nil
+}
+
 func (s *Service) CreateCollection(
 	ctx context.Context,
 	input CreateCollectionInput,

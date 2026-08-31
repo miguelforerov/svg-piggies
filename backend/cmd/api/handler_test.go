@@ -208,11 +208,12 @@ func assertErrorCode(t *testing.T, response *httptest.ResponseRecorder, want str
 }
 
 type collectionServiceStub struct {
-	list   func(context.Context) ([]collections.Collection, error)
-	get    func(context.Context, string) (collections.Collection, error)
-	create func(context.Context, collections.CreateCollectionInput) (collections.Collection, error)
-	update func(context.Context, string, collections.UpdateCollectionInput) (collections.Collection, error)
-	delete func(context.Context, string) error
+	list      func(context.Context) ([]collections.Collection, error)
+	get       func(context.Context, string) (collections.Collection, error)
+	getBySlug func(context.Context, string) (collections.Collection, error)
+	create    func(context.Context, collections.CreateCollectionInput) (collections.Collection, error)
+	update    func(context.Context, string, collections.UpdateCollectionInput) (collections.Collection, error)
+	delete    func(context.Context, string) error
 }
 
 func (s *collectionServiceStub) GetCollections(ctx context.Context) ([]collections.Collection, error) {
@@ -230,6 +231,16 @@ func (s *collectionServiceStub) GetCollection(
 		return collections.Collection{}, errors.New("unexpected GetCollection call")
 	}
 	return s.get(ctx, id)
+}
+
+func (s *collectionServiceStub) GetCollectionBySlug(
+	ctx context.Context,
+	slug string,
+) (collections.Collection, error) {
+	if s.getBySlug == nil {
+		return collections.Collection{}, errors.New("unexpected GetCollectionBySlug call")
+	}
+	return s.getBySlug(ctx, slug)
 }
 
 func (s *collectionServiceStub) CreateCollection(

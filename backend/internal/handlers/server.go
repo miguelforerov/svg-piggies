@@ -17,6 +17,7 @@ import (
 type CollectionService interface {
 	GetCollections(ctx context.Context) ([]collections.Collection, error)
 	GetCollection(ctx context.Context, id string) (collections.Collection, error)
+	GetCollectionBySlug(ctx context.Context, slug string) (collections.Collection, error)
 	CreateCollection(
 		ctx context.Context,
 		input collections.CreateCollectionInput,
@@ -168,6 +169,29 @@ func (s *Server) GetCollection(
 		return nil, err
 	}
 	return generated.GetCollection200JSONResponse(response), nil
+}
+
+func (s *Server) GetCollectionBySlug(
+	ctx context.Context,
+	request generated.GetCollectionBySlugRequestObject,
+) (generated.GetCollectionBySlugResponseObject, error) {
+	collection, err := s.collections.GetCollectionBySlug(ctx, request.Slug)
+	if err != nil {
+		switch {
+		case errors.Is(err, collections.ErrNotFound):
+			return generated.GetCollectionBySlug404JSONResponse{
+				NotFoundJSONResponse: generated.NotFoundJSONResponse(notFoundError()),
+			}, nil
+		default:
+			return nil, err
+		}
+	}
+
+	response, err := toAPICollection(collection)
+	if err != nil {
+		return nil, err
+	}
+	return generated.GetCollectionBySlug200JSONResponse(response), nil
 }
 
 func (s *Server) CreateCollection(

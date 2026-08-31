@@ -68,6 +68,20 @@ func (r *Repository) Get(ctx context.Context, id string) (collections.Collection
 	`, id))
 }
 
+func (r *Repository) GetBySlug(ctx context.Context, slug string) (collections.Collection, error) {
+	connection, err := r.provider.Acquire(ctx)
+	if err != nil {
+		return collections.Collection{}, err
+	}
+	defer release(connection)
+
+	return scanCollection(connection.QueryRow(ctx, `
+		SELECT id::text, name, slug, description
+		FROM collections
+		WHERE slug = $1
+	`, slug))
+}
+
 func (r *Repository) Create(
 	ctx context.Context,
 	input collections.CreateCollectionInput,

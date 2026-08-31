@@ -20,6 +20,53 @@ paths:
               schema:
                 $ref: "#/components/schemas/Health"
 
+  /api/products/{slug}:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        description: Product slug.
+        schema:
+          type: string
+    get:
+      operationId: getProductBySlug
+      summary: Get a product by slug
+      tags: [products]
+      responses:
+        "200":
+          description: Product found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/collections/{slug}:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getCollectionBySlug
+      summary: Get a collection by slug
+      tags: [collections]
+      responses:
+        "200":
+          description: Collection found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /api/admin/collections:
     get:
       operationId: getCollections
@@ -134,30 +181,6 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-  /api/products/{slug}:
-    parameters:
-      - name: slug
-        in: path
-        required: true
-        description: Product slug.
-        schema:
-          type: string
-    get:
-      operationId: getProductBySlug
-      summary: Get a product by slug
-      tags: [products]
-      responses:
-        "200":
-          description: Product found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Product"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":

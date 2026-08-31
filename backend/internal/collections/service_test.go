@@ -214,11 +214,12 @@ func newTestService(t *testing.T, repository Repository) *Service {
 }
 
 type repositoryStub struct {
-	list   func(context.Context) ([]Collection, error)
-	get    func(context.Context, string) (Collection, error)
-	create func(context.Context, CreateCollectionInput) (Collection, error)
-	update func(context.Context, string, UpdateCollectionInput) (Collection, error)
-	delete func(context.Context, string) error
+	list      func(context.Context) ([]Collection, error)
+	get       func(context.Context, string) (Collection, error)
+	getBySlug func(context.Context, string) (Collection, error)
+	create    func(context.Context, CreateCollectionInput) (Collection, error)
+	update    func(context.Context, string, UpdateCollectionInput) (Collection, error)
+	delete    func(context.Context, string) error
 }
 
 func (r *repositoryStub) List(ctx context.Context) ([]Collection, error) {
@@ -233,6 +234,13 @@ func (r *repositoryStub) Get(ctx context.Context, id string) (Collection, error)
 		return Collection{}, nil
 	}
 	return r.get(ctx, id)
+}
+
+func (r *repositoryStub) GetBySlug(ctx context.Context, slug string) (Collection, error) {
+	if r.getBySlug == nil {
+		return Collection{}, nil
+	}
+	return r.getBySlug(ctx, slug)
 }
 
 func (r *repositoryStub) Create(
