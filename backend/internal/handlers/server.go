@@ -35,6 +35,7 @@ type CollectionService interface {
 type ProductTypeService interface {
 	GetProductTypes(ctx context.Context) ([]producttypes.ProductType, error)
 	GetProductType(ctx context.Context, id string) (producttypes.ProductType, error)
+	GetProductTypeBySlug(ctx context.Context, slug string) (producttypes.ProductType, error)
 	CreateProductType(
 		ctx context.Context,
 		input producttypes.CreateProductTypeInput,
@@ -203,7 +204,7 @@ func (s *Server) GetCollection(
 			}, nil
 		case errors.Is(err, collections.ErrNotFound):
 			return generated.GetCollection404JSONResponse{
-				NotFoundJSONResponse: generated.NotFoundJSONResponse(notFoundError()),
+				NotFoundJSONResponse: generated.NotFoundJSONResponse(notFoundError("collection")),
 			}, nil
 		default:
 			return nil, err
@@ -226,7 +227,7 @@ func (s *Server) GetCollectionBySlug(
 		switch {
 		case errors.Is(err, collections.ErrNotFound):
 			return generated.GetCollectionBySlug404JSONResponse{
-				NotFoundJSONResponse: generated.NotFoundJSONResponse(notFoundError()),
+				NotFoundJSONResponse: generated.NotFoundJSONResponse(notFoundError("collection")),
 			}, nil
 		default:
 			return nil, err
@@ -238,6 +239,29 @@ func (s *Server) GetCollectionBySlug(
 		return nil, err
 	}
 	return generated.GetCollectionBySlug200JSONResponse(response), nil
+}
+
+func (s *Server) GetProductTypeBySlug(
+	ctx context.Context,
+	request generated.GetProductTypeBySlugRequestObject,
+) (generated.GetProductTypeBySlugResponseObject, error) {
+	productType, err := s.productTypes.GetProductTypeBySlug(ctx, request.Slug)
+	if err != nil {
+		switch {
+		case errors.Is(err, producttypes.ErrNotFound):
+			return generated.GetProductTypeBySlug404JSONResponse{
+				NotFoundJSONResponse: generated.NotFoundJSONResponse(notFoundError("product type")),
+			}, nil
+		default:
+			return nil, err
+		}
+	}
+
+	response, err := toAPIProductType(productType)
+	if err != nil {
+		return nil, err
+	}
+	return generated.GetProductTypeBySlug200JSONResponse(response), nil
 }
 
 func (s *Server) CreateCollection(
@@ -308,7 +332,7 @@ func (s *Server) UpdateCollection(
 			}, nil
 		case errors.Is(err, collections.ErrNotFound):
 			return generated.UpdateCollection404JSONResponse{
-				NotFoundJSONResponse: generated.NotFoundJSONResponse(notFoundError()),
+				NotFoundJSONResponse: generated.NotFoundJSONResponse(notFoundError("collection")),
 			}, nil
 		case errors.Is(err, collections.ErrConflict):
 			return generated.UpdateCollection409JSONResponse{
@@ -339,7 +363,7 @@ func (s *Server) DeleteCollection(
 			}, nil
 		case errors.Is(err, collections.ErrNotFound):
 			return generated.DeleteCollection404JSONResponse{
-				NotFoundJSONResponse: generated.NotFoundJSONResponse(notFoundError()),
+				NotFoundJSONResponse: generated.NotFoundJSONResponse(notFoundError("collection")),
 			}, nil
 		default:
 			return nil, err
@@ -376,10 +400,10 @@ func invalidRequestError(err error) generated.Error {
 	}
 }
 
-func notFoundError() generated.Error {
+func notFoundError(resource string) generated.Error {
 	return generated.Error{
 		Code:    generated.ErrorCodeNotFound,
-		Message: "collection not found",
+		Message: resource + " not found",
 	}
 }
 

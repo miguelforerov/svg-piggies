@@ -42,6 +42,22 @@ func (s *Service) GetProductType(ctx context.Context, id string) (ProductType, e
 	return productType, nil
 }
 
+func (s *Service) GetProductTypeBySlug(
+	ctx context.Context,
+	slug string,
+) (ProductType, error) {
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return ProductType{}, fmt.Errorf("%w: slug is required", ErrInvalidInput)
+	}
+
+	productType, err := s.repository.GetBySlug(ctx, slug)
+	if err != nil {
+		return ProductType{}, fmt.Errorf("get product type by slug %s: %w", slug, err)
+	}
+	return productType, nil
+}
+
 func (s *Service) CreateProductType(
 	ctx context.Context,
 	input CreateProductTypeInput,

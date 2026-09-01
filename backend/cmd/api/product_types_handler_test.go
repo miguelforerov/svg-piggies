@@ -169,11 +169,12 @@ func newProductTypeTestHandler(service *productTypeServiceStub) http.Handler {
 }
 
 type productTypeServiceStub struct {
-	list   func(context.Context) ([]producttypes.ProductType, error)
-	get    func(context.Context, string) (producttypes.ProductType, error)
-	create func(context.Context, producttypes.CreateProductTypeInput) (producttypes.ProductType, error)
-	update func(context.Context, string, producttypes.UpdateProductTypeInput) (producttypes.ProductType, error)
-	delete func(context.Context, string) error
+	list      func(context.Context) ([]producttypes.ProductType, error)
+	get       func(context.Context, string) (producttypes.ProductType, error)
+	getBySlug func(context.Context, string) (producttypes.ProductType, error)
+	create    func(context.Context, producttypes.CreateProductTypeInput) (producttypes.ProductType, error)
+	update    func(context.Context, string, producttypes.UpdateProductTypeInput) (producttypes.ProductType, error)
+	delete    func(context.Context, string) error
 }
 
 func (s *productTypeServiceStub) GetProductTypes(
@@ -193,6 +194,16 @@ func (s *productTypeServiceStub) GetProductType(
 		return producttypes.ProductType{}, errors.New("unexpected GetProductType call")
 	}
 	return s.get(ctx, id)
+}
+
+func (s *productTypeServiceStub) GetProductTypeBySlug(
+	ctx context.Context,
+	slug string,
+) (producttypes.ProductType, error) {
+	if s.getBySlug == nil {
+		return producttypes.ProductType{}, errors.New("unexpected GetProductTypeBySlug call")
+	}
+	return s.getBySlug(ctx, slug)
 }
 
 func (s *productTypeServiceStub) CreateProductType(

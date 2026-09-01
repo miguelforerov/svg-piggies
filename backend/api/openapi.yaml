@@ -67,6 +67,30 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /api/product-types/{slug}:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        description: Product type slug.
+        schema:
+          type: string
+    get:
+      operationId: getProductTypeBySlug
+      summary: Get a product type by slug
+      tags: [product-types]
+      responses:
+        "200":
+          description: Product type found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductType"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /api/admin/collections:
     get:
       operationId: getCollections

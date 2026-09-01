@@ -69,6 +69,23 @@ func (r *Repository) Get(ctx context.Context, id string) (producttypes.ProductTy
 	return productType, nil
 }
 
+func (r *Repository) GetBySlug(
+	ctx context.Context,
+	slug string,
+) (producttypes.ProductType, error) {
+	connection, err := r.provider.Acquire(ctx)
+	if err != nil {
+		return producttypes.ProductType{}, err
+	}
+	defer release(connection)
+
+	return scanProductType(connection.QueryRow(ctx, `
+		SELECT id::text, name, slug, description
+		FROM product_types
+		WHERE slug = $1
+	`, slug))
+}
+
 func (r *Repository) Create(
 	ctx context.Context,
 	input producttypes.CreateProductTypeInput,

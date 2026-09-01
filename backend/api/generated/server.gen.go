@@ -444,6 +444,9 @@ type ServerInterface interface {
 	// GetHealth Check API health
 	// (GET /api/health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
+	// GetProductTypeBySlug Get a product type by slug
+	// (GET /api/product-types/{slug})
+	GetProductTypeBySlug(w http.ResponseWriter, r *http.Request, slug string)
 	// GetProductBySlug Get a product by slug
 	// (GET /api/products/{slug})
 	GetProductBySlug(w http.ResponseWriter, r *http.Request, slug string)
@@ -1225,6 +1228,32 @@ func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// GetProductTypeBySlug operation middleware
+func (siw *ServerInterfaceWrapper) GetProductTypeBySlug(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", r.PathValue("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProductTypeBySlug(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetProductBySlug operation middleware
 func (siw *ServerInterfaceWrapper) GetProductBySlug(w http.ResponseWriter, r *http.Request) {
 
@@ -1374,6 +1403,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/health", wrapper.GetHealth)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/products/{slug}", wrapper.GetProductBySlug)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/collections/{slug}", wrapper.GetCollectionBySlug)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/product-types/{slug}", wrapper.GetProductTypeBySlug)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/collections", wrapper.GetCollections)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/collections", wrapper.CreateCollection)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/admin/collections/{collectionId}", wrapper.DeleteCollection)
@@ -3814,6 +3844,58 @@ func (response GetHealth200JSONResponse) VisitGetHealthResponse(w http.ResponseW
 	return err
 }
 
+type GetProductTypeBySlugRequestObject struct {
+	Slug string `json:"slug"`
+}
+
+type GetProductTypeBySlugResponseObject interface {
+	VisitGetProductTypeBySlugResponse(w http.ResponseWriter) error
+}
+
+type GetProductTypeBySlug200JSONResponse ProductType
+
+func (response GetProductTypeBySlug200JSONResponse) VisitGetProductTypeBySlugResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductTypeBySlug404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetProductTypeBySlug404JSONResponse) VisitGetProductTypeBySlugResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductTypeBySlug500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response GetProductTypeBySlug500JSONResponse) VisitGetProductTypeBySlugResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetProductBySlugRequestObject struct {
 	Slug string `json:"slug"`
 }
@@ -3961,6 +4043,9 @@ type StrictServerInterface interface {
 	// GetHealth Check API health
 	// (GET /api/health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
+	// GetProductTypeBySlug Get a product type by slug
+	// (GET /api/product-types/{slug})
+	GetProductTypeBySlug(ctx context.Context, request GetProductTypeBySlugRequestObject) (GetProductTypeBySlugResponseObject, error)
 	// GetProductBySlug Get a product by slug
 	// (GET /api/products/{slug})
 	GetProductBySlug(ctx context.Context, request GetProductBySlugRequestObject) (GetProductBySlugResponseObject, error)
@@ -4886,6 +4971,32 @@ func (sh *strictHandler) GetHealth(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetHealthResponseObject); ok {
 		if err := validResponse.VisitGetHealthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProductTypeBySlug operation middleware
+func (sh *strictHandler) GetProductTypeBySlug(w http.ResponseWriter, r *http.Request, slug string) {
+	var request GetProductTypeBySlugRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProductTypeBySlug(ctx, request.(GetProductTypeBySlugRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProductTypeBySlug")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProductTypeBySlugResponseObject); ok {
+		if err := validResponse.VisitGetProductTypeBySlugResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
