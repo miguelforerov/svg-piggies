@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	generated "github.com/zdenaforero/svg-piggies/backend/api/generated"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productproducttypes"
+	"github.com/zdenaforero/svg-piggies/backend/internal/producttypes"
 )
 
 func (s *Server) GetProductProductTypes(
@@ -91,6 +92,29 @@ func (s *Server) CreateProductProductType(
 		return nil, err
 	}
 	return generated.CreateProductProductType201JSONResponse(response), nil
+}
+
+func (s *Server) GetProductTypeBySlug(
+	ctx context.Context,
+	request generated.GetProductTypeBySlugRequestObject,
+) (generated.GetProductTypeBySlugResponseObject, error) {
+	productType, err := s.productTypes.GetProductTypeBySlug(ctx, request.Slug)
+	if err != nil {
+		switch {
+		case errors.Is(err, producttypes.ErrNotFound):
+			return generated.GetProductTypeBySlug404JSONResponse{
+				NotFoundJSONResponse: generated.NotFoundJSONResponse(notFoundError("product type")),
+			}, nil
+		default:
+			return nil, err
+		}
+	}
+
+	response, err := toAPIProductType(productType)
+	if err != nil {
+		return nil, err
+	}
+	return generated.GetProductTypeBySlug200JSONResponse(response), nil
 }
 
 func (s *Server) DeleteProductProductType(
