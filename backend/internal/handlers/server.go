@@ -10,6 +10,7 @@ import (
 	"github.com/zdenaforero/svg-piggies/backend/internal/collections"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productcollections"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productproducttypes"
+	"github.com/zdenaforero/svg-piggies/backend/internal/productrelationships"
 	"github.com/zdenaforero/svg-piggies/backend/internal/products"
 	"github.com/zdenaforero/svg-piggies/backend/internal/producttypes"
 )
@@ -85,13 +86,45 @@ type ProductProductTypeService interface {
 	DeleteProductProductType(ctx context.Context, productID string, productTypeID string) error
 }
 
+type ProductRelationshipService interface {
+	GetProductRelationships(
+		ctx context.Context,
+		productID string,
+	) ([]productrelationships.ProductRelationship, error)
+	GetProductRelationship(
+		ctx context.Context,
+		productID string,
+		relationshipID string,
+	) (productrelationships.ProductRelationship, error)
+	CreateProductRelationship(
+		ctx context.Context,
+		input productrelationships.CreateProductRelationshipInput,
+	) (productrelationships.ProductRelationship, error)
+	CreateProductRelationships(
+		ctx context.Context,
+		input productrelationships.CreateProductRelationshipsInput,
+	) (productrelationships.ProductWithRelationships, error)
+	UpdateProductRelationship(
+		ctx context.Context,
+		productID string,
+		relationshipID string,
+		input productrelationships.UpdateProductRelationshipInput,
+	) (productrelationships.ProductRelationship, error)
+	ReplaceProductRelationships(
+		ctx context.Context,
+		input productrelationships.ReplaceProductRelationshipsInput,
+	) (productrelationships.ProductWithRelationships, error)
+	DeleteProductRelationship(ctx context.Context, productID string, relationshipID string) error
+}
+
 type Server struct {
-	environment         string
-	collections         CollectionService
-	productCollections  ProductCollectionService
-	productProductTypes ProductProductTypeService
-	products            ProductService
-	productTypes        ProductTypeService
+	environment          string
+	collections          CollectionService
+	productCollections   ProductCollectionService
+	productProductTypes  ProductProductTypeService
+	productRelationships ProductRelationshipService
+	products             ProductService
+	productTypes         ProductTypeService
 }
 
 var _ generated.StrictServerInterface = (*Server)(nil)
@@ -101,16 +134,18 @@ func NewServer(
 	collectionService CollectionService,
 	productCollectionService ProductCollectionService,
 	productProductTypeService ProductProductTypeService,
+	productRelationshipService ProductRelationshipService,
 	productService ProductService,
 	productTypeService ProductTypeService,
 ) *Server {
 	return &Server{
-		environment:         environment,
-		collections:         collectionService,
-		productCollections:  productCollectionService,
-		productProductTypes: productProductTypeService,
-		products:            productService,
-		productTypes:        productTypeService,
+		environment:          environment,
+		collections:          collectionService,
+		productCollections:   productCollectionService,
+		productProductTypes:  productProductTypeService,
+		productRelationships: productRelationshipService,
+		products:             productService,
+		productTypes:         productTypeService,
 	}
 }
 

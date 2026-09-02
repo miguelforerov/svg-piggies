@@ -29,6 +29,7 @@ func newHandler(
 		dependencies.collections,
 		dependencies.productCollections,
 		dependencies.productProductTypes,
+		dependencies.productRelationships,
 		dependencies.products,
 		dependencies.productTypes,
 	)

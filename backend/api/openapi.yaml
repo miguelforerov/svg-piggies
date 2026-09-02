@@ -305,6 +305,192 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /api/admin/products/{productId}/relationships:
+    parameters:
+      - $ref: "#/components/parameters/ProductId"
+    get:
+      operationId: getProductRelationships
+      summary: List a product's related products
+      tags: [admin-product-relationships]
+      security:
+        - CloudflareAccess: []
+      responses:
+        "200":
+          description: Product relationships ordered by display order.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductRelationship"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      operationId: createProductRelationship
+      summary: Add a related product
+      tags: [admin-product-relationships]
+      security:
+        - CloudflareAccess: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductRelationshipInput"
+      responses:
+        "201":
+          description: Product relationship created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductRelationship"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    put:
+      operationId: replaceProductRelationships
+      summary: Replace all related products selected for a product
+      tags: [admin-product-relationships]
+      security:
+        - CloudflareAccess: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplaceProductRelationshipsInput"
+      responses:
+        "200":
+          description: Relationships replaced and populated product returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductWithRelationships"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/admin/products/{productId}/relationships/bulk:
+    parameters:
+      - $ref: "#/components/parameters/ProductId"
+    post:
+      operationId: createProductRelationships
+      summary: Add one or more related products, ignoring existing relationships
+      tags: [admin-product-relationships]
+      security:
+        - CloudflareAccess: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductRelationshipsInput"
+      responses:
+        "200":
+          description: Relationships added and populated product returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductWithRelationships"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/admin/products/{productId}/relationships/{relationshipId}:
+    parameters:
+      - $ref: "#/components/parameters/ProductId"
+      - $ref: "#/components/parameters/RelationshipId"
+    get:
+      operationId: getProductRelationship
+      summary: Get a product relationship
+      tags: [admin-product-relationships]
+      security:
+        - CloudflareAccess: []
+      responses:
+        "200":
+          description: Product relationship found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductRelationship"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    put:
+      operationId: updateProductRelationship
+      summary: Replace a product relationship
+      tags: [admin-product-relationships]
+      security:
+        - CloudflareAccess: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductRelationshipInput"
+      responses:
+        "200":
+          description: Product relationship updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductRelationship"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      operationId: deleteProductRelationship
+      summary: Delete a product relationship
+      tags: [admin-product-relationships]
+      security:
+        - CloudflareAccess: []
+      responses:
+        "204":
+          description: Product relationship deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /api/admin/products/{productId}/collections:
     parameters:
       - $ref: "#/components/parameters/ProductId"
@@ -612,6 +798,14 @@ components:
       schema:
         type: string
         format: uuid
+    RelationshipId:
+      name: relationshipId
+      in: path
+      required: true
+      description: Product relationship UUID.
+      schema:
+        type: string
+        format: uuid
 
   responses:
     BadRequest:
@@ -771,6 +965,92 @@ components:
           example: "19.95"
         status:
           $ref: "#/components/schemas/ProductStatus"
+
+    ProductRelationship:
+      type: object
+      required: [id, productId, relatedProductId, displayOrder]
+      properties:
+        id:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        relatedProductId:
+          type: string
+          format: uuid
+        displayOrder:
+          type: integer
+          minimum: 0
+
+    CreateProductRelationshipInput:
+      type: object
+      required: [relatedProductId]
+      properties:
+        relatedProductId:
+          type: string
+          format: uuid
+        displayOrder:
+          type: integer
+          minimum: 0
+          default: 0
+
+    CreateProductRelationshipsInput:
+      type: object
+      required: [relatedProductIds]
+      properties:
+        relatedProductIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uuid
+
+    UpdateProductRelationshipInput:
+      type: object
+      required: [relatedProductId, displayOrder]
+      properties:
+        relatedProductId:
+          type: string
+          format: uuid
+        displayOrder:
+          type: integer
+          minimum: 0
+
+    ReplaceProductRelationshipsInput:
+      type: object
+      required: [relatedProductIds]
+      properties:
+        relatedProductIds:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+
+    ProductWithRelationships:
+      type: object
+      required: [product, relationships]
+      properties:
+        product:
+          $ref: "#/components/schemas/Product"
+        relationships:
+          type: array
+          items:
+            $ref: "#/components/schemas/PopulatedProductRelationship"
+
+    PopulatedProductRelationship:
+      type: object
+      required: [relationshipId, displayOrder, product]
+      properties:
+        relationshipId:
+          type: string
+          format: uuid
+        displayOrder:
+          type: integer
+          minimum: 0
+        product:
+          $ref: "#/components/schemas/Product"
 
     ProductCollection:
       type: object

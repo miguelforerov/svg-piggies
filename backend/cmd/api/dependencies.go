@@ -11,6 +11,8 @@ import (
 	productcollectionspostgres "github.com/zdenaforero/svg-piggies/backend/internal/productcollections/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productproducttypes"
 	productproducttypespostgres "github.com/zdenaforero/svg-piggies/backend/internal/productproducttypes/postgres"
+	"github.com/zdenaforero/svg-piggies/backend/internal/productrelationships"
+	productrelationshipspostgres "github.com/zdenaforero/svg-piggies/backend/internal/productrelationships/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/products"
 	productspostgres "github.com/zdenaforero/svg-piggies/backend/internal/products/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/producttypes"
@@ -18,11 +20,12 @@ import (
 )
 
 type dependencies struct {
-	collections         handlers.CollectionService
-	productCollections  handlers.ProductCollectionService
-	productProductTypes handlers.ProductProductTypeService
-	products            handlers.ProductService
-	productTypes        handlers.ProductTypeService
+	collections          handlers.CollectionService
+	productCollections   handlers.ProductCollectionService
+	productProductTypes  handlers.ProductProductTypeService
+	productRelationships handlers.ProductRelationshipService
+	products             handlers.ProductService
+	productTypes         handlers.ProductTypeService
 }
 
 func buildDependencies(provider database.Provider) (dependencies, error) {
@@ -56,6 +59,16 @@ func buildDependencies(provider database.Provider) (dependencies, error) {
 		return dependencies{}, fmt.Errorf("create product product types service: %w", err)
 	}
 
+	productRelationshipRepository, err := productrelationshipspostgres.NewRepository(provider)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create product relationships repository: %w", err)
+	}
+
+	productRelationshipService, err := productrelationships.NewService(productRelationshipRepository)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create product relationships service: %w", err)
+	}
+
 	productRepository, err := productspostgres.NewRepository(provider)
 	if err != nil {
 		return dependencies{}, fmt.Errorf("create products repository: %w", err)
@@ -77,10 +90,11 @@ func buildDependencies(provider database.Provider) (dependencies, error) {
 	}
 
 	return dependencies{
-		collections:         service,
-		productCollections:  productCollectionService,
-		productProductTypes: productProductTypeService,
-		products:            productService,
-		productTypes:        productTypeService,
+		collections:          service,
+		productCollections:   productCollectionService,
+		productProductTypes:  productProductTypeService,
+		productRelationships: productRelationshipService,
+		products:             productService,
+		productTypes:         productTypeService,
 	}, nil
 }

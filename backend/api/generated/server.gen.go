@@ -116,6 +116,17 @@ type CreateProductProductTypeInput struct {
 	ProductTypeId openapi_types.UUID `json:"productTypeId"`
 }
 
+// CreateProductRelationshipInput defines model for CreateProductRelationshipInput.
+type CreateProductRelationshipInput struct {
+	DisplayOrder     *int               `json:"displayOrder,omitempty"`
+	RelatedProductId openapi_types.UUID `json:"relatedProductId"`
+}
+
+// CreateProductRelationshipsInput defines model for CreateProductRelationshipsInput.
+type CreateProductRelationshipsInput struct {
+	RelatedProductIds []openapi_types.UUID `json:"relatedProductIds"`
+}
+
 // CreateProductTypeInput defines model for CreateProductTypeInput.
 type CreateProductTypeInput struct {
 	Description *string `json:"description,omitempty"`
@@ -140,6 +151,13 @@ type Health struct {
 
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
+
+// PopulatedProductRelationship defines model for PopulatedProductRelationship.
+type PopulatedProductRelationship struct {
+	DisplayOrder   int                `json:"displayOrder"`
+	Product        Product            `json:"product"`
+	RelationshipId openapi_types.UUID `json:"relationshipId"`
+}
 
 // Product defines model for Product.
 type Product struct {
@@ -167,6 +185,14 @@ type ProductProductType struct {
 	ProductTypeId openapi_types.UUID `json:"productTypeId"`
 }
 
+// ProductRelationship defines model for ProductRelationship.
+type ProductRelationship struct {
+	DisplayOrder     int                `json:"displayOrder"`
+	Id               openapi_types.UUID `json:"id"`
+	ProductId        openapi_types.UUID `json:"productId"`
+	RelatedProductId openapi_types.UUID `json:"relatedProductId"`
+}
+
 // ProductStatus defines model for ProductStatus.
 type ProductStatus string
 
@@ -176,6 +202,17 @@ type ProductType struct {
 	Id          openapi_types.UUID `json:"id"`
 	Name        string             `json:"name"`
 	Slug        string             `json:"slug"`
+}
+
+// ProductWithRelationships defines model for ProductWithRelationships.
+type ProductWithRelationships struct {
+	Product       Product                        `json:"product"`
+	Relationships []PopulatedProductRelationship `json:"relationships"`
+}
+
+// ReplaceProductRelationshipsInput defines model for ReplaceProductRelationshipsInput.
+type ReplaceProductRelationshipsInput struct {
+	RelatedProductIds []openapi_types.UUID `json:"relatedProductIds"`
 }
 
 // UpdateCollectionInput defines model for UpdateCollectionInput.
@@ -196,6 +233,12 @@ type UpdateProductInput struct {
 	Title  string        `json:"title"`
 }
 
+// UpdateProductRelationshipInput defines model for UpdateProductRelationshipInput.
+type UpdateProductRelationshipInput struct {
+	DisplayOrder     int                `json:"displayOrder"`
+	RelatedProductId openapi_types.UUID `json:"relatedProductId"`
+}
+
 // UpdateProductTypeInput defines model for UpdateProductTypeInput.
 type UpdateProductTypeInput struct {
 	Description *string `json:"description,omitempty"`
@@ -211,6 +254,9 @@ type ProductId = openapi_types.UUID
 
 // ProductTypeId defines model for ProductTypeId.
 type ProductTypeId = openapi_types.UUID
+
+// RelationshipId defines model for RelationshipId.
+type RelationshipId = openapi_types.UUID
 
 // BadRequest defines model for BadRequest.
 type BadRequest = Error
@@ -250,6 +296,18 @@ type CreateProductCollectionJSONRequestBody = CreateProductCollectionInput
 
 // CreateProductProductTypeJSONRequestBody defines body for CreateProductProductType for application/json ContentType.
 type CreateProductProductTypeJSONRequestBody = CreateProductProductTypeInput
+
+// CreateProductRelationshipJSONRequestBody defines body for CreateProductRelationship for application/json ContentType.
+type CreateProductRelationshipJSONRequestBody = CreateProductRelationshipInput
+
+// ReplaceProductRelationshipsJSONRequestBody defines body for ReplaceProductRelationships for application/json ContentType.
+type ReplaceProductRelationshipsJSONRequestBody = ReplaceProductRelationshipsInput
+
+// CreateProductRelationshipsJSONRequestBody defines body for CreateProductRelationships for application/json ContentType.
+type CreateProductRelationshipsJSONRequestBody = CreateProductRelationshipsInput
+
+// UpdateProductRelationshipJSONRequestBody defines body for UpdateProductRelationship for application/json ContentType.
+type UpdateProductRelationshipJSONRequestBody = UpdateProductRelationshipInput
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -316,6 +374,27 @@ type ServerInterface interface {
 	// DeleteProductProductType Remove a product type from a product
 	// (DELETE /api/admin/products/{productId}/product-types/{productTypeId})
 	DeleteProductProductType(w http.ResponseWriter, r *http.Request, productId ProductId, productTypeId ProductTypeId)
+	// GetProductRelationships List a product's related products
+	// (GET /api/admin/products/{productId}/relationships)
+	GetProductRelationships(w http.ResponseWriter, r *http.Request, productId ProductId)
+	// CreateProductRelationship Add a related product
+	// (POST /api/admin/products/{productId}/relationships)
+	CreateProductRelationship(w http.ResponseWriter, r *http.Request, productId ProductId)
+	// ReplaceProductRelationships Replace all related products selected for a product
+	// (PUT /api/admin/products/{productId}/relationships)
+	ReplaceProductRelationships(w http.ResponseWriter, r *http.Request, productId ProductId)
+	// CreateProductRelationships Add one or more related products, ignoring existing relationships
+	// (POST /api/admin/products/{productId}/relationships/bulk)
+	CreateProductRelationships(w http.ResponseWriter, r *http.Request, productId ProductId)
+	// DeleteProductRelationship Delete a product relationship
+	// (DELETE /api/admin/products/{productId}/relationships/{relationshipId})
+	DeleteProductRelationship(w http.ResponseWriter, r *http.Request, productId ProductId, relationshipId RelationshipId)
+	// GetProductRelationship Get a product relationship
+	// (GET /api/admin/products/{productId}/relationships/{relationshipId})
+	GetProductRelationship(w http.ResponseWriter, r *http.Request, productId ProductId, relationshipId RelationshipId)
+	// UpdateProductRelationship Replace a product relationship
+	// (PUT /api/admin/products/{productId}/relationships/{relationshipId})
+	UpdateProductRelationship(w http.ResponseWriter, r *http.Request, productId ProductId, relationshipId RelationshipId)
 	// GetCollectionBySlug Get a collection by slug
 	// (GET /api/collections/{slug})
 	GetCollectionBySlug(w http.ResponseWriter, r *http.Request, slug string)
@@ -828,6 +907,215 @@ func (siw *ServerInterfaceWrapper) DeleteProductProductType(w http.ResponseWrite
 	handler.ServeHTTP(w, r)
 }
 
+// GetProductRelationships operation middleware
+func (siw *ServerInterfaceWrapper) GetProductRelationships(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProductRelationships(w, r, productId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProductRelationship operation middleware
+func (siw *ServerInterfaceWrapper) CreateProductRelationship(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProductRelationship(w, r, productId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceProductRelationships operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceProductRelationships(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceProductRelationships(w, r, productId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProductRelationships operation middleware
+func (siw *ServerInterfaceWrapper) CreateProductRelationships(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProductRelationships(w, r, productId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteProductRelationship operation middleware
+func (siw *ServerInterfaceWrapper) DeleteProductRelationship(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "relationshipId" -------------
+	var relationshipId RelationshipId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "relationshipId", r.PathValue("relationshipId"), &relationshipId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "relationshipId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteProductRelationship(w, r, productId, relationshipId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProductRelationship operation middleware
+func (siw *ServerInterfaceWrapper) GetProductRelationship(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "relationshipId" -------------
+	var relationshipId RelationshipId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "relationshipId", r.PathValue("relationshipId"), &relationshipId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "relationshipId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProductRelationship(w, r, productId, relationshipId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProductRelationship operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProductRelationship(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "relationshipId" -------------
+	var relationshipId RelationshipId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "relationshipId", r.PathValue("relationshipId"), &relationshipId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "relationshipId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProductRelationship(w, r, productId, relationshipId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetCollectionBySlug operation middleware
 func (siw *ServerInterfaceWrapper) GetCollectionBySlug(w http.ResponseWriter, r *http.Request) {
 
@@ -1027,6 +1315,13 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/admin/products/{productId}", wrapper.DeleteProduct)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/products/{productId}", wrapper.GetProduct)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/admin/products/{productId}", wrapper.UpdateProduct)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/products/{productId}/relationships", wrapper.GetProductRelationships)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/relationships", wrapper.CreateProductRelationship)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/admin/products/{productId}/relationships", wrapper.ReplaceProductRelationships)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/relationships/bulk", wrapper.CreateProductRelationships)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/admin/products/{productId}/relationships/{relationshipId}", wrapper.DeleteProductRelationship)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/products/{productId}/relationships/{relationshipId}", wrapper.GetProductRelationship)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/admin/products/{productId}/relationships/{relationshipId}", wrapper.UpdateProductRelationship)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/products/{productId}/collections", wrapper.GetProductCollections)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/collections", wrapper.CreateProductCollection)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/admin/products/{productId}/collections/{collectionId}", wrapper.DeleteProductCollection)
@@ -2692,6 +2987,595 @@ func (response DeleteProductProductType500JSONResponse) VisitDeleteProductProduc
 	return err
 }
 
+type GetProductRelationshipsRequestObject struct {
+	ProductId ProductId `json:"productId"`
+}
+
+type GetProductRelationshipsResponseObject interface {
+	VisitGetProductRelationshipsResponse(w http.ResponseWriter) error
+}
+
+type GetProductRelationships200JSONResponse []ProductRelationship
+
+func (response GetProductRelationships200JSONResponse) VisitGetProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductRelationships400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetProductRelationships400JSONResponse) VisitGetProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductRelationships401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetProductRelationships401JSONResponse) VisitGetProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductRelationships404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetProductRelationships404JSONResponse) VisitGetProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductRelationships500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response GetProductRelationships500JSONResponse) VisitGetProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductRelationshipRequestObject struct {
+	ProductId ProductId `json:"productId"`
+	Body      *CreateProductRelationshipJSONRequestBody
+}
+
+type CreateProductRelationshipResponseObject interface {
+	VisitCreateProductRelationshipResponse(w http.ResponseWriter) error
+}
+
+type CreateProductRelationship201JSONResponse ProductRelationship
+
+func (response CreateProductRelationship201JSONResponse) VisitCreateProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductRelationship400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateProductRelationship400JSONResponse) VisitCreateProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductRelationship401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateProductRelationship401JSONResponse) VisitCreateProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductRelationship404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateProductRelationship404JSONResponse) VisitCreateProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductRelationship409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateProductRelationship409JSONResponse) VisitCreateProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductRelationship500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response CreateProductRelationship500JSONResponse) VisitCreateProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceProductRelationshipsRequestObject struct {
+	ProductId ProductId `json:"productId"`
+	Body      *ReplaceProductRelationshipsJSONRequestBody
+}
+
+type ReplaceProductRelationshipsResponseObject interface {
+	VisitReplaceProductRelationshipsResponse(w http.ResponseWriter) error
+}
+
+type ReplaceProductRelationships200JSONResponse ProductWithRelationships
+
+func (response ReplaceProductRelationships200JSONResponse) VisitReplaceProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceProductRelationships400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReplaceProductRelationships400JSONResponse) VisitReplaceProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceProductRelationships401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReplaceProductRelationships401JSONResponse) VisitReplaceProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceProductRelationships404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReplaceProductRelationships404JSONResponse) VisitReplaceProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceProductRelationships500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response ReplaceProductRelationships500JSONResponse) VisitReplaceProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductRelationshipsRequestObject struct {
+	ProductId ProductId `json:"productId"`
+	Body      *CreateProductRelationshipsJSONRequestBody
+}
+
+type CreateProductRelationshipsResponseObject interface {
+	VisitCreateProductRelationshipsResponse(w http.ResponseWriter) error
+}
+
+type CreateProductRelationships200JSONResponse ProductWithRelationships
+
+func (response CreateProductRelationships200JSONResponse) VisitCreateProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductRelationships400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateProductRelationships400JSONResponse) VisitCreateProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductRelationships401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateProductRelationships401JSONResponse) VisitCreateProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductRelationships404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateProductRelationships404JSONResponse) VisitCreateProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductRelationships500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response CreateProductRelationships500JSONResponse) VisitCreateProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProductRelationshipRequestObject struct {
+	ProductId      ProductId      `json:"productId"`
+	RelationshipId RelationshipId `json:"relationshipId"`
+}
+
+type DeleteProductRelationshipResponseObject interface {
+	VisitDeleteProductRelationshipResponse(w http.ResponseWriter) error
+}
+
+type DeleteProductRelationship204Response struct {
+}
+
+func (response DeleteProductRelationship204Response) VisitDeleteProductRelationshipResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteProductRelationship400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DeleteProductRelationship400JSONResponse) VisitDeleteProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProductRelationship401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteProductRelationship401JSONResponse) VisitDeleteProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProductRelationship404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteProductRelationship404JSONResponse) VisitDeleteProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProductRelationship500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response DeleteProductRelationship500JSONResponse) VisitDeleteProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductRelationshipRequestObject struct {
+	ProductId      ProductId      `json:"productId"`
+	RelationshipId RelationshipId `json:"relationshipId"`
+}
+
+type GetProductRelationshipResponseObject interface {
+	VisitGetProductRelationshipResponse(w http.ResponseWriter) error
+}
+
+type GetProductRelationship200JSONResponse ProductRelationship
+
+func (response GetProductRelationship200JSONResponse) VisitGetProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductRelationship400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetProductRelationship400JSONResponse) VisitGetProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductRelationship401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetProductRelationship401JSONResponse) VisitGetProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductRelationship404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetProductRelationship404JSONResponse) VisitGetProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductRelationship500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response GetProductRelationship500JSONResponse) VisitGetProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProductRelationshipRequestObject struct {
+	ProductId      ProductId      `json:"productId"`
+	RelationshipId RelationshipId `json:"relationshipId"`
+	Body           *UpdateProductRelationshipJSONRequestBody
+}
+
+type UpdateProductRelationshipResponseObject interface {
+	VisitUpdateProductRelationshipResponse(w http.ResponseWriter) error
+}
+
+type UpdateProductRelationship200JSONResponse ProductRelationship
+
+func (response UpdateProductRelationship200JSONResponse) VisitUpdateProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProductRelationship400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateProductRelationship400JSONResponse) VisitUpdateProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProductRelationship401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateProductRelationship401JSONResponse) VisitUpdateProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProductRelationship404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateProductRelationship404JSONResponse) VisitUpdateProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProductRelationship409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateProductRelationship409JSONResponse) VisitUpdateProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProductRelationship500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response UpdateProductRelationship500JSONResponse) VisitUpdateProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetCollectionBySlugRequestObject struct {
 	Slug string `json:"slug"`
 }
@@ -2882,6 +3766,27 @@ type StrictServerInterface interface {
 	// DeleteProductProductType Remove a product type from a product
 	// (DELETE /api/admin/products/{productId}/product-types/{productTypeId})
 	DeleteProductProductType(ctx context.Context, request DeleteProductProductTypeRequestObject) (DeleteProductProductTypeResponseObject, error)
+	// GetProductRelationships List a product's related products
+	// (GET /api/admin/products/{productId}/relationships)
+	GetProductRelationships(ctx context.Context, request GetProductRelationshipsRequestObject) (GetProductRelationshipsResponseObject, error)
+	// CreateProductRelationship Add a related product
+	// (POST /api/admin/products/{productId}/relationships)
+	CreateProductRelationship(ctx context.Context, request CreateProductRelationshipRequestObject) (CreateProductRelationshipResponseObject, error)
+	// ReplaceProductRelationships Replace all related products selected for a product
+	// (PUT /api/admin/products/{productId}/relationships)
+	ReplaceProductRelationships(ctx context.Context, request ReplaceProductRelationshipsRequestObject) (ReplaceProductRelationshipsResponseObject, error)
+	// CreateProductRelationships Add one or more related products, ignoring existing relationships
+	// (POST /api/admin/products/{productId}/relationships/bulk)
+	CreateProductRelationships(ctx context.Context, request CreateProductRelationshipsRequestObject) (CreateProductRelationshipsResponseObject, error)
+	// DeleteProductRelationship Delete a product relationship
+	// (DELETE /api/admin/products/{productId}/relationships/{relationshipId})
+	DeleteProductRelationship(ctx context.Context, request DeleteProductRelationshipRequestObject) (DeleteProductRelationshipResponseObject, error)
+	// GetProductRelationship Get a product relationship
+	// (GET /api/admin/products/{productId}/relationships/{relationshipId})
+	GetProductRelationship(ctx context.Context, request GetProductRelationshipRequestObject) (GetProductRelationshipResponseObject, error)
+	// UpdateProductRelationship Replace a product relationship
+	// (PUT /api/admin/products/{productId}/relationships/{relationshipId})
+	UpdateProductRelationship(ctx context.Context, request UpdateProductRelationshipRequestObject) (UpdateProductRelationshipResponseObject, error)
 	// GetCollectionBySlug Get a collection by slug
 	// (GET /api/collections/{slug})
 	GetCollectionBySlug(ctx context.Context, request GetCollectionBySlugRequestObject) (GetCollectionBySlugResponseObject, error)
@@ -3517,6 +4422,219 @@ func (sh *strictHandler) DeleteProductProductType(w http.ResponseWriter, r *http
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DeleteProductProductTypeResponseObject); ok {
 		if err := validResponse.VisitDeleteProductProductTypeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProductRelationships operation middleware
+func (sh *strictHandler) GetProductRelationships(w http.ResponseWriter, r *http.Request, productId ProductId) {
+	var request GetProductRelationshipsRequestObject
+
+	request.ProductId = productId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProductRelationships(ctx, request.(GetProductRelationshipsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProductRelationships")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProductRelationshipsResponseObject); ok {
+		if err := validResponse.VisitGetProductRelationshipsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateProductRelationship operation middleware
+func (sh *strictHandler) CreateProductRelationship(w http.ResponseWriter, r *http.Request, productId ProductId) {
+	var request CreateProductRelationshipRequestObject
+
+	request.ProductId = productId
+
+	var body CreateProductRelationshipJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateProductRelationship(ctx, request.(CreateProductRelationshipRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateProductRelationship")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateProductRelationshipResponseObject); ok {
+		if err := validResponse.VisitCreateProductRelationshipResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReplaceProductRelationships operation middleware
+func (sh *strictHandler) ReplaceProductRelationships(w http.ResponseWriter, r *http.Request, productId ProductId) {
+	var request ReplaceProductRelationshipsRequestObject
+
+	request.ProductId = productId
+
+	var body ReplaceProductRelationshipsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReplaceProductRelationships(ctx, request.(ReplaceProductRelationshipsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReplaceProductRelationships")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReplaceProductRelationshipsResponseObject); ok {
+		if err := validResponse.VisitReplaceProductRelationshipsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateProductRelationships operation middleware
+func (sh *strictHandler) CreateProductRelationships(w http.ResponseWriter, r *http.Request, productId ProductId) {
+	var request CreateProductRelationshipsRequestObject
+
+	request.ProductId = productId
+
+	var body CreateProductRelationshipsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateProductRelationships(ctx, request.(CreateProductRelationshipsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateProductRelationships")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateProductRelationshipsResponseObject); ok {
+		if err := validResponse.VisitCreateProductRelationshipsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteProductRelationship operation middleware
+func (sh *strictHandler) DeleteProductRelationship(w http.ResponseWriter, r *http.Request, productId ProductId, relationshipId RelationshipId) {
+	var request DeleteProductRelationshipRequestObject
+
+	request.ProductId = productId
+	request.RelationshipId = relationshipId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteProductRelationship(ctx, request.(DeleteProductRelationshipRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteProductRelationship")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteProductRelationshipResponseObject); ok {
+		if err := validResponse.VisitDeleteProductRelationshipResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProductRelationship operation middleware
+func (sh *strictHandler) GetProductRelationship(w http.ResponseWriter, r *http.Request, productId ProductId, relationshipId RelationshipId) {
+	var request GetProductRelationshipRequestObject
+
+	request.ProductId = productId
+	request.RelationshipId = relationshipId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProductRelationship(ctx, request.(GetProductRelationshipRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProductRelationship")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProductRelationshipResponseObject); ok {
+		if err := validResponse.VisitGetProductRelationshipResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProductRelationship operation middleware
+func (sh *strictHandler) UpdateProductRelationship(w http.ResponseWriter, r *http.Request, productId ProductId, relationshipId RelationshipId) {
+	var request UpdateProductRelationshipRequestObject
+
+	request.ProductId = productId
+	request.RelationshipId = relationshipId
+
+	var body UpdateProductRelationshipJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateProductRelationship(ctx, request.(UpdateProductRelationshipRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProductRelationship")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProductRelationshipResponseObject); ok {
+		if err := validResponse.VisitUpdateProductRelationshipResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
