@@ -2,7 +2,8 @@
 import Layout from "@/layouts/admin/Layout.astro";
 import { Plus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
-import { ProductTable } from "@/components/admin/ProductTable";
+import { ProductListContainer } from "@/components/admin/ProductListContainer";
+
 ---
 
 <Layout title="Products">
@@ -22,6 +23,6 @@ import { ProductTable } from "@/components/admin/ProductTable";
         Add Product
       </a>
     </div>
-    <ProductTable />
+    <ProductListContainer client:load />
   </div>
 </Layout>

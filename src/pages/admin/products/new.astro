@@ -1,6 +1,6 @@
 ---
 import Layout from "@/layouts/admin/Layout.astro";
-import { ProductForm } from "@/components/admin/ProductForm";
+import { ProductFormContainer } from "@/components/admin/ProductFormContainer";
 ---
 
 <Layout title="New Product">
@@ -16,7 +16,7 @@ import { ProductForm } from "@/components/admin/ProductForm";
     </div>
 
     <div class="max-w-3xl rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
-      <ProductForm />
+      <ProductFormContainer client:load />
     </div>
   </div>
 </Layout>

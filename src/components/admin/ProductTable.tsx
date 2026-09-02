@@ -8,32 +8,11 @@ interface Product {
 }
 
 interface ProductTableProps {
-  products?: Product[]
+  products: Product[]
 }
 
-const demoProducts: Product[] = [
-  {
-    id: "1",
-    title: "Tractor Coloring Book",
-    price: "$4.99",
-    status: "active",
-  },
-  {
-    id: "2",
-    title: "Farm Vehicles SVG Bundle",
-    price: "$6.99",
-    status: "active",
-  },
-  {
-    id: "3",
-    title: "Cute Tractor SVG",
-    price: "$2.99",
-    status: "draft",
-  },
-]
-
 export function ProductTable({
-  products = demoProducts,
+  products,
 }: ProductTableProps) {
   return (
     <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
