@@ -7,7 +7,11 @@ import {
   type ProductFormData,
 } from "@/components/admin/ProductForm"
 
-export function ProductFormContainer() {
+interface ProductFormContainerProps {
+  onCancel: () => void
+}
+
+export function ProductFormContainer({onCancel,}: ProductFormContainerProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -53,6 +57,7 @@ export function ProductFormContainer() {
 
       <ProductForm
         onSubmit={handleSubmit}
+        onCancel={onCancel}
       />
 
       {isSubmitting && (

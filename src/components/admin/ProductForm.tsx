@@ -1,5 +1,4 @@
 import { useState } from "react"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -24,9 +23,10 @@ export interface ProductFormData {
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void
+  onCancel: () => void
 }
 
-export function ProductForm({ onSubmit }: ProductFormProps) {
+export function ProductForm({ onSubmit, onCancel }: ProductFormProps) {
   const [title, setTitle] = useState("")
   const [slug, setSlug] = useState("")
   const [description, setDescription] = useState("")
@@ -124,7 +124,7 @@ export function ProductForm({ onSubmit }: ProductFormProps) {
       </div>
 
       <div className="flex items-center justify-end gap-3 border-t pt-6">
-        <Button type="button" variant="outline">
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
 

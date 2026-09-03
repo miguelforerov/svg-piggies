@@ -1,12 +1,11 @@
 ---
-import AdminLayout from "@/layouts/admin/Layout.astro";
+import Layout from "@/layouts/admin/Layout.astro";
 import { Package, Folder, Tags } from "lucide-react";
 import { StatsCard } from "@/components/admin/StatsCard";
-import { ProductTable } from "@/components/admin/ProductTable";
 
 ---
 
-<AdminLayout title="Dashboard">
+<Layout title="Dashboard">
   <div class="space-y-6">
     <div>
       <h2 class="text-2xl font-semibold tracking-tight">Dashboard</h2>
@@ -38,4 +37,4 @@ import { ProductTable } from "@/components/admin/ProductTable";
       />
     </section>
   </div>
-</AdminLayout>
+</Layout>

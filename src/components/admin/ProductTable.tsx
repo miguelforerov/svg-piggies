@@ -19,9 +19,6 @@ export function ProductTable({
       <div className="flex items-center justify-between border-b p-6">
         <div>
           <h3 className="text-lg font-semibold">Recent Products</h3>
-          <p className="text-sm text-muted-foreground">
-            Recently added products.
-          </p>
         </div>
       </div>
 
