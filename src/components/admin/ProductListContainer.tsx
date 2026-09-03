@@ -1,9 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-
-import { ProductTable } from "@/components/admin/ProductTable"
-
+import { ProductCard } from "@/components/admin/ProductCard"
 interface Product {
   id: string
   title: string
@@ -61,5 +59,14 @@ export function ProductListContainer() {
     )
   }
 
-  return <ProductTable products={products} />
+  return (
+    <div className="space-y-4">
+      {products.map((product) => (
+        <ProductCard
+          key={product.id}
+          product={product}
+        />
+      ))}
+    </div>
+  )
 }
