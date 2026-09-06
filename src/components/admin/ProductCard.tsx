@@ -1,5 +1,5 @@
 import { EllipsisVertical, Package } from "lucide-react"
-
+import { Button } from "@/components/ui/button"
 interface Product {
   id: string
   title: string
@@ -52,20 +52,9 @@ export function ProductCard({
 
       {/* Actions */}
       <div className="mt-4 flex items-center justify-end gap-2 border-t pt-3">
-        <button
-          type="button"
-          className="cursor-pointer text-sm font-medium text-primary hover:underline"
-        >
+        <Button variant="link">
           View
-        </button>
-
-        <button
-          type="button"
-          className="cursor-pointer rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-          aria-label="More actions"
-        >
-          <EllipsisVertical className="size-4" />
-        </button>
+        </Button>
       </div>
     </div>
   )
