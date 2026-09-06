@@ -2,11 +2,12 @@
 import Layout from "@/layouts/admin/Layout.astro";
 import { ProductListContainer } from "@/components/admin/ProductListContainer";
 import { ProductFormDialog } from "@/components/admin/ProductFormDialog";
+import MaxWidthLayout from "@/layouts/admin/MaxWidthLayout.astro";
 
 ---
 
 <Layout title="Products">
-  <div class="space-y-6">
+  <MaxWidthLayout>
     <div class="flex items-center justify-between">
       <div>
         <h2 class="text-2xl font-semibold tracking-tight">Products</h2>
@@ -14,5 +15,5 @@ import { ProductFormDialog } from "@/components/admin/ProductFormDialog";
       <ProductFormDialog client:load />
     </div>
     <ProductListContainer client:load />
-  </div>
+  </MaxWidthLayout>
 </Layout>

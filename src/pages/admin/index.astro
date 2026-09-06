@@ -2,16 +2,14 @@
 import Layout from "@/layouts/admin/Layout.astro";
 import { Package, Folder, Tags } from "lucide-react";
 import { StatsCard } from "@/components/admin/StatsCard";
+import MaxWidthLayout from "@/layouts/admin/MaxWidthLayout.astro";
 
 ---
 
 <Layout title="Dashboard">
-  <div class="space-y-6">
+  <MaxWidthLayout>
     <div>
       <h2 class="text-2xl font-semibold tracking-tight">Dashboard</h2>
-      <p class="text-muted-foreground">
-        Overview of your store.
-      </p>
     </div>
 
     <section class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -36,5 +34,5 @@ import { StatsCard } from "@/components/admin/StatsCard";
         description="Total product types"
       />
     </section>
-  </div>
+  </MaxWidthLayout>
 </Layout>
