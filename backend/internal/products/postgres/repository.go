@@ -2,12 +2,20 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/dialect/psql"
+	"github.com/stephenafamo/bob/dialect/psql/dm"
+	"github.com/stephenafamo/bob/dialect/psql/im"
+	"github.com/stephenafamo/bob/dialect/psql/sm"
+	"github.com/stephenafamo/bob/dialect/psql/um"
+	"github.com/stephenafamo/scan"
 	"github.com/zdenaforero/svg-piggies/backend/internal/database"
 	"github.com/zdenaforero/svg-piggies/backend/internal/products"
 )
@@ -30,26 +38,13 @@ func (r *Repository) List(ctx context.Context) ([]products.Product, error) {
 	}
 	defer release(connection)
 
-	rows, err := connection.Query(ctx, `
-		SELECT id::text, title, slug, description, price::text, status::text,
-		       created_at, updated_at
-		FROM products
-		ORDER BY created_at DESC, id
-	`)
+	result, err := bob.All(
+		ctx,
+		connection.BobTransactor(),
+		listProductsQuery(),
+		scan.StructMapper[products.Product](),
+	)
 	if err != nil {
-		return nil, mapError(err)
-	}
-	defer rows.Close()
-
-	result := make([]products.Product, 0)
-	for rows.Next() {
-		product, scanErr := scanProduct(rows)
-		if scanErr != nil {
-			return nil, scanErr
-		}
-		result = append(result, product)
-	}
-	if err := rows.Err(); err != nil {
 		return nil, mapError(err)
 	}
 	return result, nil
@@ -62,12 +57,16 @@ func (r *Repository) Get(ctx context.Context, id string) (products.Product, erro
 	}
 	defer release(connection)
 
-	return scanProduct(connection.QueryRow(ctx, `
-		SELECT id::text, title, slug, description, price::text, status::text,
-		       created_at, updated_at
-		FROM products
-		WHERE id = $1
-	`, id))
+	product, err := bob.One(
+		ctx,
+		connection.BobTransactor(),
+		getProductQuery("id", id),
+		scan.StructMapper[products.Product](),
+	)
+	if err != nil {
+		return products.Product{}, mapError(err)
+	}
+	return product, nil
 }
 
 func (r *Repository) GetBySlug(ctx context.Context, slug string) (products.Product, error) {
@@ -77,12 +76,16 @@ func (r *Repository) GetBySlug(ctx context.Context, slug string) (products.Produ
 	}
 	defer release(connection)
 
-	return scanProduct(connection.QueryRow(ctx, `
-		SELECT id::text, title, slug, description, price::text, status::text,
-		       created_at, updated_at
-		FROM products
-		WHERE slug = $1
-	`, slug))
+	product, err := bob.One(
+		ctx,
+		connection.BobTransactor(),
+		getProductQuery("slug", slug),
+		scan.StructMapper[products.Product](),
+	)
+	if err != nil {
+		return products.Product{}, mapError(err)
+	}
+	return product, nil
 }
 
 func (r *Repository) Create(
@@ -95,12 +98,16 @@ func (r *Repository) Create(
 	}
 	defer release(connection)
 
-	return scanProduct(connection.QueryRow(ctx, `
-		INSERT INTO products (title, slug, description, price, status)
-		VALUES ($1, $2, $3, $4::numeric, $5::product_status)
-		RETURNING id::text, title, slug, description, price::text, status::text,
-		          created_at, updated_at
-	`, input.Title, input.Slug, input.Description, input.Price, input.Status))
+	product, err := bob.One(
+		ctx,
+		connection.BobTransactor(),
+		createProductQuery(input),
+		scan.StructMapper[products.Product](),
+	)
+	if err != nil {
+		return products.Product{}, mapError(err)
+	}
+	return product, nil
 }
 
 func (r *Repository) Update(
@@ -114,17 +121,16 @@ func (r *Repository) Update(
 	}
 	defer release(connection)
 
-	return scanProduct(connection.QueryRow(ctx, `
-		UPDATE products
-		SET title = $2,
-		    slug = $3,
-		    description = $4,
-		    price = $5::numeric,
-		    status = $6::product_status
-		WHERE id = $1
-		RETURNING id::text, title, slug, description, price::text, status::text,
-		          created_at, updated_at
-	`, id, input.Title, input.Slug, input.Description, input.Price, input.Status))
+	product, err := bob.One(
+		ctx,
+		connection.BobTransactor(),
+		updateProductQuery(id, input),
+		scan.StructMapper[products.Product](),
+	)
+	if err != nil {
+		return products.Product{}, mapError(err)
+	}
+	return product, nil
 }
 
 func (r *Repository) Delete(ctx context.Context, id string) error {
@@ -134,39 +140,86 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 	}
 	defer release(connection)
 
-	commandTag, err := connection.Exec(ctx, `DELETE FROM products WHERE id = $1`, id)
+	result, err := bob.Exec(ctx, connection.BobTransactor(), deleteProductQuery(id))
 	if err != nil {
 		return mapError(err)
 	}
-	if commandTag.RowsAffected() == 0 {
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return mapError(err)
+	}
+	if rowsAffected == 0 {
 		return products.ErrNotFound
 	}
 	return nil
 }
 
-type scanner interface {
-	Scan(dest ...any) error
+func productColumns() []any {
+	return []any{
+		psql.Cast(psql.Quote("id"), "text"),
+		psql.Quote("title"),
+		psql.Quote("slug"),
+		psql.Quote("description"),
+		psql.Cast(psql.Quote("price"), "text"),
+		psql.Cast(psql.Quote("status"), "text"),
+		psql.Quote("created_at"),
+		psql.Quote("updated_at"),
+	}
 }
 
-func scanProduct(row scanner) (products.Product, error) {
-	var product products.Product
-	if err := row.Scan(
-		&product.ID,
-		&product.Title,
-		&product.Slug,
-		&product.Description,
-		&product.Price,
-		&product.Status,
-		&product.CreatedAt,
-		&product.UpdatedAt,
-	); err != nil {
-		return products.Product{}, mapError(err)
-	}
-	return product, nil
+func listProductsQuery() bob.Query {
+	return psql.Select(
+		sm.Columns(productColumns()...),
+		sm.From("products"),
+		sm.OrderBy(psql.Quote("created_at")).Desc(),
+		sm.OrderBy(psql.Quote("id")),
+	)
+}
+
+func getProductQuery(column string, value string) bob.Query {
+	return psql.Select(
+		sm.Columns(productColumns()...),
+		sm.From("products"),
+		sm.Where(psql.Quote(column).EQ(psql.Arg(value))),
+	)
+}
+
+func createProductQuery(input products.CreateProductInput) bob.Query {
+	return psql.Insert(
+		im.Into("products", "title", "slug", "description", "price", "status"),
+		im.Values(
+			psql.Arg(input.Title),
+			psql.Arg(input.Slug),
+			psql.Arg(input.Description),
+			psql.Cast(psql.Arg(input.Price), "numeric"),
+			psql.Cast(psql.Arg(input.Status), "product_status"),
+		),
+		im.Returning(productColumns()...),
+	)
+}
+
+func updateProductQuery(id string, input products.UpdateProductInput) bob.Query {
+	return psql.Update(
+		um.Table("products"),
+		um.SetCol("title").ToArg(input.Title),
+		um.SetCol("slug").ToArg(input.Slug),
+		um.SetCol("description").ToArg(input.Description),
+		um.SetCol("price").To(psql.Cast(psql.Arg(input.Price), "numeric")),
+		um.SetCol("status").To(psql.Cast(psql.Arg(input.Status), "product_status")),
+		um.Where(psql.Quote("id").EQ(psql.Arg(id))),
+		um.Returning(productColumns()...),
+	)
+}
+
+func deleteProductQuery(id string) bob.Query {
+	return psql.Delete(
+		dm.From("products"),
+		dm.Where(psql.Quote("id").EQ(psql.Arg(id))),
+	)
 }
 
 func mapError(err error) error {
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, sql.ErrNoRows) {
 		return products.ErrNotFound
 	}
 

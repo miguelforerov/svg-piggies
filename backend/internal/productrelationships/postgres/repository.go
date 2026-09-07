@@ -2,12 +2,20 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/dialect/psql"
+	"github.com/stephenafamo/bob/dialect/psql/dm"
+	"github.com/stephenafamo/bob/dialect/psql/im"
+	"github.com/stephenafamo/bob/dialect/psql/sm"
+	"github.com/stephenafamo/bob/dialect/psql/um"
+	"github.com/stephenafamo/scan"
 	"github.com/zdenaforero/svg-piggies/backend/internal/database"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productrelationships"
 	"github.com/zdenaforero/svg-piggies/backend/internal/products"
@@ -34,39 +42,30 @@ func (r *Repository) ListByProduct(
 	}
 	defer release(connection)
 
-	var productExists bool
-	if err := connection.QueryRow(
+	executor := connection.BobTransactor()
+	if _, err := bob.One(
 		ctx,
-		`SELECT EXISTS (SELECT 1 FROM products WHERE id = $1)`,
-		productID,
-	).Scan(&productExists); err != nil {
+		executor,
+		productExistsQuery(productID),
+		scan.SingleColumnMapper[string],
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, productrelationships.ErrReferenceNotFound
+		}
 		return nil, mapError(err)
 	}
-	if !productExists {
-		return nil, productrelationships.ErrReferenceNotFound
-	}
 
-	rows, err := connection.Query(ctx, `
-		SELECT id::text, product_id::text, related_product_id::text, display_order
-		FROM product_relationships
-		WHERE product_id = $1
-		ORDER BY display_order, id
-	`, productID)
+	result, err := bob.All(
+		ctx,
+		executor,
+		listRelationshipsQuery(productID),
+		scan.StructMapper[productrelationships.ProductRelationship](),
+	)
 	if err != nil {
 		return nil, mapError(err)
 	}
-	defer rows.Close()
-
-	result := make([]productrelationships.ProductRelationship, 0)
-	for rows.Next() {
-		relationship, scanErr := scanProductRelationship(rows)
-		if scanErr != nil {
-			return nil, scanErr
-		}
-		result = append(result, relationship)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, mapError(err)
+	if result == nil {
+		return []productrelationships.ProductRelationship{}, nil
 	}
 	return result, nil
 }
@@ -82,11 +81,16 @@ func (r *Repository) Get(
 	}
 	defer release(connection)
 
-	return scanProductRelationship(connection.QueryRow(ctx, `
-		SELECT id::text, product_id::text, related_product_id::text, display_order
-		FROM product_relationships
-		WHERE product_id = $1 AND id = $2
-	`, productID, relationshipID))
+	relationship, err := bob.One(
+		ctx,
+		connection.BobTransactor(),
+		getRelationshipQuery(productID, relationshipID),
+		scan.StructMapper[productrelationships.ProductRelationship](),
+	)
+	if err != nil {
+		return productrelationships.ProductRelationship{}, mapError(err)
+	}
+	return relationship, nil
 }
 
 func (r *Repository) Create(
@@ -99,11 +103,16 @@ func (r *Repository) Create(
 	}
 	defer release(connection)
 
-	return scanProductRelationship(connection.QueryRow(ctx, `
-		INSERT INTO product_relationships (product_id, related_product_id, display_order)
-		VALUES ($1, $2, $3)
-		RETURNING id::text, product_id::text, related_product_id::text, display_order
-	`, input.ProductID, input.RelatedProductID, input.DisplayOrder))
+	relationship, err := bob.One(
+		ctx,
+		connection.BobTransactor(),
+		createRelationshipQuery(input),
+		scan.StructMapper[productrelationships.ProductRelationship](),
+	)
+	if err != nil {
+		return productrelationships.ProductRelationship{}, mapError(err)
+	}
+	return relationship, nil
 }
 
 func (r *Repository) CreateMany(
@@ -116,96 +125,63 @@ func (r *Repository) CreateMany(
 	}
 	defer release(connection)
 
-	transaction, err := connection.Begin(ctx)
+	var result productrelationships.ProductWithRelationships
+	err = database.RunInBobTransaction(
+		ctx,
+		connection.BobTransactor(),
+		func(ctx context.Context, transaction bob.Transaction) error {
+			product, err := getLockedProduct(ctx, transaction, input.ProductID)
+			if err != nil {
+				return err
+			}
+
+			nextDisplayOrder, err := bob.One(
+				ctx,
+				transaction,
+				nextDisplayOrderQuery(input.ProductID),
+				scan.SingleColumnMapper[int],
+			)
+			if err != nil {
+				return mapError(err)
+			}
+
+			for _, relatedProductID := range input.RelatedProductIDs {
+				insertResult, err := bob.Exec(
+					ctx,
+					transaction,
+					createRelationshipIgnoringConflictQuery(
+						input.ProductID,
+						relatedProductID,
+						nextDisplayOrder,
+					),
+				)
+				if err != nil {
+					return mapError(err)
+				}
+				rowsAffected, err := insertResult.RowsAffected()
+				if err != nil {
+					return mapError(err)
+				}
+				if rowsAffected > 0 {
+					nextDisplayOrder++
+				}
+			}
+
+			relationships, err := getPopulatedRelationships(ctx, transaction, input.ProductID)
+			if err != nil {
+				return err
+			}
+			result = productrelationships.ProductWithRelationships{
+				Product:       product,
+				Relationships: relationships,
+			}
+			return nil
+		},
+	)
 	if err != nil {
 		return productrelationships.ProductWithRelationships{}, mapError(err)
 	}
-	defer func() { _ = transaction.Rollback(ctx) }()
-
-	product, err := scanProduct(transaction.QueryRow(ctx, `
-		SELECT id::text, title, slug, description, price::text, status::text,
-		       created_at, updated_at
-		FROM products
-		WHERE id = $1
-		FOR UPDATE
-	`, input.ProductID))
-	if err != nil {
-		if errors.Is(err, productrelationships.ErrNotFound) {
-			return productrelationships.ProductWithRelationships{},
-				productrelationships.ErrReferenceNotFound
-		}
-		return productrelationships.ProductWithRelationships{}, err
-	}
-
-	var nextDisplayOrder int
-	if err := transaction.QueryRow(ctx, `
-		SELECT COALESCE(MAX(display_order) + 1, 0)
-		FROM product_relationships
-		WHERE product_id = $1
-	`, input.ProductID).Scan(&nextDisplayOrder); err != nil {
-		return productrelationships.ProductWithRelationships{}, mapError(err)
-	}
-
-	for _, relatedProductID := range input.RelatedProductIDs {
-		commandTag, err := transaction.Exec(ctx, `
-			INSERT INTO product_relationships (product_id, related_product_id, display_order)
-			VALUES ($1, $2, $3)
-			ON CONFLICT (product_id, related_product_id) DO NOTHING
-		`, input.ProductID, relatedProductID, nextDisplayOrder)
-		if err != nil {
-			return productrelationships.ProductWithRelationships{}, mapError(err)
-		}
-		if commandTag.RowsAffected() > 0 {
-			nextDisplayOrder++
-		}
-	}
-
-	rows, err := transaction.Query(ctx, `
-		SELECT pr.id::text, pr.display_order,
-		       p.id::text, p.title, p.slug, p.description, p.price::text,
-		       p.status::text, p.created_at, p.updated_at
-		FROM product_relationships pr
-		JOIN products p ON p.id = pr.related_product_id
-		WHERE pr.product_id = $1
-		ORDER BY pr.display_order, pr.id
-	`, input.ProductID)
-	if err != nil {
-		return productrelationships.ProductWithRelationships{}, mapError(err)
-	}
-
-	relationships := make([]productrelationships.PopulatedProductRelationship, 0)
-	for rows.Next() {
-		var relationship productrelationships.PopulatedProductRelationship
-		if err := rows.Scan(
-			&relationship.RelationshipID,
-			&relationship.DisplayOrder,
-			&relationship.Product.ID,
-			&relationship.Product.Title,
-			&relationship.Product.Slug,
-			&relationship.Product.Description,
-			&relationship.Product.Price,
-			&relationship.Product.Status,
-			&relationship.Product.CreatedAt,
-			&relationship.Product.UpdatedAt,
-		); err != nil {
-			rows.Close()
-			return productrelationships.ProductWithRelationships{}, mapError(err)
-		}
-		relationships = append(relationships, relationship)
-	}
-	if err := rows.Err(); err != nil {
-		rows.Close()
-		return productrelationships.ProductWithRelationships{}, mapError(err)
-	}
-	rows.Close()
-
-	if err := transaction.Commit(ctx); err != nil {
-		return productrelationships.ProductWithRelationships{}, mapError(err)
-	}
-	return productrelationships.ProductWithRelationships{
-		Product:       product,
-		Relationships: relationships,
-	}, nil
+	return result, nil
 }
 
 func (r *Repository) Update(
@@ -220,12 +196,16 @@ func (r *Repository) Update(
 	}
 	defer release(connection)
 
-	return scanProductRelationship(connection.QueryRow(ctx, `
-		UPDATE product_relationships
-		SET related_product_id = $3, display_order = $4
-		WHERE product_id = $1 AND id = $2
-		RETURNING id::text, product_id::text, related_product_id::text, display_order
-	`, productID, relationshipID, input.RelatedProductID, input.DisplayOrder))
+	relationship, err := bob.One(
+		ctx,
+		connection.BobTransactor(),
+		updateRelationshipQuery(productID, relationshipID, input),
+		scan.StructMapper[productrelationships.ProductRelationship](),
+	)
+	if err != nil {
+		return productrelationships.ProductRelationship{}, mapError(err)
+	}
+	return relationship, nil
 }
 
 func (r *Repository) Replace(
@@ -238,90 +218,49 @@ func (r *Repository) Replace(
 	}
 	defer release(connection)
 
-	transaction, err := connection.Begin(ctx)
-	if err != nil {
-		return productrelationships.ProductWithRelationships{}, mapError(err)
-	}
-	defer func() { _ = transaction.Rollback(ctx) }()
-
-	product, err := scanProduct(transaction.QueryRow(ctx, `
-		SELECT id::text, title, slug, description, price::text, status::text,
-		       created_at, updated_at
-		FROM products
-		WHERE id = $1
-		FOR UPDATE
-	`, input.ProductID))
-	if err != nil {
-		if errors.Is(err, productrelationships.ErrNotFound) {
-			return productrelationships.ProductWithRelationships{},
-				productrelationships.ErrReferenceNotFound
-		}
-		return productrelationships.ProductWithRelationships{}, err
-	}
-
-	if _, err := transaction.Exec(
+	var result productrelationships.ProductWithRelationships
+	err = database.RunInBobTransaction(
 		ctx,
-		`DELETE FROM product_relationships WHERE product_id = $1`,
-		input.ProductID,
-	); err != nil {
-		return productrelationships.ProductWithRelationships{}, mapError(err)
-	}
+		connection.BobTransactor(),
+		func(ctx context.Context, transaction bob.Transaction) error {
+			product, err := getLockedProduct(ctx, transaction, input.ProductID)
+			if err != nil {
+				return err
+			}
 
-	for displayOrder, relatedProductID := range input.RelatedProductIDs {
-		if _, err := transaction.Exec(ctx, `
-			INSERT INTO product_relationships (product_id, related_product_id, display_order)
-			VALUES ($1, $2, $3)
-		`, input.ProductID, relatedProductID, displayOrder); err != nil {
-			return productrelationships.ProductWithRelationships{}, mapError(err)
-		}
-	}
+			if _, err := bob.Exec(
+				ctx,
+				transaction,
+				deleteRelationshipsByProductQuery(input.ProductID),
+			); err != nil {
+				return mapError(err)
+			}
 
-	rows, err := transaction.Query(ctx, `
-		SELECT pr.id::text, pr.display_order,
-		       p.id::text, p.title, p.slug, p.description, p.price::text,
-		       p.status::text, p.created_at, p.updated_at
-		FROM product_relationships pr
-		JOIN products p ON p.id = pr.related_product_id
-		WHERE pr.product_id = $1
-		ORDER BY pr.display_order, pr.id
-	`, input.ProductID)
+			for displayOrder, relatedProductID := range input.RelatedProductIDs {
+				if _, err := bob.Exec(
+					ctx,
+					transaction,
+					insertRelationshipQuery(input.ProductID, relatedProductID, displayOrder),
+				); err != nil {
+					return mapError(err)
+				}
+			}
+
+			relationships, err := getPopulatedRelationships(ctx, transaction, input.ProductID)
+			if err != nil {
+				return err
+			}
+			result = productrelationships.ProductWithRelationships{
+				Product:       product,
+				Relationships: relationships,
+			}
+			return nil
+		},
+	)
 	if err != nil {
 		return productrelationships.ProductWithRelationships{}, mapError(err)
 	}
-
-	relationships := make([]productrelationships.PopulatedProductRelationship, 0)
-	for rows.Next() {
-		var relationship productrelationships.PopulatedProductRelationship
-		if err := rows.Scan(
-			&relationship.RelationshipID,
-			&relationship.DisplayOrder,
-			&relationship.Product.ID,
-			&relationship.Product.Title,
-			&relationship.Product.Slug,
-			&relationship.Product.Description,
-			&relationship.Product.Price,
-			&relationship.Product.Status,
-			&relationship.Product.CreatedAt,
-			&relationship.Product.UpdatedAt,
-		); err != nil {
-			rows.Close()
-			return productrelationships.ProductWithRelationships{}, mapError(err)
-		}
-		relationships = append(relationships, relationship)
-	}
-	if err := rows.Err(); err != nil {
-		rows.Close()
-		return productrelationships.ProductWithRelationships{}, mapError(err)
-	}
-	rows.Close()
-
-	if err := transaction.Commit(ctx); err != nil {
-		return productrelationships.ProductWithRelationships{}, mapError(err)
-	}
-	return productrelationships.ProductWithRelationships{
-		Product:       product,
-		Relationships: relationships,
-	}, nil
+	return result, nil
 }
 
 func (r *Repository) Delete(
@@ -335,56 +274,263 @@ func (r *Repository) Delete(
 	}
 	defer release(connection)
 
-	commandTag, err := connection.Exec(ctx, `
-		DELETE FROM product_relationships
-		WHERE product_id = $1 AND id = $2
-	`, productID, relationshipID)
+	result, err := bob.Exec(
+		ctx,
+		connection.BobTransactor(),
+		deleteRelationshipQuery(productID, relationshipID),
+	)
 	if err != nil {
 		return mapError(err)
 	}
-	if commandTag.RowsAffected() == 0 {
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return mapError(err)
+	}
+	if rowsAffected == 0 {
 		return productrelationships.ErrNotFound
 	}
 	return nil
 }
 
-type scanner interface {
-	Scan(dest ...any) error
-}
-
-func scanProductRelationship(row scanner) (productrelationships.ProductRelationship, error) {
-	var relationship productrelationships.ProductRelationship
-	if err := row.Scan(
-		&relationship.ID,
-		&relationship.ProductID,
-		&relationship.RelatedProductID,
-		&relationship.DisplayOrder,
-	); err != nil {
-		return productrelationships.ProductRelationship{}, mapError(err)
+func relationshipColumns() []any {
+	return []any{
+		psql.Cast(psql.Quote("id"), "text"),
+		psql.Cast(psql.Quote("product_id"), "text"),
+		psql.Cast(psql.Quote("related_product_id"), "text"),
+		psql.Quote("display_order"),
 	}
-	return relationship, nil
 }
 
-func scanProduct(row scanner) (products.Product, error) {
-	var product products.Product
-	if err := row.Scan(
-		&product.ID,
-		&product.Title,
-		&product.Slug,
-		&product.Description,
-		&product.Price,
-		&product.Status,
-		&product.CreatedAt,
-		&product.UpdatedAt,
-	); err != nil {
+func productColumns() []any {
+	return []any{
+		psql.Cast(psql.Quote("id"), "text"),
+		psql.Quote("title"),
+		psql.Quote("slug"),
+		psql.Quote("description"),
+		psql.Cast(psql.Quote("price"), "text"),
+		psql.Cast(psql.Quote("status"), "text"),
+		psql.Quote("created_at"),
+		psql.Quote("updated_at"),
+	}
+}
+
+func productExistsQuery(productID string) bob.Query {
+	return psql.Select(
+		sm.Columns(psql.Cast(psql.Quote("id"), "text")),
+		sm.From("products"),
+		sm.Where(psql.Quote("id").EQ(psql.Arg(productID))),
+	)
+}
+
+func lockedProductQuery(productID string) bob.Query {
+	return psql.Select(
+		sm.Columns(productColumns()...),
+		sm.From("products"),
+		sm.Where(psql.Quote("id").EQ(psql.Arg(productID))),
+		sm.ForUpdate(),
+	)
+}
+
+func listRelationshipsQuery(productID string) bob.Query {
+	return psql.Select(
+		sm.Columns(relationshipColumns()...),
+		sm.From("product_relationships"),
+		sm.Where(psql.Quote("product_id").EQ(psql.Arg(productID))),
+		sm.OrderBy(psql.Quote("display_order")),
+		sm.OrderBy(psql.Quote("id")),
+	)
+}
+
+func getRelationshipQuery(productID string, relationshipID string) bob.Query {
+	return psql.Select(
+		sm.Columns(relationshipColumns()...),
+		sm.From("product_relationships"),
+		sm.Where(psql.And(
+			psql.Quote("product_id").EQ(psql.Arg(productID)),
+			psql.Quote("id").EQ(psql.Arg(relationshipID)),
+		)),
+	)
+}
+
+func createRelationshipQuery(input productrelationships.CreateProductRelationshipInput) bob.Query {
+	return psql.Insert(
+		im.Into("product_relationships", "product_id", "related_product_id", "display_order"),
+		im.Values(psql.Arg(input.ProductID, input.RelatedProductID, input.DisplayOrder)),
+		im.Returning(relationshipColumns()...),
+	)
+}
+
+func nextDisplayOrderQuery(productID string) bob.Query {
+	nextOrder := psql.F("MAX", psql.Quote("display_order"))().Plus(psql.Arg(1))
+	return psql.Select(
+		sm.Columns(psql.F("COALESCE", nextOrder, psql.Arg(0))),
+		sm.From("product_relationships"),
+		sm.Where(psql.Quote("product_id").EQ(psql.Arg(productID))),
+	)
+}
+
+func createRelationshipIgnoringConflictQuery(
+	productID string,
+	relatedProductID string,
+	displayOrder int,
+) bob.Query {
+	return psql.Insert(
+		im.Into("product_relationships", "product_id", "related_product_id", "display_order"),
+		im.Values(psql.Arg(productID, relatedProductID, displayOrder)),
+		im.OnConflict(
+			psql.Quote("product_id"),
+			psql.Quote("related_product_id"),
+		).DoNothing(),
+	)
+}
+
+func insertRelationshipQuery(
+	productID string,
+	relatedProductID string,
+	displayOrder int,
+) bob.Query {
+	return psql.Insert(
+		im.Into("product_relationships", "product_id", "related_product_id", "display_order"),
+		im.Values(psql.Arg(productID, relatedProductID, displayOrder)),
+	)
+}
+
+func updateRelationshipQuery(
+	productID string,
+	relationshipID string,
+	input productrelationships.UpdateProductRelationshipInput,
+) bob.Query {
+	return psql.Update(
+		um.Table("product_relationships"),
+		um.SetCol("related_product_id").ToArg(input.RelatedProductID),
+		um.SetCol("display_order").ToArg(input.DisplayOrder),
+		um.Where(psql.And(
+			psql.Quote("product_id").EQ(psql.Arg(productID)),
+			psql.Quote("id").EQ(psql.Arg(relationshipID)),
+		)),
+		um.Returning(relationshipColumns()...),
+	)
+}
+
+func deleteRelationshipsByProductQuery(productID string) bob.Query {
+	return psql.Delete(
+		dm.From("product_relationships"),
+		dm.Where(psql.Quote("product_id").EQ(psql.Arg(productID))),
+	)
+}
+
+func deleteRelationshipQuery(productID string, relationshipID string) bob.Query {
+	return psql.Delete(
+		dm.From("product_relationships"),
+		dm.Where(psql.And(
+			psql.Quote("product_id").EQ(psql.Arg(productID)),
+			psql.Quote("id").EQ(psql.Arg(relationshipID)),
+		)),
+	)
+}
+
+type populatedRelationshipRow struct {
+	RelationshipID     string          `db:"relationship_id"`
+	DisplayOrder       int             `db:"display_order"`
+	ProductID          string          `db:"product_id"`
+	ProductTitle       string          `db:"product_title"`
+	ProductSlug        string          `db:"product_slug"`
+	ProductDescription string          `db:"product_description"`
+	ProductPrice       string          `db:"product_price"`
+	ProductStatus      products.Status `db:"product_status"`
+	ProductCreatedAt   time.Time       `db:"product_created_at"`
+	ProductUpdatedAt   time.Time       `db:"product_updated_at"`
+}
+
+func populatedRelationshipsQuery(productID string) bob.Query {
+	return psql.Select(
+		sm.Columns(
+			psql.Cast(psql.Quote("pr", "id"), "text").As("relationship_id"),
+			psql.Quote("pr", "display_order").As("display_order"),
+			psql.Cast(psql.Quote("p", "id"), "text").As("product_id"),
+			psql.Quote("p", "title").As("product_title"),
+			psql.Quote("p", "slug").As("product_slug"),
+			psql.Quote("p", "description").As("product_description"),
+			psql.Cast(psql.Quote("p", "price"), "text").As("product_price"),
+			psql.Cast(psql.Quote("p", "status"), "text").As("product_status"),
+			psql.Quote("p", "created_at").As("product_created_at"),
+			psql.Quote("p", "updated_at").As("product_updated_at"),
+		),
+		sm.From("product_relationships").As("pr"),
+		sm.InnerJoin("products").As("p").OnEQ(
+			psql.Quote("p", "id"),
+			psql.Quote("pr", "related_product_id"),
+		),
+		sm.Where(psql.Quote("pr", "product_id").EQ(psql.Arg(productID))),
+		sm.OrderBy(psql.Quote("pr", "display_order")),
+		sm.OrderBy(psql.Quote("pr", "id")),
+	)
+}
+
+func getLockedProduct(
+	ctx context.Context,
+	transaction bob.Transaction,
+	productID string,
+) (products.Product, error) {
+	product, err := bob.One(
+		ctx,
+		transaction,
+		lockedProductQuery(productID),
+		scan.StructMapper[products.Product](),
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return products.Product{}, productrelationships.ErrReferenceNotFound
+		}
 		return products.Product{}, mapError(err)
 	}
 	return product, nil
 }
 
+func getPopulatedRelationships(
+	ctx context.Context,
+	transaction bob.Transaction,
+	productID string,
+) ([]productrelationships.PopulatedProductRelationship, error) {
+	rows, err := bob.All(
+		ctx,
+		transaction,
+		populatedRelationshipsQuery(productID),
+		scan.StructMapper[populatedRelationshipRow](),
+	)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	result := make([]productrelationships.PopulatedProductRelationship, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, productrelationships.PopulatedProductRelationship{
+			RelationshipID: row.RelationshipID,
+			DisplayOrder:   row.DisplayOrder,
+			Product: products.Product{
+				ID:          row.ProductID,
+				Title:       row.ProductTitle,
+				Slug:        row.ProductSlug,
+				Description: row.ProductDescription,
+				Price:       row.ProductPrice,
+				Status:      row.ProductStatus,
+				CreatedAt:   row.ProductCreatedAt,
+				UpdatedAt:   row.ProductUpdatedAt,
+			},
+		})
+	}
+	return result, nil
+}
+
 func mapError(err error) error {
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, sql.ErrNoRows) {
 		return productrelationships.ErrNotFound
+	}
+	if errors.Is(err, productrelationships.ErrInvalidInput) ||
+		errors.Is(err, productrelationships.ErrNotFound) ||
+		errors.Is(err, productrelationships.ErrReferenceNotFound) ||
+		errors.Is(err, productrelationships.ErrConflict) {
+		return err
 	}
 
 	var postgresError *pgconn.PgError

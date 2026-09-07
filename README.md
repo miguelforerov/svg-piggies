@@ -97,6 +97,14 @@ In the Worker, the same repositories acquire a connection through the
 `HYPERDRIVE` binding for each database operation. Hyperdrive performs the
 connection pooling, so the Worker does not create another long-lived pool.
 
+The `collections`, `products`, `producttypes`, `productimages`,
+`productrelationships`, `productcollections`, and `productproducttypes`
+PostgreSQL repositories use Bob's PostgreSQL query builder and pgx adapter. Bob
+handles transactional repository operations, while the existing database
+provider continues to own native pgx pooling and Cloudflare Hyperdrive
+connections. Other repositories still use pgx directly and can be migrated to
+Bob incrementally.
+
 Before deploying, replace the placeholder Hyperdrive ID and provision the R2
 buckets. Store production Stripe values with `wrangler secret put`, never in
 `wrangler.jsonc`.

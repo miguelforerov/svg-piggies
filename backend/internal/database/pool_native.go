@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	bobpgx "github.com/stephenafamo/bob/drivers/pgx"
 )
 
 type PoolProvider struct {
@@ -43,7 +44,7 @@ func (p *PoolProvider) Acquire(ctx context.Context) (*Connection, error) {
 		return nil, fmt.Errorf("acquire PostgreSQL connection: %w", err)
 	}
 
-	return NewConnection(connection, func(context.Context) error {
+	return NewConnection(connection, bobpgx.NewPoolConn(connection), func(context.Context) error {
 		connection.Release()
 		return nil
 	})

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	bobpgx "github.com/stephenafamo/bob/drivers/pgx"
 	"github.com/syumai/workers/cloudflare"
 	"github.com/syumai/workers/cloudflare/sockets"
 )
@@ -64,7 +65,7 @@ func (p *HyperdriveProvider) Acquire(ctx context.Context) (*Connection, error) {
 		return nil, fmt.Errorf("connect through Hyperdrive: %w", err)
 	}
 
-	return NewConnection(connection, func(closeContext context.Context) error {
+	return NewConnection(connection, bobpgx.NewConn(connection), func(closeContext context.Context) error {
 		return connection.Close(closeContext)
 	})
 }

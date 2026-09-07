@@ -2,12 +2,20 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/dialect/psql"
+	"github.com/stephenafamo/bob/dialect/psql/dm"
+	"github.com/stephenafamo/bob/dialect/psql/im"
+	"github.com/stephenafamo/bob/dialect/psql/sm"
+	"github.com/stephenafamo/bob/dialect/psql/um"
+	"github.com/stephenafamo/scan"
 	"github.com/zdenaforero/svg-piggies/backend/internal/collections"
 	"github.com/zdenaforero/svg-piggies/backend/internal/database"
 )
@@ -30,25 +38,13 @@ func (r *Repository) List(ctx context.Context) ([]collections.Collection, error)
 	}
 	defer release(connection)
 
-	rows, err := connection.Query(ctx, `
-		SELECT id::text, name, slug, description
-		FROM collections
-		ORDER BY name, id
-	`)
+	result, err := bob.All(
+		ctx,
+		connection.BobTransactor(),
+		listCollectionsQuery(),
+		scan.StructMapper[collections.Collection](),
+	)
 	if err != nil {
-		return nil, mapError(err)
-	}
-	defer rows.Close()
-
-	result := make([]collections.Collection, 0)
-	for rows.Next() {
-		collection, scanErr := scanCollection(rows)
-		if scanErr != nil {
-			return nil, scanErr
-		}
-		result = append(result, collection)
-	}
-	if err := rows.Err(); err != nil {
 		return nil, mapError(err)
 	}
 	return result, nil
@@ -61,11 +57,16 @@ func (r *Repository) Get(ctx context.Context, id string) (collections.Collection
 	}
 	defer release(connection)
 
-	return scanCollection(connection.QueryRow(ctx, `
-		SELECT id::text, name, slug, description
-		FROM collections
-		WHERE id = $1
-	`, id))
+	collection, err := bob.One(
+		ctx,
+		connection.BobTransactor(),
+		getCollectionQuery("id", id),
+		scan.StructMapper[collections.Collection](),
+	)
+	if err != nil {
+		return collections.Collection{}, mapError(err)
+	}
+	return collection, nil
 }
 
 func (r *Repository) GetBySlug(ctx context.Context, slug string) (collections.Collection, error) {
@@ -75,11 +76,16 @@ func (r *Repository) GetBySlug(ctx context.Context, slug string) (collections.Co
 	}
 	defer release(connection)
 
-	return scanCollection(connection.QueryRow(ctx, `
-		SELECT id::text, name, slug, description
-		FROM collections
-		WHERE slug = $1
-	`, slug))
+	collection, err := bob.One(
+		ctx,
+		connection.BobTransactor(),
+		getCollectionQuery("slug", slug),
+		scan.StructMapper[collections.Collection](),
+	)
+	if err != nil {
+		return collections.Collection{}, mapError(err)
+	}
+	return collection, nil
 }
 
 func (r *Repository) Create(
@@ -92,11 +98,16 @@ func (r *Repository) Create(
 	}
 	defer release(connection)
 
-	return scanCollection(connection.QueryRow(ctx, `
-		INSERT INTO collections (name, slug, description)
-		VALUES ($1, $2, $3)
-		RETURNING id::text, name, slug, description
-	`, input.Name, input.Slug, input.Description))
+	collection, err := bob.One(
+		ctx,
+		connection.BobTransactor(),
+		createCollectionQuery(input),
+		scan.StructMapper[collections.Collection](),
+	)
+	if err != nil {
+		return collections.Collection{}, mapError(err)
+	}
+	return collection, nil
 }
 
 func (r *Repository) Update(
@@ -110,12 +121,16 @@ func (r *Repository) Update(
 	}
 	defer release(connection)
 
-	return scanCollection(connection.QueryRow(ctx, `
-		UPDATE collections
-		SET name = $2, slug = $3, description = $4
-		WHERE id = $1
-		RETURNING id::text, name, slug, description
-	`, id, input.Name, input.Slug, input.Description))
+	collection, err := bob.One(
+		ctx,
+		connection.BobTransactor(),
+		updateCollectionQuery(id, input),
+		scan.StructMapper[collections.Collection](),
+	)
+	if err != nil {
+		return collections.Collection{}, mapError(err)
+	}
+	return collection, nil
 }
 
 func (r *Repository) Delete(ctx context.Context, id string) error {
@@ -125,35 +140,74 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 	}
 	defer release(connection)
 
-	commandTag, err := connection.Exec(ctx, `DELETE FROM collections WHERE id = $1`, id)
+	result, err := bob.Exec(ctx, connection.BobTransactor(), deleteCollectionQuery(id))
 	if err != nil {
 		return mapError(err)
 	}
-	if commandTag.RowsAffected() == 0 {
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return mapError(err)
+	}
+	if rowsAffected == 0 {
 		return collections.ErrNotFound
 	}
 	return nil
 }
 
-type scanner interface {
-	Scan(dest ...any) error
+func collectionColumns() []any {
+	return []any{
+		psql.Cast(psql.Quote("id"), "text"),
+		psql.Quote("name"),
+		psql.Quote("slug"),
+		psql.Quote("description"),
+	}
 }
 
-func scanCollection(row scanner) (collections.Collection, error) {
-	var collection collections.Collection
-	if err := row.Scan(
-		&collection.ID,
-		&collection.Name,
-		&collection.Slug,
-		&collection.Description,
-	); err != nil {
-		return collections.Collection{}, mapError(err)
-	}
-	return collection, nil
+func listCollectionsQuery() bob.Query {
+	return psql.Select(
+		sm.Columns(collectionColumns()...),
+		sm.From("collections"),
+		sm.OrderBy(psql.Quote("name")),
+		sm.OrderBy(psql.Quote("id")),
+	)
+}
+
+func getCollectionQuery(column string, value string) bob.Query {
+	return psql.Select(
+		sm.Columns(collectionColumns()...),
+		sm.From("collections"),
+		sm.Where(psql.Quote(column).EQ(psql.Arg(value))),
+	)
+}
+
+func createCollectionQuery(input collections.CreateCollectionInput) bob.Query {
+	return psql.Insert(
+		im.Into("collections", "name", "slug", "description"),
+		im.Values(psql.Arg(input.Name, input.Slug, input.Description)),
+		im.Returning(collectionColumns()...),
+	)
+}
+
+func updateCollectionQuery(id string, input collections.UpdateCollectionInput) bob.Query {
+	return psql.Update(
+		um.Table("collections"),
+		um.SetCol("name").ToArg(input.Name),
+		um.SetCol("slug").ToArg(input.Slug),
+		um.SetCol("description").ToArg(input.Description),
+		um.Where(psql.Quote("id").EQ(psql.Arg(id))),
+		um.Returning(collectionColumns()...),
+	)
+}
+
+func deleteCollectionQuery(id string) bob.Query {
+	return psql.Delete(
+		dm.From("collections"),
+		dm.Where(psql.Quote("id").EQ(psql.Arg(id))),
+	)
 }
 
 func mapError(err error) error {
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, sql.ErrNoRows) {
 		return collections.ErrNotFound
 	}
 

@@ -2,11 +2,19 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/dialect/psql"
+	"github.com/stephenafamo/bob/dialect/psql/dm"
+	"github.com/stephenafamo/bob/dialect/psql/im"
+	"github.com/stephenafamo/bob/dialect/psql/sm"
+	"github.com/stephenafamo/scan"
 	"github.com/zdenaforero/svg-piggies/backend/internal/database"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productcollections"
 )
@@ -32,39 +40,30 @@ func (r *Repository) ListByProduct(
 	}
 	defer release(connection)
 
-	var productExists bool
-	if err := connection.QueryRow(
+	executor := connection.BobTransactor()
+	if _, err := bob.One(
 		ctx,
-		`SELECT EXISTS (SELECT 1 FROM products WHERE id = $1)`,
-		productID,
-	).Scan(&productExists); err != nil {
+		executor,
+		productExistsQuery(productID),
+		scan.SingleColumnMapper[string],
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, productcollections.ErrReferenceNotFound
+		}
 		return nil, mapError(err)
 	}
-	if !productExists {
-		return nil, productcollections.ErrReferenceNotFound
-	}
 
-	rows, err := connection.Query(ctx, `
-		SELECT product_id::text, collection_id::text
-		FROM product_collections
-		WHERE product_id = $1
-		ORDER BY collection_id
-	`, productID)
+	result, err := bob.All(
+		ctx,
+		executor,
+		listProductCollectionsQuery(productID),
+		scan.StructMapper[productcollections.ProductCollection](),
+	)
 	if err != nil {
 		return nil, mapError(err)
 	}
-	defer rows.Close()
-
-	result := make([]productcollections.ProductCollection, 0)
-	for rows.Next() {
-		productCollection, scanErr := scanProductCollection(rows)
-		if scanErr != nil {
-			return nil, scanErr
-		}
-		result = append(result, productCollection)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, mapError(err)
+	if result == nil {
+		return []productcollections.ProductCollection{}, nil
 	}
 	return result, nil
 }
@@ -79,11 +78,16 @@ func (r *Repository) Create(
 	}
 	defer release(connection)
 
-	return scanProductCollection(connection.QueryRow(ctx, `
-		INSERT INTO product_collections (product_id, collection_id)
-		VALUES ($1, $2)
-		RETURNING product_id::text, collection_id::text
-	`, input.ProductID, input.CollectionID))
+	productCollection, err := bob.One(
+		ctx,
+		connection.BobTransactor(),
+		createProductCollectionQuery(input),
+		scan.StructMapper[productcollections.ProductCollection](),
+	)
+	if err != nil {
+		return productcollections.ProductCollection{}, mapError(err)
+	}
+	return productCollection, nil
 }
 
 func (r *Repository) Delete(
@@ -97,35 +101,79 @@ func (r *Repository) Delete(
 	}
 	defer release(connection)
 
-	commandTag, err := connection.Exec(ctx, `
-		DELETE FROM product_collections
-		WHERE product_id = $1 AND collection_id = $2
-	`, productID, collectionID)
+	result, err := bob.Exec(
+		ctx,
+		connection.BobTransactor(),
+		deleteProductCollectionQuery(productID, collectionID),
+	)
 	if err != nil {
 		return mapError(err)
 	}
-	if commandTag.RowsAffected() == 0 {
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return mapError(err)
+	}
+	if rowsAffected == 0 {
 		return productcollections.ErrNotFound
 	}
 	return nil
 }
 
-type scanner interface {
-	Scan(dest ...any) error
+func productCollectionColumns() []any {
+	return []any{
+		psql.Cast(psql.Quote("product_id"), "text"),
+		psql.Cast(psql.Quote("collection_id"), "text"),
+	}
 }
 
-func scanProductCollection(row scanner) (productcollections.ProductCollection, error) {
-	var productCollection productcollections.ProductCollection
-	if err := row.Scan(
-		&productCollection.ProductID,
-		&productCollection.CollectionID,
-	); err != nil {
-		return productcollections.ProductCollection{}, mapError(err)
-	}
-	return productCollection, nil
+func productExistsQuery(productID string) bob.Query {
+	return psql.Select(
+		sm.Columns(psql.Cast(psql.Quote("id"), "text")),
+		sm.From("products"),
+		sm.Where(psql.Quote("id").EQ(psql.Arg(productID))),
+	)
+}
+
+func listProductCollectionsQuery(productID string) bob.Query {
+	return psql.Select(
+		sm.Columns(productCollectionColumns()...),
+		sm.From("product_collections"),
+		sm.Where(psql.Quote("product_id").EQ(psql.Arg(productID))),
+		sm.OrderBy(psql.Quote("collection_id")),
+	)
+}
+
+func createProductCollectionQuery(
+	input productcollections.CreateProductCollectionInput,
+) bob.Query {
+	return psql.Insert(
+		im.Into("product_collections", "product_id", "collection_id"),
+		im.Values(psql.Arg(input.ProductID, input.CollectionID)),
+		im.Returning(productCollectionColumns()...),
+	)
+}
+
+func deleteProductCollectionQuery(productID string, collectionID string) bob.Query {
+	return psql.Delete(
+		dm.From("product_collections"),
+		dm.Where(psql.And(
+			psql.Quote("product_id").EQ(psql.Arg(productID)),
+			psql.Quote("collection_id").EQ(psql.Arg(collectionID)),
+		)),
+	)
 }
 
 func mapError(err error) error {
+	if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, sql.ErrNoRows) {
+		return productcollections.ErrNotFound
+	}
+	if errors.Is(err, productcollections.ErrInvalidInput) ||
+		errors.Is(err, productcollections.ErrNotFound) ||
+		errors.Is(err, productcollections.ErrReferenceNotFound) ||
+		errors.Is(err, productcollections.ErrConflict) {
+		return err
+	}
+
 	var postgresError *pgconn.PgError
 	if errors.As(err, &postgresError) {
 		switch postgresError.Code {
