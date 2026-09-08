@@ -37,9 +37,15 @@ func TestProductTypeQueries(t *testing.T) {
 		},
 		{
 			name:      "get",
-			query:     getProductTypeQuery("product-type-id"),
+			query:     getProductTypeQuery("id", "product-type-id"),
 			fragments: []string{`FROM product_types`, `WHERE ("id" = $1)`},
 			wantArgs:  []any{"product-type-id"},
+		},
+		{
+			name:      "get by slug",
+			query:     getProductTypeQuery("slug", "printable"),
+			fragments: []string{`FROM product_types`, `WHERE ("slug" = $1)`},
+			wantArgs:  []any{"printable"},
 		},
 		{
 			name:      "create",

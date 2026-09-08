@@ -60,7 +60,7 @@ func (r *Repository) Get(ctx context.Context, id string) (producttypes.ProductTy
 	productType, err := bob.One(
 		ctx,
 		connection.BobTransactor(),
-		getProductTypeQuery(id),
+		getProductTypeQuery("id", id),
 		scan.StructMapper[producttypes.ProductType](),
 	)
 	if err != nil {
@@ -79,11 +79,16 @@ func (r *Repository) GetBySlug(
 	}
 	defer release(connection)
 
-	return scanProductType(connection.QueryRow(ctx, `
-		SELECT id::text, name, slug, description
-		FROM product_types
-		WHERE slug = $1
-	`, slug))
+	productType, err := bob.One(
+		ctx,
+		connection.BobTransactor(),
+		getProductTypeQuery("slug", slug),
+		scan.StructMapper[producttypes.ProductType](),
+	)
+	if err != nil {
+		return producttypes.ProductType{}, mapError(err)
+	}
+	return productType, nil
 }
 
 func (r *Repository) Create(
@@ -170,11 +175,11 @@ func listProductTypesQuery() bob.Query {
 	)
 }
 
-func getProductTypeQuery(id string) bob.Query {
+func getProductTypeQuery(column string, value string) bob.Query {
 	return psql.Select(
 		sm.Columns(productTypeColumns()...),
 		sm.From("product_types"),
-		sm.Where(psql.Quote("id").EQ(psql.Arg(id))),
+		sm.Where(psql.Quote(column).EQ(psql.Arg(value))),
 	)
 }
 
