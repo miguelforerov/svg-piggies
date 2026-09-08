@@ -9,6 +9,7 @@ import (
 	generated "github.com/zdenaforero/svg-piggies/backend/api/generated"
 	"github.com/zdenaforero/svg-piggies/backend/internal/collections"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productcollections"
+	"github.com/zdenaforero/svg-piggies/backend/internal/productimages"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productproducttypes"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productrelationships"
 	"github.com/zdenaforero/svg-piggies/backend/internal/products"
@@ -74,6 +75,13 @@ type ProductCollectionService interface {
 	DeleteProductCollection(ctx context.Context, productID string, collectionID string) error
 }
 
+type ProductImageService interface {
+	AddProductImages(
+		ctx context.Context,
+		input productimages.AddProductImagesInput,
+	) ([]productimages.ProductImage, error)
+}
+
 type ProductProductTypeService interface {
 	GetProductProductTypes(
 		ctx context.Context,
@@ -121,6 +129,7 @@ type Server struct {
 	environment          string
 	collections          CollectionService
 	productCollections   ProductCollectionService
+	productImages        ProductImageService
 	productProductTypes  ProductProductTypeService
 	productRelationships ProductRelationshipService
 	products             ProductService
@@ -133,6 +142,7 @@ func NewServer(
 	environment string,
 	collectionService CollectionService,
 	productCollectionService ProductCollectionService,
+	productImageService ProductImageService,
 	productProductTypeService ProductProductTypeService,
 	productRelationshipService ProductRelationshipService,
 	productService ProductService,
@@ -142,6 +152,7 @@ func NewServer(
 		environment:          environment,
 		collections:          collectionService,
 		productCollections:   productCollectionService,
+		productImages:        productImageService,
 		productProductTypes:  productProductTypeService,
 		productRelationships: productRelationshipService,
 		products:             productService,

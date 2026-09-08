@@ -388,6 +388,42 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /api/admin/products/{productId}/images:
+    parameters:
+      - $ref: "#/components/parameters/ProductId"
+    post:
+      operationId: addProductImages
+      summary: Register one or more R2 images for a product
+      description: The image objects must already exist in R2; this operation stores their metadata.
+      tags: [admin-product-images]
+      security:
+        - CloudflareAccess: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddProductImagesInput"
+      responses:
+        "201":
+          description: Product images added.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductImage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /api/admin/products/{productId}/relationships/bulk:
     parameters:
       - $ref: "#/components/parameters/ProductId"
@@ -965,6 +1001,109 @@ components:
           example: "19.95"
         status:
           $ref: "#/components/schemas/ProductStatus"
+
+    ProductImage:
+      type: object
+      required:
+        - id
+        - productId
+        - r2ObjectKey
+        - originalFilename
+        - contentType
+        - fileSizeBytes
+        - displayOrder
+        - isPrimary
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        r2ObjectKey:
+          type: string
+        originalFilename:
+          type: string
+        contentType:
+          type: string
+        fileSizeBytes:
+          type: integer
+          format: int64
+          minimum: 0
+        widthPx:
+          type: integer
+          minimum: 1
+          nullable: true
+        heightPx:
+          type: integer
+          minimum: 1
+          nullable: true
+        altText:
+          type: string
+          nullable: true
+        displayOrder:
+          type: integer
+          minimum: 0
+        isPrimary:
+          type: boolean
+        r2Etag:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    NewProductImage:
+      type: object
+      required: [r2ObjectKey, originalFilename, contentType, fileSizeBytes]
+      properties:
+        r2ObjectKey:
+          type: string
+          minLength: 1
+        originalFilename:
+          type: string
+          minLength: 1
+        contentType:
+          type: string
+          pattern: '^image/'
+        fileSizeBytes:
+          type: integer
+          format: int64
+          minimum: 0
+        widthPx:
+          type: integer
+          minimum: 1
+        heightPx:
+          type: integer
+          minimum: 1
+        altText:
+          type: string
+        displayOrder:
+          type: integer
+          minimum: 0
+          default: 0
+        isPrimary:
+          type: boolean
+          default: false
+        r2Etag:
+          type: string
+
+    AddProductImagesInput:
+      type: object
+      required: [images]
+      properties:
+        images:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/NewProductImage"
 
     ProductRelationship:
       type: object

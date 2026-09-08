@@ -28,6 +28,7 @@ func newHandler(
 		cfg.Environment,
 		dependencies.collections,
 		dependencies.productCollections,
+		dependencies.productImages,
 		dependencies.productProductTypes,
 		dependencies.productRelationships,
 		dependencies.products,

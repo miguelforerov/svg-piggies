@@ -9,6 +9,8 @@ import (
 	"github.com/zdenaforero/svg-piggies/backend/internal/handlers"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productcollections"
 	productcollectionspostgres "github.com/zdenaforero/svg-piggies/backend/internal/productcollections/postgres"
+	"github.com/zdenaforero/svg-piggies/backend/internal/productimages"
+	productimagespostgres "github.com/zdenaforero/svg-piggies/backend/internal/productimages/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productproducttypes"
 	productproducttypespostgres "github.com/zdenaforero/svg-piggies/backend/internal/productproducttypes/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productrelationships"
@@ -22,6 +24,7 @@ import (
 type dependencies struct {
 	collections          handlers.CollectionService
 	productCollections   handlers.ProductCollectionService
+	productImages        handlers.ProductImageService
 	productProductTypes  handlers.ProductProductTypeService
 	productRelationships handlers.ProductRelationshipService
 	products             handlers.ProductService
@@ -47,6 +50,16 @@ func buildDependencies(provider database.Provider) (dependencies, error) {
 	productCollectionService, err := productcollections.NewService(productCollectionRepository)
 	if err != nil {
 		return dependencies{}, fmt.Errorf("create product collections service: %w", err)
+	}
+
+	productImageRepository, err := productimagespostgres.NewRepository(provider)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create product images repository: %w", err)
+	}
+
+	productImageService, err := productimages.NewService(productImageRepository)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create product images service: %w", err)
 	}
 
 	productProductTypeRepository, err := productproducttypespostgres.NewRepository(provider)
@@ -92,6 +105,7 @@ func buildDependencies(provider database.Provider) (dependencies, error) {
 	return dependencies{
 		collections:          service,
 		productCollections:   productCollectionService,
+		productImages:        productImageService,
 		productProductTypes:  productProductTypeService,
 		productRelationships: productRelationshipService,
 		products:             productService,

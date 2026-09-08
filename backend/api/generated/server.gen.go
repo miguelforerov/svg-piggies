@@ -80,6 +80,11 @@ func (e ProductStatus) Valid() bool {
 	}
 }
 
+// AddProductImagesInput defines model for AddProductImagesInput.
+type AddProductImagesInput struct {
+	Images []NewProductImage `json:"images"`
+}
+
 // Collection defines model for Collection.
 type Collection struct {
 	Description string             `json:"description"`
@@ -152,6 +157,20 @@ type Health struct {
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
 
+// NewProductImage defines model for NewProductImage.
+type NewProductImage struct {
+	AltText          *string `json:"altText,omitempty"`
+	ContentType      string  `json:"contentType"`
+	DisplayOrder     *int    `json:"displayOrder,omitempty"`
+	FileSizeBytes    int64   `json:"fileSizeBytes"`
+	HeightPx         *int    `json:"heightPx,omitempty"`
+	IsPrimary        *bool   `json:"isPrimary,omitempty"`
+	OriginalFilename string  `json:"originalFilename"`
+	R2Etag           *string `json:"r2Etag,omitempty"`
+	R2ObjectKey      string  `json:"r2ObjectKey"`
+	WidthPx          *int    `json:"widthPx,omitempty"`
+}
+
 // PopulatedProductRelationship defines model for PopulatedProductRelationship.
 type PopulatedProductRelationship struct {
 	DisplayOrder   int                `json:"displayOrder"`
@@ -177,6 +196,24 @@ type Product struct {
 type ProductCollection struct {
 	CollectionId openapi_types.UUID `json:"collectionId"`
 	ProductId    openapi_types.UUID `json:"productId"`
+}
+
+// ProductImage defines model for ProductImage.
+type ProductImage struct {
+	AltText          *string            `json:"altText,omitempty"`
+	ContentType      string             `json:"contentType"`
+	CreatedAt        *time.Time         `json:"createdAt,omitempty"`
+	DisplayOrder     int                `json:"displayOrder"`
+	FileSizeBytes    int64              `json:"fileSizeBytes"`
+	HeightPx         *int               `json:"heightPx,omitempty"`
+	Id               openapi_types.UUID `json:"id"`
+	IsPrimary        bool               `json:"isPrimary"`
+	OriginalFilename string             `json:"originalFilename"`
+	ProductId        openapi_types.UUID `json:"productId"`
+	R2Etag           *string            `json:"r2Etag,omitempty"`
+	R2ObjectKey      string             `json:"r2ObjectKey"`
+	UpdatedAt        *time.Time         `json:"updatedAt,omitempty"`
+	WidthPx          *int               `json:"widthPx,omitempty"`
 }
 
 // ProductProductType defines model for ProductProductType.
@@ -294,6 +331,9 @@ type UpdateProductJSONRequestBody = UpdateProductInput
 // CreateProductCollectionJSONRequestBody defines body for CreateProductCollection for application/json ContentType.
 type CreateProductCollectionJSONRequestBody = CreateProductCollectionInput
 
+// AddProductImagesJSONRequestBody defines body for AddProductImages for application/json ContentType.
+type AddProductImagesJSONRequestBody = AddProductImagesInput
+
 // CreateProductProductTypeJSONRequestBody defines body for CreateProductProductType for application/json ContentType.
 type CreateProductProductTypeJSONRequestBody = CreateProductProductTypeInput
 
@@ -365,6 +405,9 @@ type ServerInterface interface {
 	// DeleteProductCollection Remove a product from a collection
 	// (DELETE /api/admin/products/{productId}/collections/{collectionId})
 	DeleteProductCollection(w http.ResponseWriter, r *http.Request, productId ProductId, collectionId CollectionId)
+	// AddProductImages Register one or more R2 images for a product
+	// (POST /api/admin/products/{productId}/images)
+	AddProductImages(w http.ResponseWriter, r *http.Request, productId ProductId)
 	// GetProductProductTypes List a product's product type assignments
 	// (GET /api/admin/products/{productId}/product-types)
 	GetProductProductTypes(w http.ResponseWriter, r *http.Request, productId ProductId)
@@ -811,6 +854,32 @@ func (siw *ServerInterfaceWrapper) DeleteProductCollection(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeleteProductCollection(w, r, productId, collectionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddProductImages operation middleware
+func (siw *ServerInterfaceWrapper) AddProductImages(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddProductImages(w, r, productId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1318,6 +1387,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/products/{productId}/relationships", wrapper.GetProductRelationships)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/relationships", wrapper.CreateProductRelationship)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/admin/products/{productId}/relationships", wrapper.ReplaceProductRelationships)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/images", wrapper.AddProductImages)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/relationships/bulk", wrapper.CreateProductRelationships)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/admin/products/{productId}/relationships/{relationshipId}", wrapper.DeleteProductRelationship)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/products/{productId}/relationships/{relationshipId}", wrapper.GetProductRelationship)
@@ -2737,6 +2807,101 @@ func (response DeleteProductCollection500JSONResponse) VisitDeleteProductCollect
 	return err
 }
 
+type AddProductImagesRequestObject struct {
+	ProductId ProductId `json:"productId"`
+	Body      *AddProductImagesJSONRequestBody
+}
+
+type AddProductImagesResponseObject interface {
+	VisitAddProductImagesResponse(w http.ResponseWriter) error
+}
+
+type AddProductImages201JSONResponse []ProductImage
+
+func (response AddProductImages201JSONResponse) VisitAddProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddProductImages400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AddProductImages400JSONResponse) VisitAddProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddProductImages401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AddProductImages401JSONResponse) VisitAddProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddProductImages404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AddProductImages404JSONResponse) VisitAddProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddProductImages409JSONResponse struct{ ConflictJSONResponse }
+
+func (response AddProductImages409JSONResponse) VisitAddProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddProductImages500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response AddProductImages500JSONResponse) VisitAddProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetProductProductTypesRequestObject struct {
 	ProductId ProductId `json:"productId"`
 }
@@ -3757,6 +3922,9 @@ type StrictServerInterface interface {
 	// DeleteProductCollection Remove a product from a collection
 	// (DELETE /api/admin/products/{productId}/collections/{collectionId})
 	DeleteProductCollection(ctx context.Context, request DeleteProductCollectionRequestObject) (DeleteProductCollectionResponseObject, error)
+	// AddProductImages Register one or more R2 images for a product
+	// (POST /api/admin/products/{productId}/images)
+	AddProductImages(ctx context.Context, request AddProductImagesRequestObject) (AddProductImagesResponseObject, error)
 	// GetProductProductTypes List a product's product type assignments
 	// (GET /api/admin/products/{productId}/product-types)
 	GetProductProductTypes(ctx context.Context, request GetProductProductTypesRequestObject) (GetProductProductTypesResponseObject, error)
@@ -4336,6 +4504,39 @@ func (sh *strictHandler) DeleteProductCollection(w http.ResponseWriter, r *http.
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DeleteProductCollectionResponseObject); ok {
 		if err := validResponse.VisitDeleteProductCollectionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddProductImages operation middleware
+func (sh *strictHandler) AddProductImages(w http.ResponseWriter, r *http.Request, productId ProductId) {
+	var request AddProductImagesRequestObject
+
+	request.ProductId = productId
+
+	var body AddProductImagesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddProductImages(ctx, request.(AddProductImagesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddProductImages")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddProductImagesResponseObject); ok {
+		if err := validResponse.VisitAddProductImagesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
