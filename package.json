@@ -27,6 +27,7 @@
     "db:migrate:status": "dbmate status"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^14.3.1",
     "@astrojs/react": "^6.0.4",
     "@base-ui/react": "^1.7.0",
     "@fontsource-variable/geist": "^5.3.0",
@@ -53,6 +54,6 @@
   "devDependencies": {
     "concurrently": "^10.0.5",
     "dbmate": "2.35.0",
-    "wrangler": "4.115.0"
+    "wrangler": "^4.130.0"
   }
 }
