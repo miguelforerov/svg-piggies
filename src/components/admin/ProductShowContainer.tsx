@@ -183,10 +183,6 @@ export function ProductShowContainer({
           <h2 className="text-2xl font-semibold tracking-tight">
             {product.title}
           </h2>
-
-          <p className="mt-1 text-sm text-muted-foreground">
-            Product details
-          </p>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium">

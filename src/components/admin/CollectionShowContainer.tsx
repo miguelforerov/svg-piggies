@@ -131,9 +131,6 @@ export function CollectionShowContainer({
         <h2 className="text-2xl font-semibold tracking-tight">
           {collection.name}
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Collection details
-        </p>
       </div>
 
       <Dialog
