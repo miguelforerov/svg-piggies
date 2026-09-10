@@ -8,7 +8,9 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   output: "server",
   integrations: [react()],
-  adapter: cloudflare(),
+  adapter: cloudflare({
+    configPath: "./wrangler.jsonc",
+  }),
   vite: {
     plugins: [tailwindcss()],
     server: {

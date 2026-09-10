@@ -6,6 +6,12 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "services": [
+    {
+      "binding": "API",
+      "service": "svg-piggies-api"
+    }
+  ],
   "assets": {
     "binding": "ASSETS",
     "directory": "./dist"
