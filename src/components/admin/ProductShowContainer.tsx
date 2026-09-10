@@ -58,7 +58,7 @@ export function ProductShowContainer({
           throw new Error(message || "Failed to load product")
         }
 
-        const data = await response.json()
+        const data: Product = await response.json()
 
         setProduct(data)
       } catch (error) {
