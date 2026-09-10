@@ -59,7 +59,7 @@ const SocialShare = ({ title, url, imageUrl }: SocialShareProps) => {
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`Share ${title} on Pinterest`}
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-border transition-colors duration-300 text-text-gray hover:bg-primary hover:text-white"
+        className="flex h-9 w-9 items-center justify-center rounded-full border border-border transition-colors duration-300 text-text-light hover:bg-primary hover:text-white"
       >
         <FaPinterestP size={16} />
       </a>
@@ -70,7 +70,7 @@ const SocialShare = ({ title, url, imageUrl }: SocialShareProps) => {
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`Share ${title} on Facebook`}
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-border transition-colors duration-300 text-text-gray hover:bg-primary hover:text-white"
+        className="flex h-9 w-9 items-center justify-center rounded-full border border-border transition-colors duration-300 text-text-light hover:bg-primary hover:text-white"
       >
         <FaFacebookF size={15} />
       </a>
@@ -81,7 +81,7 @@ const SocialShare = ({ title, url, imageUrl }: SocialShareProps) => {
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`Share ${title} on WhatsApp`}
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-border transition-colors duration-300 text-text-gray hover:bg-primary hover:text-white"
+        className="flex h-9 w-9 items-center justify-center rounded-full border border-border transition-colors duration-300 text-text-light hover:bg-primary hover:text-white"
       >
         <FaWhatsapp size={17} />
       </a>
@@ -91,7 +91,7 @@ const SocialShare = ({ title, url, imageUrl }: SocialShareProps) => {
         type="button"
         onClick={copyLink}
         aria-label="Copy product link"
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-border transition-colors duration-300 text-text-gray hover:bg-primary hover:text-white"
+        className="flex h-9 w-9 items-center justify-center rounded-full border border-border transition-colors duration-300 text-text-light hover:bg-primary hover:text-white"
       >
         {copied ? <FiCheck size={17} /> : <FiCopy size={17} />}
       </button>
