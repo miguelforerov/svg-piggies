@@ -1,7 +1,8 @@
+import type { ProductStatus } from "@/types/product"
 import { Badge } from "@/components/ui/badge"
 
 interface ProductStatusBadgeProps {
-  status: "draft" | "active" | "archived"
+  status: ProductStatus
 }
 
 export function ProductStatusBadge({

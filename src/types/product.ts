@@ -1,4 +1,6 @@
-export type ProductStatus = "draft" | "active" | "archived";
+export const PRODUCT_STATUSES = ["draft", "active", "archived"] as const;
+
+export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
 
 export interface ProductImage {
   id: string;

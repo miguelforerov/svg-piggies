@@ -1,4 +1,8 @@
 import { useState } from "react"
+import {
+  PRODUCT_STATUSES,
+  type ProductStatus,
+} from "@/types/product"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -11,8 +15,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-type ProductStatus = "draft" | "active" | "archived"
-
 export interface ProductFormData {
   title: string
   slug: string
@@ -21,17 +23,32 @@ export interface ProductFormData {
   status: ProductStatus
 }
 
+const productStatusLabels: Record<ProductStatus, string> = {
+  draft: "Draft",
+  active: "Active",
+  archived: "Archived",
+}
+
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void
   onCancel: () => void
+  initialValues?: ProductFormData
 }
 
-export function ProductForm({ onSubmit, onCancel }: ProductFormProps) {
-  const [title, setTitle] = useState("")
-  const [slug, setSlug] = useState("")
-  const [description, setDescription] = useState("")
-  const [price, setPrice] = useState("")
-  const [status, setStatus] = useState<ProductStatus>("draft")
+export function ProductForm({
+  onSubmit,
+  onCancel,
+  initialValues,
+}: ProductFormProps) {
+  const [title, setTitle] = useState(initialValues?.title ?? "")
+  const [slug, setSlug] = useState(initialValues?.slug ?? "")
+  const [description, setDescription] = useState(
+    initialValues?.description ?? ""
+  )
+  const [price, setPrice] = useState(initialValues?.price ?? "")
+  const [status, setStatus] = useState<ProductStatus>(
+    initialValues?.status ?? "draft"
+  )
 
   function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -115,9 +132,11 @@ export function ProductForm({ onSubmit, onCancel }: ProductFormProps) {
             </SelectTrigger>
 
             <SelectContent>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
+              {PRODUCT_STATUSES.map((productStatus) => (
+                <SelectItem key={productStatus} value={productStatus}>
+                  {productStatusLabels[productStatus]}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

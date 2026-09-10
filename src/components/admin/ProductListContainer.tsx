@@ -1,12 +1,14 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import type { ProductStatus } from "@/types/product"
 import { ProductCard } from "@/components/admin/ProductCard"
+
 interface Product {
   id: string
   title: string
   price: string
-  status: "draft" | "active" | "archived"
+  status: ProductStatus
 }
 
 export function ProductListContainer() {
