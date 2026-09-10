@@ -1,0 +1,17 @@
+---
+import Layout from "@/layouts/admin/Layout.astro";
+import MaxWidthLayout from "@/layouts/admin/MaxWidthLayout.astro";
+import { CollectionFormDialog } from "@/components/admin/CollectionFormDialog";
+import { CollectionListContainer } from "@/components/admin/CollectionListContainer";
+---
+
+<Layout title="Collections">
+  <MaxWidthLayout>
+    <div class="flex items-center justify-between">
+      <h2 class="text-2xl font-semibold tracking-tight">Collections</h2>
+      <CollectionFormDialog client:load />
+    </div>
+
+    <CollectionListContainer client:load />
+  </MaxWidthLayout>
+</Layout>
