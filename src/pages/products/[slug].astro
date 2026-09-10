@@ -6,6 +6,8 @@ import ProductGrid from "@/layouts/functional-components/ProductGrid";
 import { products, getRelatedProducts } from "@/data/products";
 import SocialShare from "@/layouts/functional-components/SocialShare";
 
+export const prerender = true;
+
 export function getStaticPaths() {
   const activeProducts = products.filter(
     (product) => product.status === "active",
