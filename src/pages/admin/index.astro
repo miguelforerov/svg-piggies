@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/admin/Layout.astro";
-import { Package, Folder, Tags } from "lucide-react";
+import { Folder, Tags } from "lucide-react";
+import { ProductStatsCard } from "@/components/admin/ProductStatsCard";
 import { StatsCard } from "@/components/admin/StatsCard";
 import MaxWidthLayout from "@/layouts/admin/MaxWidthLayout.astro";
 
@@ -13,12 +14,7 @@ import MaxWidthLayout from "@/layouts/admin/MaxWidthLayout.astro";
     </div>
 
     <section class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <StatsCard
-        title="Products"
-        value={0}
-        icon={Package}
-        description="Total products"
-      />
+      <ProductStatsCard client:load />
 
       <StatsCard
         title="Collections"
