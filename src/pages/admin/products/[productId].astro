@@ -1,0 +1,25 @@
+---
+import Layout from "@/layouts/admin/Layout.astro";
+import MaxWidthLayout from "@/layouts/admin/MaxWidthLayout.astro";
+import { ProductShowContainer } from "@/components/admin/ProductShowContainer";
+
+const { productId } = Astro.params;
+---
+
+<Layout title="Product">
+  <MaxWidthLayout>
+    <div>
+      <a
+        href="/admin/products"
+        class="text-sm text-muted-foreground hover:text-foreground"
+      >
+        ← Back to Products
+      </a>
+    </div>
+
+    <ProductShowContainer
+      productId={productId ?? ""}
+      client:load
+    />
+  </MaxWidthLayout>
+</Layout>
