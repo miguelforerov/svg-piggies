@@ -6,12 +6,14 @@ import {
   $cart,
   $cartCount,
   $cartTotal,
-  removeFromCart,
   updateQuantity,
 } from "@/cartStore";
 
 import CloseCart from "./CloseCart";
+import AddIcon from "./AddIcon";
+import DeleteIcon from "./DeleteIcon";
 import OpenCart from "./OpenCart";
+import RemoveIcon from "./RemoveIcon";
 
 const CartModal: React.FC = () => {
   const currentCart = useStore($cart);
@@ -60,7 +62,7 @@ const CartModal: React.FC = () => {
       {/* Cart drawer */}
       <div
         id="cartDialog"
-        className={`fixed inset-y-0 right-0 z-50 w-full transform transition-transform duration-300 ease-in-out md:w-[390px] ${
+        className={`fixed inset-y-0 right-0 z-50 w-full transform transition-transform duration-300 ease-in-out md:w-[560px] ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -135,36 +137,35 @@ const CartModal: React.FC = () => {
                         </div>
 
                         {/* Quantity + delete */}
-                        <div className="ml-1 flex h-16 flex-col items-end justify-between">
-                          <button
-                            type="button"
-                            className="text-sm text-neutral-500 hover:text-black dark:hover:text-white"
-                            onClick={() => removeFromCart(item.variantId)}
-                            aria-label={`Remove ${item.name}`}
-                          >
-                            ×
-                          </button>
-
+                        <div className="ml-1 flex h-16 flex-col items-end justify-center">
                           <div className="flex items-center space-x-2">
                             <button
                               type="button"
-                              className="flex h-6 w-6 items-center justify-center rounded border"
+                              className="flex h-6 w-6 items-center justify-center"
                               onClick={() =>
                                 updateQuantity(
                                   item.variantId,
                                   item.quantity - 1,
                                 )
                               }
-                              aria-label="Decrease quantity"
+                              aria-label={
+                                item.quantity === 1
+                                  ? `Remove ${item.name}`
+                                  : "Decrease quantity"
+                              }
                             >
-                              −
+                              {item.quantity === 1 ? (
+                                <DeleteIcon className="size-5" />
+                              ) : (
+                                <RemoveIcon className="size-5" />
+                              )}
                             </button>
 
                             <p>{item.quantity}</p>
 
                             <button
                               type="button"
-                              className="flex h-6 w-6 items-center justify-center rounded border"
+                              className="flex h-6 w-6 items-center justify-center"
                               onClick={() =>
                                 updateQuantity(
                                   item.variantId,
@@ -173,7 +174,7 @@ const CartModal: React.FC = () => {
                               }
                               aria-label="Increase quantity"
                             >
-                              +
+                              <AddIcon className="size-5" />
                             </button>
                           </div>
                         </div>
@@ -192,12 +193,12 @@ const CartModal: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1 pt-1 dark:border-neutral-700">
+                  {/* <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1 pt-1 dark:border-neutral-700">
                     <p>Shipping</p>
                     <p className="text-right">
                       Calculated at checkout
                     </p>
-                  </div>
+                  </div> */}
 
                   <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1 pt-1 dark:border-neutral-700">
                     <p>Total</p>
@@ -211,7 +212,7 @@ const CartModal: React.FC = () => {
                 {/* Checkout */}
                 <button
                   type="button"
-                  className="block w-full rounded-md bg-dark p-3 text-center text-sm font-medium text-white opacity-100 hover:opacity-90 dark:bg-light dark:text-text-dark"
+                  className="block w-full rounded-md bg-primary  p-3 text-center text-sm font-medium text-white opacity-100 hover:opacity-90 dark:bg-light dark:text-text-dark"
                   onClick={() => {
                     console.log("Checkout:", currentCart);
                   }}
