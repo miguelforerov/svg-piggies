@@ -38,6 +38,7 @@
     "astro": "^7.3.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cn": "^0.2.6",
     "lucide-react": "^1.39.0",
     "marked": "^18.0.10",
     "nanostores": "^1.5.2",
