@@ -105,16 +105,28 @@ export function ProductShowContainer({
           General
         </h3>
 
-        <div className="mt-6 space-y-6">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              Title
-            </p>
-            <p className="mt-1 font-medium">
-              {product.title}
-            </p>
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          {/* Left column */}
+          <div className="space-y-6">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Title
+              </p>
+              <p className="mt-1 font-medium">
+                {product.title}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Price
+              </p>
+              <p className="mt-1 font-medium">
+                ${product.price}
+              </p>
+            </div>
           </div>
 
+          {/* Right column */}
           <div>
             <p className="text-sm text-muted-foreground">
               Slug
@@ -124,23 +136,14 @@ export function ProductShowContainer({
             </p>
           </div>
 
-          <div>
-            <p className="text-sm text-muted-foreground">
-              Description
-            </p>
-            <p className="mt-1 whitespace-pre-wrap">
-              {product.description}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm text-muted-foreground">
-              Price
-            </p>
-            <p className="mt-1 font-medium">
-              ${product.price}
-            </p>
-          </div>
+        </div>
+        <div className="mt-6">
+          <p className="text-sm text-muted-foreground">
+            Description
+          </p>
+          <p className="mt-1 whitespace-pre-wrap">
+            {product.description}
+          </p>
         </div>
       </div>
 
