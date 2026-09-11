@@ -1,27 +1,129 @@
 ---
+import ProductFilters from "@/layouts/functional-components/ProductFilters";
+import ProductLayoutViews from "@/layouts/functional-components/ProductLayoutViews";
+import ProductLayouts from "@/layouts/functional-components/product/ProductLayouts";
+import CallToAction from "@/layouts/partials/CallToAction.astro";
 import Base from "@/layouts/Base.astro";
-import ProductGrid from "@/layouts/functional-components/ProductGrid";
-import { products } from "@/data/products";
+import { defaultSort, sorting } from "@/lib/constants";
+import { getCatalog } from "@/lib/catalog";
 
-const activeProducts = products.filter(
-  (product) => product.status === "active",
-);
+const searchParams = Astro.url.searchParams;
+const sortSlug = searchParams.get("sort") ?? "";
+const searchValue = searchParams.get("q")?.trim() ?? "";
+const minPrice = Number(searchParams.get("minPrice") ?? 0);
+const maxPriceParam = searchParams.get("maxPrice");
+const maxPrice = maxPriceParam ? Number(maxPriceParam) : Number.POSITIVE_INFINITY;
+const collectionSlug = searchParams.get("c");
+const productTypeSlug = searchParams.get("pt");
+
+const { sortKey, reverse } =
+  sorting.find((item) => item.slug === sortSlug) ?? defaultSort;
+
+let catalogError: string | null = null;
+let catalog = { products: [], collections: [], productTypes: [] } as Awaited<
+  ReturnType<typeof getCatalog>
+>;
+
+try {
+  catalog = await getCatalog(Astro.request.headers);
+} catch (error) {
+  console.error("Unable to load the product catalog:", error);
+  catalogError = error instanceof Error ? error.message : "Unable to load the catalog";
+}
+
+const { products: activeProducts, collections, productTypes } = catalog;
+
+const collectionCounts = collections.map((collection) => ({
+  id: collection.id,
+  productCount: activeProducts.filter((product) =>
+    product.collections.some((item) => item.id === collection.id),
+  ).length,
+}));
+
+const productTypeCounts = productTypes.map((productType) => ({
+  id: productType.id,
+  productCount: activeProducts.filter((product) =>
+    product.productTypes.some((item) => item.id === productType.id),
+  ).length,
+}));
+
+const filteredProducts = activeProducts
+  .filter((product) => {
+    const matchesSearch =
+      !searchValue ||
+      `${product.title} ${product.description}`
+        .toLocaleLowerCase()
+        .includes(searchValue.toLocaleLowerCase());
+    const matchesPrice = product.price >= minPrice && product.price <= maxPrice;
+    const matchesCollection =
+      !collectionSlug ||
+      product.collections.some((collection) => collection.slug === collectionSlug);
+    const matchesProductType =
+      !productTypeSlug ||
+      product.productTypes.some((productType) => productType.slug === productTypeSlug);
+
+    return matchesSearch && matchesPrice && matchesCollection && matchesProductType;
+  })
+  .sort((left, right) => {
+    if (sortKey !== "PRICE") return 0;
+
+    const comparison = left.price - right.price;
+    return reverse ? -comparison : comparison;
+  });
+
+const highestPrice = Math.max(0, ...activeProducts.map((product) => product.price));
+const maxPriceData = { amount: String(Math.ceil(highestPrice)), currencyCode: "USD" };
+
+/*
+ * TODO(storefront-catalog): replace the admin reads with a purpose-built public
+ * catalog endpoint that returns products and hydrated relations in one request.
+ * Also add the currently unsupported Shopify-era concepts to our own domain
+ * only when their behavior is defined: sale/compare-at price,
+ * variants, inventory/availability, vendor/brand, tags and cursor pagination.
+ * The "latest" and "trending" sort options likewise need timestamps and a
+ * sales/popularity signal; until then they preserve the catalog source order.
+ */
 ---
 
-<Base title="Products" meta_title="Products | SVG Piggies">
-  <section class="section">
-    <div class="container">
-      <div class="mb-10 text-center">
-        <h1 class="h2">Our Products</h1>
-        <p class="mt-4">
-          Discover our collection of digital designs.
-        </p>
+<Base title="Products | SVG Piggies">
+  {
+    catalogError && (
+      <div class="container pt-6">
+        <div class="rounded-md border border-red-300 bg-red-50 p-4 text-red-800">
+          The product catalog could not be loaded. Please try again later.
+        </div>
+      </div>
+    )
+  }
+
+  <ProductLayouts
+    collections={collections}
+    productTypes={productTypes}
+    maxPriceData={maxPriceData}
+    collectionCounts={collectionCounts}
+    productTypeCounts={productTypeCounts}
+    client:only="react"
+  />
+
+  <div class="container">
+    <div class="row">
+      <div class="col-3 hidden lg:block -mt-14">
+        <ProductFilters
+          collections={collections}
+          productTypes={productTypes}
+          maxPriceData={maxPriceData}
+          collectionCounts={collectionCounts}
+          productTypeCounts={productTypeCounts}
+          client:only="react"
+        />
       </div>
 
-      <ProductGrid
+      <ProductLayoutViews
+        initialProducts={filteredProducts}
+        searchValue={searchValue}
         client:load
-        initialProducts={activeProducts}
       />
+      <CallToAction />
     </div>
-  </section>
+  </div>
 </Base>
