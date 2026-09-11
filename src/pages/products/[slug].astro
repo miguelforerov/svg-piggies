@@ -1,129 +1,139 @@
 ---
 import Base from "@/layouts/Base.astro";
-import ProductGallery from "@/layouts/functional-components/product/ProductGallery";
+import Breadcrumbs from "@/layouts/components/Breadcrumbs.astro";
 import { AddToCart } from "@/layouts/functional-components/cart/AddToCart";
-import ProductGrid from "@/layouts/functional-components/ProductGrid";
-import { products, getRelatedProducts } from "@/data/products";
+import ProductGallery from "@/layouts/functional-components/product/ProductGallery";
 import SocialShare from "@/layouts/functional-components/SocialShare";
+import { getProductBySlug } from "@/lib/catalog";
 
-export const prerender = true;
+export const prerender = false;
 
-export function getStaticPaths() {
-  const activeProducts = products.filter(
-    (product) => product.status === "active",
-  );
+const slug = Astro.params.slug;
+let loadError: string | null = null;
+let product = null;
 
-  return activeProducts.map((product) => ({
-    params: {
-      slug: product.slug,
-    },
-    props: {
-      product,
-    },
-  }));
+if (slug) {
+  try {
+    product = await getProductBySlug(slug, Astro.request.headers);
+  } catch (error) {
+    console.error(`Unable to load product ${slug}:`, error);
+    loadError = error instanceof Error ? error.message : "Unable to load product";
+  }
 }
 
-const { product } = Astro.props;
-const relatedProducts = getRelatedProducts(product.id);
+if (!product && !loadError) {
+  Astro.response.status = 404;
+}
 
+if (loadError) {
+  Astro.response.status = 502;
+}
+
+const galleryImages = product
+  ? product.images.length > 0
+    ? product.images.map((image) => ({
+        url: image.url,
+        altText: product.title,
+        width: 800,
+        height: 800,
+      }))
+    : [
+        {
+          url: "/images/product-placeholder.jpg",
+          altText: product.title,
+          width: 800,
+          height: 800,
+        },
+      ]
+  : [];
+
+/*
+ * TODO(product-detail): hydrate real image metadata once a GET images endpoint
+ * exists, and restore related products through a public aggregate endpoint.
+ * Sale price and variants remain documented for their future domain support.
+ */
 ---
 
-<Base title={`${product.title} | SVG Piggies`}>
-  <section class="md:section-sm">
-    <div class="container">
-      <div class="row justify-center">
-
-        {/* right side contents */}
-        <div class="col-10 md:col-8 lg:col-6">
-          <ProductGallery
-            client:only="react"
-            images={product.images}
-          />
-        </div>
-
-        {/* left side contents */}
-        <div class="col-10 md:col-8 lg:col-5 md:ml-7 py-6 lg:py-0">
-
-          <h1 class="text-3xl md:h2 mb-2 md:mb-6">
-            {product.title}
-          </h1>
-
-          <div class="flex gap-2 items-center">
-            <h4 class="text-text-light max-md:h2">
-              ${product.price.toFixed(2)}
-            </h4>
-          </div>
-
-          {/* Variant selector
-              Not available yet because our product model
-              does not have variants.
-          */}
-
-          <div class="flex gap-4 mt-8 md:mt-10 mb-6">
-            <AddToCart
-              client:only="react"
-              productId={product.id}
-              stylesClass="btn max-md:btn-sm btn-primary"
-            />
-          </div>
-
-          {/* Payment / delivery
-              Will be added later.
-          */}
-
-          <hr class="my-6 border border-border" />
-
-          <div class="flex gap-3 items-center mb-6">
-            <h5 class="max-md:text-base text-text-gray">Share:</h5>
-
-            <SocialShare
-              client:load
-              title={product.title}
-              imageUrl={product.images[0]?.url}
-            />
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </section>
-
-  {/* Description of a product */}
+<Base title={product ? `${product.title} | SVG Piggies` : "Product | SVG Piggies"}>
   {
-    product.description && (
-      <section>
-        <div class="container">
-          <div class="row">
-            <div class="col-10 lg:col-11 mx-auto mt-12">
-              <div class="prose max-w-none">
-                <h2 class="mb-6">Description</h2>
-                <p>{product.description}</p>
+    loadError ? (
+      <section class="section">
+        <div class="container text-center">
+          <h1 class="h2 mb-4">Product unavailable</h1>
+          <p>We could not load this product. Please try again later.</p>
+          <a class="btn btn-primary mt-6" href="/products">Back to products</a>
+        </div>
+      </section>
+    ) : !product ? (
+      <section class="section">
+        <div class="container text-center">
+          <h1 class="h2 mb-4">Product not found</h1>
+          <p>The requested product does not exist or is not active.</p>
+          <a class="btn btn-primary mt-6" href="/products">Back to products</a>
+        </div>
+      </section>
+    ) : (
+      <>
+        <div class="container pt-6">
+          <Breadcrumbs currentLabel={product.title} />
+        </div>
+
+        <section class="md:section-sm">
+          <div class="container">
+            <div class="row justify-center">
+              <div class="col-10 md:col-8 lg:col-6">
+                <ProductGallery client:only="react" images={galleryImages} />
+              </div>
+
+              <div class="col-10 py-6 md:col-8 md:ml-7 lg:col-5 lg:py-0">
+                <h1 class="mb-2 text-3xl md:h2 md:mb-6">{product.title}</h1>
+
+                <div class="flex items-center gap-2">
+                  <h4 class="text-text-light max-md:h2">
+                    ${product.price.toFixed(2)}
+                  </h4>
+                  {/* TODO(catalog): render sale/compare-at price when supported. */}
+                </div>
+
+                {/* TODO(catalog): render variants when supported by Product. */}
+                <div class="mt-8 mb-6 flex gap-4 md:mt-10">
+                  <AddToCart
+                    client:only="react"
+                    productId={product.id}
+                    stylesClass="btn max-md:btn-sm btn-primary"
+                  />
+                </div>
+
+                <hr class="my-6 border border-border" />
+
+                <div class="mb-6 flex items-center gap-3">
+                  <h5 class="text-text-gray max-md:text-base">Share:</h5>
+                  <SocialShare
+                    client:load
+                    title={product.title}
+                    imageUrl={galleryImages[0]?.url}
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-    )
-  }
-
-  {/* Related Products section */}
-
-  {
-    relatedProducts.length > 0 && (
-        <section class="section">
-          <div class="container">
-
-            <div class="text-center mb-6 md:mb-14">
-              <h2 class="mb-2">Related Products</h2>
-            </div>
-
-            <ProductGrid
-              client:load
-              initialProducts={relatedProducts}
-            />
-
-          </div>
         </section>
-      )
+
+        {product.description && (
+          <section>
+            <div class="container">
+              <div class="row">
+                <div class="col-10 mx-auto mt-12 lg:col-11">
+                  <div class="prose max-w-none">
+                    <h2 class="mb-6">Description</h2>
+                    <p>{product.description}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+      </>
+    )
   }
 </Base>
