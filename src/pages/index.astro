@@ -1,17 +1,92 @@
 ---
 import Base from "@/layouts/Base.astro";
-import TestAddToCart from "@/layouts/functional-components/cart/TestAddToCart";
+import CollectionsSlider from "@/layouts/functional-components/CollectionsSlider";
+import FeaturedProducts from "@/layouts/functional-components/FeaturedProducts";
+import HeroSlider from "@/layouts/functional-components/HeroSlider";
+import ProductLayoutViews from "@/layouts/functional-components/ProductLayoutViews";
+import CallToAction from "@/layouts/partials/CallToAction.astro";
+import { getCatalog } from "@/lib/catalog";
+
+let catalogError = false;
+let catalog = { products: [], collections: [], productTypes: [] } as Awaited<
+  ReturnType<typeof getCatalog>
+>;
+
+try {
+  catalog = await getCatalog(Astro.request.headers);
+} catch (error) {
+  console.error("Unable to load the home catalog:", error);
+  catalogError = true;
+}
+
+const heroProducts = catalog.products.slice(0, 3);
+const featuredProducts = catalog.products.slice(0, 8);
+const collectionProducts = catalog.collections.map((collection) => ({
+  ...collection,
+  productCount: catalog.products.filter((product) =>
+    product.collections.some((item) => item.id === collection.id),
+  ).length,
+  // TODO(collection-images): use the collection image once the API supports it.
+  imageUrl: undefined,
+}));
 ---
 
-<Base title="SVGPiggies">
-  <div class="container mx-auto px-4 py-20">
-    <h1 class="text-5xl font-bold">
-      SVGPiggies
-    </h1>
+<Base title="SVG Piggies">
+  {
+    catalogError && (
+      <div class="container pt-6">
+        <div class="rounded-md border border-red-300 bg-red-50 p-4 text-red-800">
+          The product catalog could not be loaded. Please try again later.
+        </div>
+      </div>
+    )
+  }
 
-    <p class="mt-4 text-lg">
-      Our new store
-    </p>
-  </div>
-  <TestAddToCart client:load />
+  {catalog.products.length > 0 && (
+    <section class="section-sm">
+      <div class="container">
+        <div class="row justify-center">
+          <ProductLayoutViews
+            initialProducts={catalog.products}
+            client:load
+          />
+        </div>
+      </div>
+    </section>
+  )}
+
+  {heroProducts.length > 0 && (
+    <section>
+      <div class="container">
+        <div class="bg-gradient rounded-md py-10">
+          <HeroSlider products={heroProducts} client:load />
+        </div>
+      </div>
+    </section>
+  )}
+
+  {collectionProducts.length > 0 && (
+    <section class="section">
+      <div class="container">
+        <div class="mb-6 text-center md:mb-14">
+          <h2>Collections</h2>
+        </div>
+        <CollectionsSlider collections={collectionProducts} client:load />
+      </div>
+    </section>
+  )}
+
+  {featuredProducts.length > 0 && (
+    <section class="section">
+      <div class="container">
+        <div class="mb-6 text-center md:mb-14">
+          <h2 class="mb-2">Featured Products</h2>
+          <p class="md:h5">Explore Today's Featured Picks!</p>
+        </div>
+        <FeaturedProducts products={featuredProducts} client:load />
+      </div>
+    </section>
+  )}
+
+  <CallToAction />
 </Base>
