@@ -26,16 +26,13 @@ export function ProductFormDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen} disablePointerDismissal>
-      <DialogTrigger
-        className={buttonVariants()}
-      >
+      <DialogTrigger className={buttonVariants()}>
         <Plus />
         Add Product
       </DialogTrigger>
 
       <DialogContent
         className="max-h-[90vh] overflow-y-auto sm:max-w-3xl"
-        showCloseButton
         primaryButtonLabel="Save Product"
         onCancel={() => setOpen(false)}
         onSave={submitProductForm}
@@ -44,10 +41,7 @@ export function ProductFormDialog() {
           <DialogTitle>New Product</DialogTitle>
         </DialogHeader>
 
-        <ProductFormContainer
-          formId={formId}
-          onCancel={() => setOpen(false)}
-        />
+        <ProductFormContainer formId={formId} onCancel={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   )
