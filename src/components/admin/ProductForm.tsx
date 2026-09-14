@@ -3,6 +3,7 @@ import {
   PRODUCT_STATUSES,
   type ProductStatus,
 } from "@/types/product"
+import type { ProductType } from "@/types/product-type"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -21,7 +22,13 @@ export interface ProductFormData {
   description: string
   price: string
   status: ProductStatus
+  productTypeIds: string[]
 }
+
+export type ProductFormInitialValues = Omit<
+  ProductFormData,
+  "productTypeIds"
+>
 
 const productStatusLabels: Record<ProductStatus, string> = {
   draft: "Draft",
@@ -32,13 +39,21 @@ const productStatusLabels: Record<ProductStatus, string> = {
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void
   onCancel: () => void
-  initialValues?: ProductFormData
+  initialValues?: ProductFormInitialValues
+  productTypes: ProductType[]
+  initialProductTypeIds?: string[]
+  isSubmitting?: boolean
+  formId?: string
 }
 
 export function ProductForm({
   onSubmit,
   onCancel,
   initialValues,
+  productTypes,
+  initialProductTypeIds = [],
+  isSubmitting = false,
+  formId,
 }: ProductFormProps) {
   const [title, setTitle] = useState(initialValues?.title ?? "")
   const [slug, setSlug] = useState(initialValues?.slug ?? "")
@@ -49,6 +64,17 @@ export function ProductForm({
   const [status, setStatus] = useState<ProductStatus>(
     initialValues?.status ?? "draft"
   )
+  const [productTypeIds, setProductTypeIds] = useState<string[]>(
+    initialProductTypeIds
+  )
+
+  function toggleProductType(productTypeId: string) {
+    setProductTypeIds((currentIds) =>
+      currentIds.includes(productTypeId)
+        ? currentIds.filter((id) => id !== productTypeId)
+        : [...currentIds, productTypeId]
+    )
+  }
 
   function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -59,11 +85,12 @@ export function ProductForm({
       description,
       price,
       status,
+      productTypeIds,
     })
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="title">Title</Label>
 
@@ -87,19 +114,6 @@ export function ProductForm({
           onChange={(event) => setSlug(event.target.value)}
           placeholder="product-slug"
           required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-
-        <Textarea
-          id="description"
-          name="description"
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          placeholder="Product description"
-          rows={6}
         />
       </div>
 
@@ -142,15 +156,58 @@ export function ProductForm({
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-3 border-t pt-6">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
+      <fieldset className="space-y-3">
+        <legend className="text-sm font-medium">Product Types</legend>
 
-        <Button type="submit">
-          Save Product
-        </Button>
+        {productTypes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No product types available.
+          </p>
+        ) : (
+          <div className="grid gap-3 rounded-md border p-4 sm:grid-cols-2">
+            {productTypes.map((productType) => (
+              <label
+                key={productType.id}
+                className="flex cursor-pointer items-start gap-3 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  name="productTypeIds"
+                  value={productType.id}
+                  checked={productTypeIds.includes(productType.id)}
+                  onChange={() => toggleProductType(productType.id)}
+                  className="mt-0.5 size-4 rounded border-input accent-primary"
+                />
+                <span>
+                  <span className="block font-medium">{productType.name}</span>
+                  {productType.description && (
+                    <span className="block text-muted-foreground">
+                      {productType.description}
+                    </span>
+                  )}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+      </fieldset>
+
+      {/* Collection */}
+
+      <div className="space-y-2">
+        <Label htmlFor="description">Description</Label>
+
+        <Textarea
+          id="description"
+          name="description"
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          placeholder="Product description"
+          rows={6}
+        />
       </div>
+
+
     </form>
   )
 }

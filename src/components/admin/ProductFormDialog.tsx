@@ -14,6 +14,15 @@ import {
 
 export function ProductFormDialog() {
   const [open, setOpen] = useState(false)
+  const formId = "new-product-form"
+
+  function submitProductForm() {
+    const form = document.getElementById(formId)
+
+    if (form instanceof HTMLFormElement) {
+      form.requestSubmit()
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen} disablePointerDismissal>
@@ -24,12 +33,21 @@ export function ProductFormDialog() {
         Add Product
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl" showCloseButton={false}>
+      <DialogContent
+        className="max-h-[90vh] overflow-y-auto sm:max-w-3xl"
+        showCloseButton
+        primaryButtonLabel="Save Product"
+        onCancel={() => setOpen(false)}
+        onSave={submitProductForm}
+      >
         <DialogHeader>
           <DialogTitle>New Product</DialogTitle>
         </DialogHeader>
 
-        <ProductFormContainer onCancel={() => setOpen(false)} />
+        <ProductFormContainer
+          formId={formId}
+          onCancel={() => setOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   )

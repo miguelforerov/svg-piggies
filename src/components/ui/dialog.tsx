@@ -41,9 +41,17 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  showDialogFooter = true,
+  primaryButtonLabel = "Save",
+  onCancel,
+  onSave,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
+  showDialogFooter?: boolean
+  primaryButtonLabel?: string
+  onCancel?: () => void
+  onSave?: () => void
 }) {
   return (
     <DialogPortal>
@@ -73,6 +81,13 @@ function DialogContent({
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}
+        {showDialogFooter && (
+          <DialogFooter
+            primaryButtonLabel={primaryButtonLabel}
+            onCancel={onCancel}
+            onSave={onSave}
+          />
+        )}
       </DialogPrimitive.Popup>
     </DialogPortal>
   )
@@ -80,37 +95,57 @@ function DialogContent({
 
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <div
-      data-slot="dialog-header"
-      className={cn("flex flex-col gap-2", className)}
-      {...props}
-    />
+    <div className="flex items-center">
+      <div
+        data-slot="dialog-header"
+        className={cn("flex flex-col gap-2 flex-auto", className)}
+        {...props}
+      />
+      <div className="h-4 w-4">
+        <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            fill="black"
+            d="M4.575 4.57498C4.85629 4.29378 5.23775 4.1358 5.6355 4.1358C6.03324 4.1358 6.41471 4.29378 6.696 4.57498L12 9.87898L17.304 4.57498C17.5869 4.30175 17.9658 4.15055 18.3591 4.15397C18.7524 4.15739 19.1286 4.31514 19.4067 4.59326C19.6848 4.87137 19.8426 5.24759 19.846 5.64088C19.8494 6.03418 19.6982 6.41308 19.425 6.69598L14.121 12L19.425 17.304C19.6982 17.5869 19.8494 17.9658 19.846 18.3591C19.8426 18.7524 19.6848 19.1286 19.4067 19.4067C19.1286 19.6848 18.7524 19.8426 18.3591 19.846C17.9658 19.8494 17.5869 19.6982 17.304 19.425L12 14.121L6.696 19.425C6.4131 19.6982 6.03419 19.8494 5.6409 19.846C5.2476 19.8426 4.87138 19.6848 4.59327 19.4067C4.31516 19.1286 4.1574 18.7524 4.15399 18.3591C4.15057 17.9658 4.30176 17.5869 4.575 17.304L9.879 12L4.575 6.69598C4.29379 6.41469 4.13582 6.03323 4.13582 5.63548C4.13582 5.23774 4.29379 4.85627 4.575 4.57498Z"
+          />
+        </svg>
+      </div>
+    </div>
   )
 }
 
 function DialogFooter({
   className,
-  showCloseButton = false,
   children,
+  primaryButtonLabel = "Save",
+  onCancel,
+  onSave,
   ...props
 }: React.ComponentProps<"div"> & {
-  showCloseButton?: boolean
+  primaryButtonLabel?: string
+  onCancel?: () => void
+  onSave?: () => void
 }) {
   return (
     <div
       data-slot="dialog-footer"
       className={cn(
-        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+        "-mx-4 -mb-4 flex flex-col-reverse gap-4 rounded-b-xl p-4 sm:flex-row sm:justify-end",
         className
       )}
       {...props}
     >
       {children}
-      {showCloseButton && (
-        <DialogPrimitive.Close render={<Button variant="outline" />}>
-          Close
-        </DialogPrimitive.Close>
-      )}
+      <DialogPrimitive.Close
+        render={<Button variant="outline" onClick={onCancel} />}
+      >
+        Cancel
+      </DialogPrimitive.Close>
+
+      <div className="flex items-center justify-end gap-3">
+        <Button type="button" onClick={onSave} disabled={!onSave}>
+          {primaryButtonLabel}
+        </Button>
+      </div>
     </div>
   )
 }

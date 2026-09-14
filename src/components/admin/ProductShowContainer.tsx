@@ -36,6 +36,7 @@ interface ProductShowContainerProps {
 export function ProductShowContainer({
   productId,
 }: ProductShowContainerProps) {
+  const editFormId = `edit-product-${productId}-form`
   const [product, setProduct] = useState<Product | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -200,12 +201,23 @@ export function ProductShowContainer({
         <DialogContent
           className="max-h-[90vh] overflow-y-auto sm:max-w-3xl"
           showCloseButton={false}
+          primaryButtonLabel="Save Product"
+          onCancel={() => setIsEditing(false)}
+          onSave={() => {
+            const form = document.getElementById(editFormId)
+
+            if (form instanceof HTMLFormElement) {
+              form.requestSubmit()
+            }
+          }}
+          showDialogFooter={true}
         >
           <DialogHeader>
             <DialogTitle>Edit Product</DialogTitle>
           </DialogHeader>
 
           <ProductFormContainer
+            formId={editFormId}
             productId={productId}
             initialValues={product}
             onCancel={() => setIsEditing(false)}
