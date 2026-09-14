@@ -261,3 +261,8 @@ header to `-- migrate:up transaction:false` or
 Write the Down section in reverse dependency order so rolling back does not
 violate foreign-key dependencies. Once a migration has been applied to a shared
 environment, add a new migration instead of editing the applied file.
+
+
+```sh
+npx wrangler dev --config backend/wrangler.jsonc --port 8787
+```
