@@ -107,32 +107,25 @@ const galleryImages = product
                 <hr class="my-6 border border-border" />
 
                 <div class="mb-6 flex items-center gap-3">
-                  <h5 class="text-text-gray max-md:text-base">Share:</h5>
+                  <h5 class="text-primary max-md:text-base">Share:</h5>
                   <SocialShare
                     client:load
                     title={product.title}
                     imageUrl={galleryImages[0]?.url}
                   />
                 </div>
+                {product.description && (
+                  <section>
+                      <h5 class="mb-6">Description</h5>
+                    <div class="prose ">
+                      <p class="whitespace-pre-wrap">{product.description}</p>
+                    </div>
+                  </section>
+                )}
               </div>
             </div>
           </div>
         </section>
-
-        {product.description && (
-          <section>
-            <div class="container">
-              <div class="row">
-                <div class="col-10 mx-auto mt-12 lg:col-11">
-                  <div class="prose max-w-none">
-                    <h2 class="mb-6">Description</h2>
-                    <p>{product.description}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
       </>
     )
   }
