@@ -46,7 +46,7 @@ export function AddToCart({
         aria-label="Add to cart"
         aria-disabled={pending}
         className={`${stylesClass} ${
-          pending ? "cursor-not-allowed opacity-70" : ""
+          pending ? "cursor-not-allowed opacity-70" : "btn-primary"
         }`}
       >
         {pending ? (

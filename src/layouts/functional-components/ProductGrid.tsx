@@ -54,14 +54,14 @@ const ProductGrid = ({
                   width={312}
                   height={269}
                   alt={product.title}
-                  className="mx-auto h-[200px] w-full rounded-md border border-border object-cover sm:w-[312px] md:h-[269px]"
+                  className="mx-auto h-[200px] w-full rounded-md object-cover sm:w-[312px] md:h-[269px]"
                 />
               </div>
 
               <div className="z-20 py-2 text-center md:py-4">
                 <h2 className="text-base font-medium md:text-xl">
                   <a
-                    className="after:absolute after:inset-0"
+                    className="after:absolute after:inset-0 text-primary"
                     href={`/products/${product.slug}`}
                   >
                     {product.title}
@@ -69,7 +69,7 @@ const ProductGrid = ({
                 </h2>
 
                 <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 md:mt-4">
-                  <span className="text-base font-bold text-text-dark md:text-xl">
+                  <span className="text-base font-bold text-primary md:text-xl">
                     {currencySymbol} {product.price.toFixed(2)}
                   </span>
                 </div>

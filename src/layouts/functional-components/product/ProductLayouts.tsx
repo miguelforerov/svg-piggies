@@ -106,7 +106,7 @@ const ProductLayouts = ({
                   </button>
                   <button
                     onClick={() => layoutChange("list")}
-                    className={`btn border dark:border-darkmode-border ${isListView ? "btn-primary" : "btn-outline-primary"
+                    className={`btn dark:border-darkmode-border ${isListView ? "btn-primary" : "btn-outline-primary"
                       } p-2 hover:scale-105 duration-300`}
                   >
                     <FaList />

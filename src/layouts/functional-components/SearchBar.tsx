@@ -46,7 +46,7 @@ const SearchBar = () => {
   };
 
   return (
-    <form onSubmit={onSubmit} className="border border-border dark:border-darkmode-border rounded-full flex bg-light/90 dark:bg-dark/10 pl-4 relative">
+    <form onSubmit={onSubmit} className="rounded-lg flex bg-light dark:bg-dark/10 pl-4 relative">
       <input
         type="text"
         name="search"
