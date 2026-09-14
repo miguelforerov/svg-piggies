@@ -49,3 +49,8 @@ export const TAGS = {
 export const HIDDEN_PRODUCT_TAG = "nextjs-frontend-hidden";
 export const DEFAULT_OPTION = "Default Title";
 export const SHOPIFY_GRAPHQL_API_ENDPOINT = "/api/2023-01/graphql.json";
+
+export const DELETE_CONFIRMATION_TEXT = {
+  question: "Are you sure you want to delete",
+  warning: "This action cannot be undone.",
+} as const;

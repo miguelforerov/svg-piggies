@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { EllipsisVertical, Pencil, Trash2 } from "lucide-react"
-import type { ProductType } from "@/types/product-type"
-import { ProductTypeFormContainer } from "@/components/admin/ProductTypeFormContainer"
+import type { Collection } from "@/types/collection"
+import { CollectionDialog } from "@/components/admin/collection/CollectionDialog"
 import { Button } from "@/components/ui/button"
+import { DELETE_CONFIRMATION_TEXT } from "@/lib/constants"
 import {
   Card,
   CardAction,
@@ -13,12 +14,16 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,14 +31,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-interface ProductTypeShowContainerProps {
-  productTypeId: string
+interface CollectionShowProps {
+  collectionId: string
 }
 
-export function ProductTypeShowContainer({
-  productTypeId,
-}: ProductTypeShowContainerProps) {
-  const [productType, setProductType] = useState<ProductType | null>(null)
+export function CollectionShow({
+  collectionId,
+}: CollectionShowProps) {
+  const [collection, setCollection] = useState<Collection | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -42,56 +47,56 @@ export function ProductTypeShowContainer({
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   useEffect(() => {
-    async function loadProductType() {
+    async function loadCollection() {
       try {
         const response = await fetch(
-          `/api/admin/product-types/${productTypeId}`
+          `/api/admin/collections/${collectionId}`
         )
 
         if (!response.ok) {
           const message = await response.text()
-          throw new Error(message || "Failed to load product type")
+          throw new Error(message || "Failed to load collection")
         }
 
-        const data: ProductType = await response.json()
-        setProductType(data)
+        const data: Collection = await response.json()
+        setCollection(data)
       } catch (error) {
-        console.error("Error loading product type:", error)
+        console.error("Error loading collection:", error)
         setError(
           error instanceof Error
             ? error.message
-            : "Failed to load product type"
+            : "Failed to load collection"
         )
       } finally {
         setIsLoading(false)
       }
     }
 
-    loadProductType()
-  }, [productTypeId])
+    loadCollection()
+  }, [collectionId])
 
-  async function deleteProductType() {
+  async function deleteCollection() {
     setIsDeleting(true)
     setDeleteError(null)
 
     try {
       const response = await fetch(
-        `/api/admin/product-types/${productTypeId}`,
+        `/api/admin/collections/${collectionId}`,
         { method: "DELETE" }
       )
 
       if (!response.ok) {
         const message = await response.text()
-        throw new Error(message || "Failed to delete product type")
+        throw new Error(message || "Failed to delete collection")
       }
 
-      window.location.href = "/admin/product-types"
+      window.location.href = "/admin/collections"
     } catch (error) {
-      console.error("Error deleting product type:", error)
+      console.error("Error deleting collection:", error)
       setDeleteError(
         error instanceof Error
           ? error.message
-          : "Failed to delete product type"
+          : "Failed to delete collection"
       )
       setIsDeleting(false)
     }
@@ -101,7 +106,7 @@ export function ProductTypeShowContainer({
     return (
       <Card>
         <CardContent className="p-10 text-center text-muted-foreground">
-          Loading product type...
+          Loading collection...
         </CardContent>
       </Card>
     )
@@ -115,11 +120,11 @@ export function ProductTypeShowContainer({
     )
   }
 
-  if (!productType) {
+  if (!collection) {
     return (
       <Card>
         <CardContent className="p-10 text-center text-muted-foreground">
-          Product type not found.
+          Collection not found.
         </CardContent>
       </Card>
     )
@@ -129,36 +134,19 @@ export function ProductTypeShowContainer({
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">
-          {productType.name}
+          {collection.name}
         </h2>
       </div>
 
-      <Dialog
+      <CollectionDialog
+        collection={collection}
         open={isEditing}
         onOpenChange={setIsEditing}
-        disablePointerDismissal
-      >
-        <DialogContent
-          className="max-h-[90vh] overflow-y-auto sm:max-w-3xl"
-          showCloseButton={false}
-        >
-          <DialogHeader>
-            <DialogTitle>Edit Product Type</DialogTitle>
-          </DialogHeader>
+        showTrigger={false}
+        onSuccess={setCollection}
+      />
 
-          <ProductTypeFormContainer
-            productTypeId={productTypeId}
-            initialValues={productType}
-            onCancel={() => setIsEditing(false)}
-            onSuccess={(updatedProductType) => {
-              setProductType(updatedProductType)
-              setIsEditing(false)
-            }}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
+      <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={(open) => {
           if (!isDeleting) {
@@ -166,16 +154,18 @@ export function ProductTypeShowContainer({
             setDeleteError(null)
           }
         }}
-        disablePointerDismissal
       >
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>Delete Product Type</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete “{productType.name}”? This
-              action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
+              <Trash2 />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Delete Collection</AlertDialogTitle>
+            <AlertDialogDescription>
+              {DELETE_CONFIRMATION_TEXT.question}{" "}
+              <b>“{collection.name}”</b>? {DELETE_CONFIRMATION_TEXT.warning}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
           {deleteError && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
@@ -183,9 +173,8 @@ export function ProductTypeShowContainer({
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-3 border-t pt-4">
-            <Button
-              variant="outline"
+          <AlertDialogFooter>
+            <AlertDialogCancel
               disabled={isDeleting}
               onClick={() => {
                 setIsDeleteDialogOpen(false)
@@ -193,18 +182,18 @@ export function ProductTypeShowContainer({
               }}
             >
               Cancel
-            </Button>
-            <Button
+            </AlertDialogCancel>
+            <AlertDialogAction
               variant="destructive"
               disabled={isDeleting}
-              onClick={deleteProductType}
+              onClick={deleteCollection}
             >
               <Trash2 />
               {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Card className="shadow-sm">
         <CardHeader>
@@ -216,7 +205,7 @@ export function ProductTypeShowContainer({
                   <Button
                     variant="secondary"
                     size="icon"
-                    aria-label="Product type actions"
+                    aria-label="Collection actions"
                   />
                 }
               >
@@ -244,18 +233,18 @@ export function ProductTypeShowContainer({
           <div className="grid gap-6 lg:grid-cols-2">
             <div>
               <p className="text-sm text-muted-foreground">Name</p>
-              <p className="mt-1 font-medium">{productType.name}</p>
+              <p className="mt-1 font-medium">{collection.name}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Slug</p>
-              <p className="mt-1">{productType.slug}</p>
+              <p className="mt-1">{collection.slug}</p>
             </div>
           </div>
 
           <div>
             <p className="text-sm text-muted-foreground">Description</p>
             <p className="mt-1 whitespace-pre-wrap">
-              {productType.description || "—"}
+              {collection.description || "—"}
             </p>
           </div>
         </CardContent>
@@ -268,7 +257,7 @@ export function ProductTypeShowContainer({
         <CardContent>
           <p className="text-sm text-muted-foreground">ID</p>
           <p className="mt-1 break-all font-mono text-sm">
-            {productType.id}
+            {collection.id}
           </p>
         </CardContent>
       </Card>

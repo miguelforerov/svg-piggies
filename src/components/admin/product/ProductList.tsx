@@ -1,17 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import type { ProductStatus } from "@/types/product"
-import { ProductCard } from "@/components/admin/ProductCard"
+import type { Product } from "@/components/admin/product/ProductFormContainer"
+import { ProductCard } from "@/components/admin/product/ProductCard"
 
-interface Product {
-  id: string
-  title: string
-  price: string
-  status: ProductStatus
-}
-
-export function ProductListContainer() {
+export function ProductList() {
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -26,7 +19,7 @@ export function ProductListContainer() {
           throw new Error(message || "Failed to load products")
         }
 
-        const data = await response.json()
+        const data = (await response.json()) as Product[]
 
         setProducts(data)
       } catch (error) {

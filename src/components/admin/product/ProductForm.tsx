@@ -4,6 +4,7 @@ import {
   type ProductStatus,
 } from "@/types/product"
 import type { ProductType } from "@/types/product-type"
+import type { Collection } from "@/types/collection"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -22,11 +23,12 @@ export interface ProductFormData {
   price: string
   status: ProductStatus
   productTypeIds: string[]
+  collectionIds: string[]
 }
 
 export type ProductFormInitialValues = Omit<
   ProductFormData,
-  "productTypeIds"
+  "productTypeIds" | "collectionIds"
 >
 
 const productStatusLabels: Record<ProductStatus, string> = {
@@ -37,21 +39,21 @@ const productStatusLabels: Record<ProductStatus, string> = {
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void
-  onCancel: () => void
   initialValues?: ProductFormInitialValues
   productTypes: ProductType[]
   initialProductTypeIds?: string[]
-  isSubmitting?: boolean
+  collections: Collection[]
+  initialCollectionIds?: string[]
   formId?: string
 }
 
 export function ProductForm({
   onSubmit,
-  onCancel,
   initialValues,
   productTypes,
   initialProductTypeIds = [],
-  isSubmitting = false,
+  collections,
+  initialCollectionIds = [],
   formId,
 }: ProductFormProps) {
   const [title, setTitle] = useState(initialValues?.title ?? "")
@@ -66,12 +68,23 @@ export function ProductForm({
   const [productTypeIds, setProductTypeIds] = useState<string[]>(
     initialProductTypeIds
   )
+  const [collectionIds, setCollectionIds] = useState<string[]>(
+    initialCollectionIds
+  )
 
   function toggleProductType(productTypeId: string) {
     setProductTypeIds((currentIds) =>
       currentIds.includes(productTypeId)
         ? currentIds.filter((id) => id !== productTypeId)
         : [...currentIds, productTypeId]
+    )
+  }
+
+  function toggleCollection(collectionId: string) {
+    setCollectionIds((currentIds) =>
+      currentIds.includes(collectionId)
+        ? currentIds.filter((id) => id !== collectionId)
+        : [...currentIds, collectionId]
     )
   }
 
@@ -85,6 +98,7 @@ export function ProductForm({
       price,
       status,
       productTypeIds,
+      collectionIds,
     })
   }
 
@@ -163,7 +177,7 @@ export function ProductForm({
             No product types available.
           </p>
         ) : (
-          <div className="grid gap-3 rounded-md border p-4 sm:grid-cols-2">
+          <div className="grid gap-3 rounded-md border p-4 sm:grid-cols-2 max-h-[96px] overflow-hidden overflow-scroll">
             {productTypes.map((productType) => (
               <label
                 key={productType.id}
@@ -179,11 +193,6 @@ export function ProductForm({
                 />
                 <span>
                   <span className="block font-medium">{productType.name}</span>
-                  {productType.description && (
-                    <span className="block text-muted-foreground">
-                      {productType.description}
-                    </span>
-                  )}
                 </span>
               </label>
             ))}
@@ -191,7 +200,34 @@ export function ProductForm({
         )}
       </fieldset>
 
-      {/* Collection */}
+      <fieldset className="space-y-3">
+        <legend className="text-sm font-medium">Collections</legend>
+
+        {collections.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No collections available.
+          </p>
+        ) : (
+          <div className="grid max-h-[96px] gap-3 overflow-scroll rounded-md border p-4 sm:grid-cols-2">
+            {collections.map((collection) => (
+              <label
+                key={collection.id}
+                className="flex cursor-pointer items-start gap-3 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  name="collectionIds"
+                  value={collection.id}
+                  checked={collectionIds.includes(collection.id)}
+                  onChange={() => toggleCollection(collection.id)}
+                  className="mt-0.5 size-4 rounded border-input accent-primary"
+                />
+                <span className="block font-medium">{collection.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
+      </fieldset>
 
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>

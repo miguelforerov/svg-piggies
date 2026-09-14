@@ -9,19 +9,22 @@ import {
   Send,
   Trash2,
 } from "lucide-react"
-import {
-  ProductFormContainer,
-  type Product,
-} from "@/components/admin/ProductFormContainer"
-import { ProductStatusBadge } from "@/components/admin/ProductStatusBadge"
+import type { Product } from "@/components/admin/product/ProductFormContainer"
+import { ProductDialog } from "@/components/admin/product/ProductDialog"
+import { ProductStatusBadge } from "@/components/admin/product/ProductStatusBadge"
 import { Button } from "@/components/ui/button"
+import { DELETE_CONFIRMATION_TEXT } from "@/lib/constants"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,14 +32,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-interface ProductShowContainerProps {
+interface ProductShowProps {
   productId: string
 }
 
-export function ProductShowContainer({
+export function ProductShow({
   productId,
-}: ProductShowContainerProps) {
-  const editFormId = `edit-product-${productId}-form`
+}: ProductShowProps) {
   const [product, setProduct] = useState<Product | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -193,43 +195,15 @@ export function ProductShowContainer({
         </div>
       </div>
 
-      <Dialog
+      <ProductDialog
+        product={product}
         open={isEditing}
         onOpenChange={setIsEditing}
-        disablePointerDismissal
-      >
-        <DialogContent
-          className="max-h-[90vh] overflow-y-auto sm:max-w-3xl"
-          showCloseButton={false}
-          primaryButtonLabel="Save Product"
-          onCancel={() => setIsEditing(false)}
-          onSave={() => {
-            const form = document.getElementById(editFormId)
+        showTrigger={false}
+        onSuccess={setProduct}
+      />
 
-            if (form instanceof HTMLFormElement) {
-              form.requestSubmit()
-            }
-          }}
-          showDialogFooter={true}
-        >
-          <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
-          </DialogHeader>
-
-          <ProductFormContainer
-            formId={editFormId}
-            productId={productId}
-            initialValues={product}
-            onCancel={() => setIsEditing(false)}
-            onSuccess={(updatedProduct) => {
-              setProduct(updatedProduct)
-              setIsEditing(false)
-            }}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
+      <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={(open) => {
           if (pendingAction !== "delete") {
@@ -237,16 +211,18 @@ export function ProductShowContainer({
             setActionError(null)
           }
         }}
-        disablePointerDismissal
       >
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>Delete Product</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete “{product.title}”? This action
-              cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
+              <Trash2 />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Delete Product</AlertDialogTitle>
+            <AlertDialogDescription>
+              {DELETE_CONFIRMATION_TEXT.question}{" "}
+              <b>“{product.title}”</b>? {DELETE_CONFIRMATION_TEXT.warning}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
           {actionError && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
@@ -254,9 +230,8 @@ export function ProductShowContainer({
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-3 border-t pt-4">
-            <Button
-              variant="outline"
+          <AlertDialogFooter>
+            <AlertDialogCancel
               disabled={pendingAction === "delete"}
               onClick={() => {
                 setIsDeleteDialogOpen(false)
@@ -264,18 +239,18 @@ export function ProductShowContainer({
               }}
             >
               Cancel
-            </Button>
-            <Button
+            </AlertDialogCancel>
+            <AlertDialogAction
               variant="destructive"
               disabled={pendingAction === "delete"}
               onClick={deleteProduct}
             >
               <Trash2 />
               {pendingAction === "delete" ? "Deleting..." : "Delete"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {actionError && !isDeleteDialogOpen && (
         <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">

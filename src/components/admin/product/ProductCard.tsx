@@ -1,15 +1,8 @@
 import { Package } from "lucide-react"
-import type { ProductStatus } from "@/types/product"
-import { ProductStatusBadge } from "@/components/admin/ProductStatusBadge"
+import type { Product } from "@/components/admin/product/ProductFormContainer"
+import { ProductStatusBadge } from "@/components/admin/product/ProductStatusBadge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-
-interface Product {
-  id: string
-  title: string
-  price: string
-  status: ProductStatus
-}
 
 interface ProductCardProps {
   product: Product

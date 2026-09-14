@@ -1,47 +1,47 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import type { Collection } from "@/types/collection"
-import { CollectionCard } from "@/components/admin/CollectionCard"
+import type { ProductType } from "@/types/product-type"
+import { ProductTypeCard } from "@/components/admin/product-type/ProductTypeCard"
 import { Card, CardContent } from "@/components/ui/card"
 
-export function CollectionListContainer() {
-  const [collections, setCollections] = useState<Collection[]>([])
+export function ProductTypeList() {
+  const [productTypes, setProductTypes] = useState<ProductType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    async function loadCollections() {
+    async function loadProductTypes() {
       try {
-        const response = await fetch("/api/admin/collections")
+        const response = await fetch("/api/admin/product-types")
 
         if (!response.ok) {
           const message = await response.text()
-          throw new Error(message || "Failed to load collections")
+          throw new Error(message || "Failed to load product types")
         }
 
-        const data: Collection[] = await response.json()
-        setCollections(data)
+        const data: ProductType[] = await response.json()
+        setProductTypes(data)
       } catch (error) {
-        console.error("Error loading collections:", error)
+        console.error("Error loading product types:", error)
         setError(
           error instanceof Error
             ? error.message
-            : "Failed to load collections"
+            : "Failed to load product types"
         )
       } finally {
         setIsLoading(false)
       }
     }
 
-    loadCollections()
+    loadProductTypes()
   }, [])
 
   if (isLoading) {
     return (
       <Card>
         <CardContent className="p-10 text-center text-muted-foreground">
-          Loading collections...
+          Loading product types...
         </CardContent>
       </Card>
     )
@@ -55,11 +55,11 @@ export function CollectionListContainer() {
     )
   }
 
-  if (collections.length === 0) {
+  if (productTypes.length === 0) {
     return (
       <Card>
         <CardContent className="p-10 text-center text-muted-foreground">
-          No collections found.
+          No product types found.
         </CardContent>
       </Card>
     )
@@ -67,8 +67,8 @@ export function CollectionListContainer() {
 
   return (
     <div className="space-y-4">
-      {collections.map((collection) => (
-        <CollectionCard key={collection.id} collection={collection} />
+      {productTypes.map((productType) => (
+        <ProductTypeCard key={productType.id} productType={productType} />
       ))}
     </div>
   )

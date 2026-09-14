@@ -1,7 +1,7 @@
 ---
 import Layout from "@/layouts/admin/Layout.astro";
-import { ProductListContainer } from "@/components/admin/ProductListContainer";
-import { ProductFormDialog } from "@/components/admin/ProductFormDialog";
+import { ProductList } from "@/components/admin/product/ProductList";
+import { ProductDialog } from "@/components/admin/product/ProductDialog";
 import MaxWidthLayout from "@/layouts/admin/MaxWidthLayout.astro";
 
 ---
@@ -12,8 +12,8 @@ import MaxWidthLayout from "@/layouts/admin/MaxWidthLayout.astro";
       <div>
         <h2 class="text-2xl font-semibold tracking-tight">Products</h2>
       </div>
-      <ProductFormDialog client:load />
+      <ProductDialog client:load />
     </div>
-    <ProductListContainer client:load />
+    <ProductList client:load />
   </MaxWidthLayout>
 </Layout>

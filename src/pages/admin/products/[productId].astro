@@ -1,7 +1,7 @@
 ---
 import Layout from "@/layouts/admin/Layout.astro";
 import MaxWidthLayout from "@/layouts/admin/MaxWidthLayout.astro";
-import { ProductShowContainer } from "@/components/admin/ProductShowContainer";
+import { ProductShow } from "@/components/admin/product/ProductShow";
 
 const { productId } = Astro.params;
 ---
@@ -17,7 +17,7 @@ const { productId } = Astro.params;
       </a>
     </div>
 
-    <ProductShowContainer
+    <ProductShow
       productId={productId ?? ""}
       client:load
     />

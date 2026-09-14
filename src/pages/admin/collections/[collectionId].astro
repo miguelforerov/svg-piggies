@@ -1,7 +1,7 @@
 ---
 import Layout from "@/layouts/admin/Layout.astro";
 import MaxWidthLayout from "@/layouts/admin/MaxWidthLayout.astro";
-import { CollectionShowContainer } from "@/components/admin/CollectionShowContainer";
+import { CollectionShow } from "@/components/admin/collection/CollectionShow";
 
 const { collectionId } = Astro.params;
 ---
@@ -17,7 +17,7 @@ const { collectionId } = Astro.params;
       </a>
     </div>
 
-    <CollectionShowContainer
+    <CollectionShow
       collectionId={collectionId ?? ""}
       client:load
     />

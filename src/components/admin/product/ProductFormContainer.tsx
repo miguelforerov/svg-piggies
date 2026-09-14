@@ -6,8 +6,9 @@ import {
   ProductForm,
   type ProductFormData,
   type ProductFormInitialValues,
-} from "@/components/admin/ProductForm"
+} from "@/components/admin/product/ProductForm"
 import type { ProductType } from "@/types/product-type"
+import type { Collection } from "@/types/collection"
 
 export interface Product extends ProductFormInitialValues {
   id: string
@@ -20,8 +21,12 @@ interface ProductTypeAssignment {
   productTypeId: string
 }
 
+interface CollectionAssignment {
+  productId: string
+  collectionId: string
+}
+
 interface ProductFormContainerProps {
-  onCancel: () => void
   initialValues?: ProductFormInitialValues
   productId?: string
   onSuccess?: (product: Product) => void
@@ -29,20 +34,23 @@ interface ProductFormContainerProps {
 }
 
 export function ProductFormContainer({
-  onCancel,
   initialValues,
   productId,
   onSuccess,
   formId,
 }: ProductFormContainerProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoadingProductTypes, setIsLoadingProductTypes] = useState(true)
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [productTypesLoadError, setProductTypesLoadError] = useState<
+  const [optionsLoadError, setOptionsLoadError] = useState<
     string | null
   >(null)
   const [productTypes, setProductTypes] = useState<ProductType[]>([])
+  const [collections, setCollections] = useState<Collection[]>([])
   const [assignedProductTypeIds, setAssignedProductTypeIds] = useState<
+    string[]
+  >([])
+  const [assignedCollectionIds, setAssignedCollectionIds] = useState<
     string[]
   >([])
   const isEditing = productId !== undefined
@@ -50,67 +58,104 @@ export function ProductFormContainer({
   useEffect(() => {
     let cancelled = false
 
-    async function loadProductTypes() {
-      setIsLoadingProductTypes(true)
-      setProductTypesLoadError(null)
+    async function loadOptions() {
+      setIsLoadingOptions(true)
+      setOptionsLoadError(null)
 
       try {
-        const requests: [Promise<Response>, Promise<Response>?] = [
+        const requests = [
           fetch("/api/admin/product-types"),
-        ]
+          fetch("/api/admin/collections"),
+          productId
+            ? fetch(`/api/admin/products/${productId}/product-types`)
+            : Promise.resolve(null),
+          productId
+            ? fetch(`/api/admin/products/${productId}/collections`)
+            : Promise.resolve(null),
+        ] as const
 
-        if (productId) {
-          requests.push(
-            fetch(`/api/admin/products/${productId}/product-types`)
-          )
-        }
-
-        const [productTypesResponse, assignmentsResponse] = await Promise.all(
-          requests
-        )
+        const [
+          productTypesResponse,
+          collectionsResponse,
+          productTypeAssignmentsResponse,
+          collectionAssignmentsResponse,
+        ] = await Promise.all(requests)
 
         if (!productTypesResponse.ok) {
           const message = await productTypesResponse.text()
           throw new Error(message || "Failed to load product types")
         }
 
-        if (assignmentsResponse && !assignmentsResponse.ok) {
-          const message = await assignmentsResponse.text()
+        if (!collectionsResponse.ok) {
+          const message = await collectionsResponse.text()
+          throw new Error(message || "Failed to load collections")
+        }
+
+        if (
+          productTypeAssignmentsResponse &&
+          !productTypeAssignmentsResponse.ok
+        ) {
+          const message = await productTypeAssignmentsResponse.text()
           throw new Error(
             message || "Failed to load the product's product types"
           )
         }
 
+        if (
+          collectionAssignmentsResponse &&
+          !collectionAssignmentsResponse.ok
+        ) {
+          const message = await collectionAssignmentsResponse.text()
+          throw new Error(
+            message || "Failed to load the product's collections"
+          )
+        }
+
         const loadedProductTypes: ProductType[] =
           await productTypesResponse.json()
-        const assignments: ProductTypeAssignment[] = assignmentsResponse
-          ? await assignmentsResponse.json()
-          : []
+        const loadedCollections: Collection[] =
+          await collectionsResponse.json()
+        const productTypeAssignments: ProductTypeAssignment[] =
+          productTypeAssignmentsResponse
+            ? await productTypeAssignmentsResponse.json()
+            : []
+        const collectionAssignments: CollectionAssignment[] =
+          collectionAssignmentsResponse
+            ? await collectionAssignmentsResponse.json()
+            : []
 
         if (!cancelled) {
           setProductTypes(loadedProductTypes)
+          setCollections(loadedCollections)
           setAssignedProductTypeIds(
-            assignments.map((assignment) => assignment.productTypeId)
+            productTypeAssignments.map(
+              (assignment) => assignment.productTypeId
+            )
+          )
+          setAssignedCollectionIds(
+            collectionAssignments.map(
+              (assignment) => assignment.collectionId
+            )
           )
         }
       } catch (error) {
-        console.error("Error loading product types:", error)
+        console.error("Error loading product options:", error)
 
         if (!cancelled) {
-          setProductTypesLoadError(
+          setOptionsLoadError(
             error instanceof Error
               ? error.message
-              : "Failed to load product types"
+              : "Failed to load product options"
           )
         }
       } finally {
         if (!cancelled) {
-          setIsLoadingProductTypes(false)
+          setIsLoadingOptions(false)
         }
       }
     }
 
-    loadProductTypes()
+    loadOptions()
 
     return () => {
       cancelled = true
@@ -172,12 +217,69 @@ export function ProductFormContainer({
     setAssignedProductTypeIds(selectedProductTypeIds)
   }
 
+  async function syncCollections(
+    targetProductId: string,
+    selectedCollectionIds: string[]
+  ) {
+    const assignmentsResponse = await fetch(
+      `/api/admin/products/${targetProductId}/collections`
+    )
+
+    if (!assignmentsResponse.ok) {
+      const message = await assignmentsResponse.text()
+      throw new Error(
+        message || "Failed to load the product's collections"
+      )
+    }
+
+    const currentAssignments: CollectionAssignment[] =
+      await assignmentsResponse.json()
+    const currentCollectionIds = currentAssignments.map(
+      (assignment) => assignment.collectionId
+    )
+    const assignedIds = new Set(currentCollectionIds)
+    const selectedIds = new Set(selectedCollectionIds)
+    const requests = [
+      ...selectedCollectionIds
+        .filter((id) => !assignedIds.has(id))
+        .map((collectionId) =>
+          fetch(`/api/admin/products/${targetProductId}/collections`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ collectionId }),
+          })
+        ),
+      ...currentCollectionIds
+        .filter((id) => !selectedIds.has(id))
+        .map((collectionId) =>
+          fetch(
+            `/api/admin/products/${targetProductId}/collections/${collectionId}`,
+            { method: "DELETE" }
+          )
+        ),
+    ]
+
+    const responses = await Promise.all(requests)
+    const failedResponse = responses.find((response) => !response.ok)
+
+    if (failedResponse) {
+      const message = await failedResponse.text()
+      throw new Error(message || "Failed to save collections")
+    }
+
+    setAssignedCollectionIds(selectedCollectionIds)
+  }
+
   async function handleSubmit(data: ProductFormData) {
+    if (isSubmitting) return
+
     setIsSubmitting(true)
     setError(null)
 
     try {
-      const { productTypeIds, ...productData } = data
+      const { productTypeIds, collectionIds, ...productData } = data
       const response = await fetch(
         isEditing
           ? `/api/admin/products/${productId}`
@@ -203,7 +305,10 @@ export function ProductFormContainer({
 
       const savedProduct: Product = await response.json()
 
-      await syncProductTypes(savedProduct.id, productTypeIds)
+      await Promise.all([
+        syncProductTypes(savedProduct.id, productTypeIds),
+        syncCollections(savedProduct.id, collectionIds),
+      ])
 
       if (isEditing) {
         const updatedProduct = savedProduct
@@ -232,24 +337,24 @@ export function ProductFormContainer({
 
   return (
     <div className="space-y-4">
-      {(error || productTypesLoadError) && (
+      {(error || optionsLoadError) && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
-          {error || productTypesLoadError}
+          {error || optionsLoadError}
         </div>
       )}
 
-      {isLoadingProductTypes ? (
+      {isLoadingOptions ? (
         <p className="text-sm text-muted-foreground">
-          Loading product types...
+          Loading product options...
         </p>
-      ) : !productTypesLoadError ? (
+      ) : !optionsLoadError ? (
         <ProductForm
           onSubmit={handleSubmit}
-          onCancel={onCancel}
           initialValues={initialValues}
           productTypes={productTypes}
           initialProductTypeIds={assignedProductTypeIds}
-          isSubmitting={isSubmitting}
+          collections={collections}
+          initialCollectionIds={assignedCollectionIds}
           formId={formId}
         />
       ) : null}

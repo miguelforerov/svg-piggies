@@ -1,17 +1,17 @@
 ---
 import Layout from "@/layouts/admin/Layout.astro";
 import MaxWidthLayout from "@/layouts/admin/MaxWidthLayout.astro";
-import { ProductTypeFormDialog } from "@/components/admin/ProductTypeFormDialog";
-import { ProductTypeListContainer } from "@/components/admin/ProductTypeListContainer";
+import { ProductTypeDialog } from "@/components/admin/product-type/ProductTypeDialog";
+import { ProductTypeList } from "@/components/admin/product-type/ProductTypeList";
 ---
 
 <Layout title="Product Types">
   <MaxWidthLayout>
     <div class="flex items-center justify-between">
       <h2 class="text-2xl font-semibold tracking-tight">Product Types</h2>
-      <ProductTypeFormDialog client:load />
+      <ProductTypeDialog client:load />
     </div>
 
-    <ProductTypeListContainer client:load />
+    <ProductTypeList client:load />
   </MaxWidthLayout>
 </Layout>
