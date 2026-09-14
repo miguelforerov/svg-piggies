@@ -1,4 +1,4 @@
-import React, {
+import {
   useEffect,
   useRef,
   useState,
@@ -11,14 +11,6 @@ import {
   HiOutlineArrowNarrowLeft,
   HiOutlineArrowNarrowRight,
 } from "react-icons/hi";
-import type { Swiper as TSwiper } from "swiper";
-import "swiper/css";
-import "swiper/css/free-mode";
-import "swiper/css/navigation";
-import "swiper/css/thumbs";
-import { FreeMode, Navigation, Thumbs } from "swiper/modules";
-import { Swiper, SwiperSlide } from "swiper/react";
-import SkeletonProductThumb from "../loadings/skeleton/SkeletonProductThumb";
 
 export interface ImageItem {
   url: string;
@@ -155,50 +147,8 @@ interface ProductGalleryProps {
 }
 
 const ProductGallery = ({ images }: ProductGalleryProps): JSX.Element => {
-  const [thumbsSwiper, setThumbsSwiper] = useState<TSwiper | null>(null);
-  const [activeIndex, setActiveIndex] = useState<number>(0);
-  const [isHovered, setIsHovered] = useState<boolean>(false);
-  const [loadingThumb, setLoadingThumb] = useState<boolean>(true);
-  const [picUrl, setPicUrl] = useState<string>("");
-  const [isTouchDevice, setIsTouchDevice] = useState<boolean>(false);
-
   const [lightboxOpen, setLightboxOpen] = useState<boolean>(false);
   const [lightboxIndex, setLightboxIndex] = useState<number>(0);
-
-  const prevRef = useRef<HTMLDivElement | null>(null);
-  const nextRef = useRef<HTMLDivElement | null>(null);
-
-  const altTextArray = images.map((item) => item.altText);
-
-  useEffect(() => {
-    const updateFromURL = () => {
-      const params = new URLSearchParams(window.location.search);
-      const searchParam = params.get("color");
-
-      if (searchParam) {
-        const foundIndex = altTextArray.indexOf(searchParam);
-        setActiveIndex(foundIndex !== -1 ? foundIndex : 0);
-      }
-
-      setLoadingThumb(false);
-    };
-
-    updateFromURL();
-    window.addEventListener("popstate", updateFromURL);
-
-    const interval = setInterval(updateFromURL, 500);
-
-    return () => {
-      window.removeEventListener("popstate", updateFromURL);
-      clearInterval(interval);
-    };
-  }, [altTextArray]);
-
-  useEffect(() => {
-    setIsTouchDevice(
-      "ontouchstart" in window || navigator.maxTouchPoints > 0,
-    );
-  }, []);
 
   useEffect(() => {
     if (!lightboxOpen) return;
@@ -210,13 +160,13 @@ const ProductGallery = ({ images }: ProductGalleryProps): JSX.Element => {
 
       if (event.key === "ArrowLeft") {
         setLightboxIndex((prev) =>
-          prev === 0 ? filteredImages.length - 1 : prev - 1,
+          prev === 0 ? images.length - 1 : prev - 1,
         );
       }
 
       if (event.key === "ArrowRight") {
         setLightboxIndex((prev) =>
-          prev === filteredImages.length - 1 ? 0 : prev + 1,
+          prev === images.length - 1 ? 0 : prev + 1,
         );
       }
     };
@@ -230,26 +180,7 @@ const ProductGallery = ({ images }: ProductGalleryProps): JSX.Element => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [lightboxOpen]);
-
-  const filteredImages = images.filter(
-    (item) => item.altText === altTextArray[activeIndex],
-  );
-
-  const handleSlideChange = (swiper: TSwiper): void => {
-    setActiveIndex(swiper.activeIndex);
-    setPicUrl(filteredImages[swiper.activeIndex]?.url || "");
-  };
-
-  const handleThumbSlideClick = (clickedUrl: string): void => {
-    const foundIndex = filteredImages.findIndex(
-      (item) => item.url === clickedUrl,
-    );
-
-    if (foundIndex !== -1) {
-      setActiveIndex(foundIndex);
-    }
-  };
+  }, [images.length, lightboxOpen]);
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
@@ -262,108 +193,36 @@ const ProductGallery = ({ images }: ProductGalleryProps): JSX.Element => {
 
   const previousLightboxImage = () => {
     setLightboxIndex((prev) =>
-      prev === 0 ? filteredImages.length - 1 : prev - 1,
+      prev === 0 ? images.length - 1 : prev - 1,
     );
   };
 
   const nextLightboxImage = () => {
     setLightboxIndex((prev) =>
-      prev === filteredImages.length - 1 ? 0 : prev + 1,
+      prev === images.length - 1 ? 0 : prev + 1,
     );
   };
 
-  if (loadingThumb) {
-    return <SkeletonProductThumb />;
-  }
-
   return (
     <>
-      <div
-        className="relative"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <Swiper
-          spaceBetween={10}
-          thumbs={{ swiper: thumbsSwiper }}
-          modules={[FreeMode, Navigation, Thumbs]}
-          navigation={{
-            prevEl: prevRef.current,
-            nextEl: nextRef.current,
-          }}
-          onSlideChange={handleSlideChange}
-          allowTouchMove={!isHovered}
-        >
-          {filteredImages.map((item, index) => (
-            <SwiperSlide key={item.url}>
-              <div className="mb-6 border border-border rounded-md max-h-[623px] overflow-hidden">
-                <CustomZoomImage
-                  src={item.url}
-                  alt={item.altText}
-                  width={722}
-                  height={623}
-                  onOpenLightbox={() => openLightbox(index)}
-                />
-              </div>
-            </SwiperSlide>
-          ))}
-
+      <div className="space-y-6">
+        {images.map((item, index) => (
           <div
-            className={`hidden lg:block w-full absolute top-1/2 -translate-y-1/2 z-10 px-6 text-text-dark ${
-              isHovered
-                ? "opacity-100 transition-opacity duration-300 ease-in-out"
-                : "opacity-0 transition-opacity duration-300 ease-in-out"
-            }`}
+            key={item.url}
+            className="aspect-[722/623] overflow-hidden rounded-md border border-border"
           >
-            <div
-              ref={prevRef}
-              className="p-2 lg:p-4 rounded-md bg-body cursor-pointer shadow-sm absolute left-4"
-            >
-              <HiOutlineArrowNarrowLeft size={24} />
-            </div>
-
-            <div
-              ref={nextRef}
-              className="p-2 lg:p-4 rounded-md bg-body cursor-pointer shadow-sm absolute right-4"
-            >
-              <HiOutlineArrowNarrowRight size={24} />
-            </div>
+            <CustomZoomImage
+              src={item.url}
+              alt={item.altText}
+              width={item.width}
+              height={item.height}
+              onOpenLightbox={() => openLightbox(index)}
+            />
           </div>
-        </Swiper>
+        ))}
       </div>
 
-      <Swiper
-        onSwiper={setThumbsSwiper}
-        spaceBetween={10}
-        slidesPerView={isTouchDevice ? 3.5 : 4}
-        freeMode={true}
-        watchSlidesProgress={true}
-        modules={[FreeMode, Navigation, Thumbs]}
-      >
-        {filteredImages.map((item) => (
-          <SwiperSlide key={item.url}>
-            <div
-              onClick={() => handleThumbSlideClick(item.url)}
-              className={`rounded-md cursor-pointer overflow-hidden ${
-                picUrl === item.url
-                  ? "border border-primary"
-                  : "border border-border"
-              }`}
-            >
-              <img
-                src={item.url}
-                alt={item.altText}
-                width={168}
-                height={146}
-                className="max-h-[146px]"
-                draggable={false}
-              />
-            </div>
-          </SwiperSlide>
-        ))}
-      </Swiper>
-
-      {lightboxOpen && filteredImages[lightboxIndex] && (
+      {lightboxOpen && images[lightboxIndex] && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-4 md:p-8"
           role="dialog"
@@ -380,7 +239,7 @@ const ProductGallery = ({ images }: ProductGalleryProps): JSX.Element => {
             <FiX size={24} />
           </button>
 
-          {filteredImages.length > 1 && (
+          {images.length > 1 && (
             <>
               <button
                 type="button"
@@ -413,16 +272,16 @@ const ProductGallery = ({ images }: ProductGalleryProps): JSX.Element => {
             onClick={(event) => event.stopPropagation()}
           >
             <img
-              src={filteredImages[lightboxIndex].url}
-              alt={filteredImages[lightboxIndex].altText}
+              src={images[lightboxIndex].url}
+              alt={images[lightboxIndex].altText}
               className="max-h-full max-w-full object-contain"
               draggable={false}
             />
           </div>
 
-          {filteredImages.length > 1 && (
+          {images.length > 1 && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-2 text-sm text-white">
-              {lightboxIndex + 1} / {filteredImages.length}
+              {lightboxIndex + 1} / {images.length}
             </div>
           )}
         </div>
