@@ -7,16 +7,18 @@ import ProductList from "./ProductList";
 interface ProductLayoutViewsProps {
   initialProducts: Product[];
   searchValue?: string | null;
+  className?: string;
 }
 
 const ProductLayoutViews = ({
   initialProducts,
   searchValue,
+  className = "col-12 lg:col-9",
 }: ProductLayoutViewsProps) => {
   const layout = useStore(layoutView);
 
   return (
-    <div className="col-12 lg:col-9">
+    <div className={className}>
       {layout === "list" ? (
         <ProductList initialProducts={initialProducts} searchValue={searchValue} />
       ) : (

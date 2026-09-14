@@ -46,6 +46,7 @@ function SortFilterItem({ item }: { item: any }) {
   } else {
     newParams.delete("sort");
   }
+  newParams.delete("page");
 
   const href = createUrl(pathname, newParams);
   const active = searchParams.get("sort") === item.slug;

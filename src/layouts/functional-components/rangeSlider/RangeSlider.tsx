@@ -100,6 +100,7 @@ const RangeSlider = ({
     const searchParams = new URLSearchParams(window.location.search);
     searchParams.set("minPrice", min.toString());
     searchParams.set("maxPrice", max.toString());
+    searchParams.delete("page");
 
     const newUrl = createUrl("/products", searchParams);
     window.location.href = newUrl;

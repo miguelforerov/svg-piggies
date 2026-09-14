@@ -3,7 +3,7 @@ import Base from "@/layouts/Base.astro";
 import CollectionsSlider from "@/layouts/functional-components/CollectionsSlider";
 import FeaturedProducts from "@/layouts/functional-components/FeaturedProducts";
 import HeroSlider from "@/layouts/functional-components/HeroSlider";
-import ProductLayoutViews from "@/layouts/functional-components/ProductLayoutViews";
+import PaginatedProductLayoutViews from "@/layouts/components/PaginatedProductLayoutViews.astro";
 import CallToAction from "@/layouts/partials/CallToAction.astro";
 import { getCatalog } from "@/lib/catalog";
 
@@ -46,10 +46,7 @@ const collectionProducts = catalog.collections.map((collection) => ({
     <section class="section-sm">
       <div class="container">
         <div class="row justify-center">
-          <ProductLayoutViews
-            initialProducts={catalog.products}
-            client:load
-          />
+          <PaginatedProductLayoutViews products={catalog.products} />
         </div>
       </div>
     </section>

@@ -1,7 +1,7 @@
 ---
 import ProductFilters from "@/layouts/functional-components/ProductFilters";
-import ProductLayoutViews from "@/layouts/functional-components/ProductLayoutViews";
 import ProductLayouts from "@/layouts/functional-components/product/ProductLayouts";
+import PaginatedProductLayoutViews from "@/layouts/components/PaginatedProductLayoutViews.astro";
 import CallToAction from "@/layouts/partials/CallToAction.astro";
 import Base from "@/layouts/Base.astro";
 import { defaultSort, sorting } from "@/lib/constants";
@@ -118,10 +118,9 @@ const maxPriceData = { amount: String(Math.ceil(highestPrice)), currencyCode: "U
         />
       </div>
 
-      <ProductLayoutViews
-        initialProducts={filteredProducts}
+      <PaginatedProductLayoutViews
+        products={filteredProducts}
         searchValue={searchValue}
-        client:load
       />
       <CallToAction />
     </div>

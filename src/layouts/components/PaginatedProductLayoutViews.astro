@@ -1,0 +1,34 @@
+---
+import type { Product } from "@/types/product";
+import Pagination from "./Pagination.astro";
+import ProductLayoutViews from "../functional-components/ProductLayoutViews";
+
+interface Props {
+  products: Product[];
+  searchValue?: string | null;
+  pageSize?: number;
+}
+
+const { products, searchValue, pageSize = 9 } = Astro.props;
+const requestedPage = Number.parseInt(Astro.url.searchParams.get("page") ?? "1", 10);
+const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
+const currentPage = Math.min(
+  Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1,
+  totalPages,
+);
+const pageStart = (currentPage - 1) * pageSize;
+const paginatedProducts = products.slice(pageStart, pageStart + pageSize);
+---
+
+<div class="col-12 lg:col-9">
+  <ProductLayoutViews
+    initialProducts={paginatedProducts}
+    searchValue={searchValue}
+    className="w-full"
+    client:load
+  />
+
+  <div class="my-10">
+    <Pagination currentPage={currentPage} totalPages={totalPages} />
+  </div>
+</div>

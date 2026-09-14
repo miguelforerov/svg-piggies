@@ -36,6 +36,7 @@ const ProductFilters = ({
     } else {
       newParams.set(key, slug);
     }
+    newParams.delete("page");
 
     const query = newParams.toString();
     window.location.href = query ? `/products?${query}` : "/products";
