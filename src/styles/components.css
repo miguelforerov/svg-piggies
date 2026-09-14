@@ -23,24 +23,23 @@
 
 /* social icons */
 .social-icons {
+  @apply h-8 w-8 p-1 flex items-center justify-center rounded-lg hover:bg-primary hover:text-white duration-300 text-center leading-9 text-text-light dark:border-border/30 dark:bg-darkmode-light dark:text-darkmode-text-light dark:hover:bg-white dark:hover:text-black;
+  svg {
+    @apply text-xs;
+  }
+}
+
+.social-icons-list {
   @apply flex items-center gap-x-2;
   li {
     @apply inline-block;
-    a {
-      @apply h-6 w-6 p-1 flex items-center justify-center rounded-md bg-white hover:bg-primary hover:text-white duration-300 text-center leading-9 text-text-light border border-border dark:border-border/30 dark:bg-darkmode-light dark:text-darkmode-text-light dark:hover:bg-white dark:hover:text-black;
-      svg {
-        @apply text-xs;
-      }
-    }
   }
 }
 
 .social-icons-footer {
-  a {
-    @apply !h-10 !w-10 p-1 rounded-full!;
-    svg {
-      @apply text-lg!;
-    }
+  @apply !h-10 !w-10;
+  svg {
+    @apply text-lg!;
   }
 }
 
