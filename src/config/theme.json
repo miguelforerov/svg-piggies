@@ -11,7 +11,8 @@
       "text_color": {
         "text": "#2f2f2f",
         "text-dark": "#D94B87",
-        "text-light": "#FF7FB0"
+        "text-light": "#FF7FB0",
+        "text-gray": "#A9A9A9"
       }
     },
     "darkmode": {

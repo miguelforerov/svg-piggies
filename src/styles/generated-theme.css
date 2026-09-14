@@ -11,10 +11,10 @@
   --color-border: #FF9FC4;
   --color-light: #FFF7FB;
   --color-dark: #000;
-  --color-gray: #a9a9a9;
   --color-text: #2f2f2f;
   --color-text-dark: #D94B87;
   --color-text-light: #FF7FB0;
+  --color-text-gray: #A9A9A9;
 
   /* === Darkmode Colors === */
   --color-darkmode-primary: #fff;
