@@ -1,3 +1,4 @@
+/* Shadcn theme and base styles used by the admin application. */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
