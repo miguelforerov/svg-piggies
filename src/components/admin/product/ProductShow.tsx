@@ -13,7 +13,10 @@ import type { Product } from "@/components/admin/product/ProductFormContainer"
 import { ProductDialog } from "@/components/admin/product/ProductDialog"
 import { ProductStatusBadge } from "@/components/admin/product/ProductStatusBadge"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { DELETE_CONFIRMATION_TEXT } from "@/lib/constants"
+import type { ProductType } from "@/types/product-type"
+import type { Collection } from "@/types/collection"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,10 +39,82 @@ interface ProductShowProps {
   productId: string
 }
 
+interface ProductTypeAssignment {
+  productId: string
+  productTypeId: string
+}
+
+interface CollectionAssignment {
+  productId: string
+  collectionId: string
+}
+
+async function getProductTypes(productId: string) {
+  const [productTypesResponse, assignmentsResponse] = await Promise.all([
+    fetch("/api/admin/product-types"),
+    fetch(`/api/admin/products/${productId}/product-types`),
+  ])
+
+  if (!productTypesResponse.ok) {
+    const message = await productTypesResponse.text()
+    throw new Error(message || "Failed to load product types")
+  }
+
+  if (!assignmentsResponse.ok) {
+    const message = await assignmentsResponse.text()
+    throw new Error(
+      message || "Failed to load the product's product types"
+    )
+  }
+
+  const productTypes: ProductType[] = await productTypesResponse.json()
+  const assignments: ProductTypeAssignment[] =
+    await assignmentsResponse.json()
+  const assignedIds = new Set(
+    assignments.map((assignment) => assignment.productTypeId)
+  )
+
+  return productTypes.filter((productType) =>
+    assignedIds.has(productType.id)
+  )
+}
+
+async function getCollections(productId: string) {
+  const [collectionsResponse, assignmentsResponse] = await Promise.all([
+    fetch("/api/admin/collections"),
+    fetch(`/api/admin/products/${productId}/collections`),
+  ])
+
+  if (!collectionsResponse.ok) {
+    const message = await collectionsResponse.text()
+    throw new Error(message || "Failed to load collections")
+  }
+
+  if (!assignmentsResponse.ok) {
+    const message = await assignmentsResponse.text()
+    throw new Error(
+      message || "Failed to load the product's collections"
+    )
+  }
+
+  const collections: Collection[] = await collectionsResponse.json()
+  const assignments: CollectionAssignment[] =
+    await assignmentsResponse.json()
+  const assignedIds = new Set(
+    assignments.map((assignment) => assignment.collectionId)
+  )
+
+  return collections.filter((collection) =>
+    assignedIds.has(collection.id)
+  )
+}
+
 export function ProductShow({
   productId,
 }: ProductShowProps) {
   const [product, setProduct] = useState<Product | null>(null)
+  const [productTypes, setProductTypes] = useState<ProductType[]>([])
+  const [collections, setCollections] = useState<Collection[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -52,9 +127,11 @@ export function ProductShow({
   useEffect(() => {
     async function loadProduct() {
       try {
-        const response = await fetch(
-          `/api/admin/products/${productId}`
-        )
+        const [response, loadedProductTypes, loadedCollections] = await Promise.all([
+          fetch(`/api/admin/products/${productId}`),
+          getProductTypes(productId),
+          getCollections(productId),
+        ])
 
         if (!response.ok) {
           const message = await response.text()
@@ -64,6 +141,8 @@ export function ProductShow({
         const data: Product = await response.json()
 
         setProduct(data)
+        setProductTypes(loadedProductTypes)
+        setCollections(loadedCollections)
       } catch (error) {
         console.error("Error loading product:", error)
 
@@ -200,7 +279,19 @@ export function ProductShow({
         open={isEditing}
         onOpenChange={setIsEditing}
         showTrigger={false}
-        onSuccess={setProduct}
+        onSuccess={(updatedProduct) => {
+          setProduct(updatedProduct)
+          void getProductTypes(productId)
+            .then(setProductTypes)
+            .catch((error) => {
+              console.error("Error refreshing product types:", error)
+              setActionError(
+                error instanceof Error
+                  ? error.message
+                  : "Failed to refresh product types"
+              )
+            })
+        }}
       />
 
       <AlertDialog
@@ -350,13 +441,46 @@ export function ProductShow({
           </div>
 
           {/* Right column */}
+          <div className="space-y-6">
+
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Slug
+              </p>
+              <p className="mt-1">
+                {product.slug}
+              </p>
+            </div>
+          </div>
+
           <div>
             <p className="text-sm text-muted-foreground">
-              Slug
+              Product Types
             </p>
-            <p className="mt-1">
-              {product.slug}
+            <div className="mt-1 flex flex-wrap gap-2">
+              {productTypes.length > 0
+                ? productTypes.map((productType) => (
+                    <Badge variant="secondary" key={productType.id}>
+                      {productType.name}
+                    </Badge>
+                  ))
+                : "No product types assigned."}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm text-muted-foreground">
+              Collections
             </p>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {collections.length > 0
+                ? collections.map((collection) => (
+                    <Badge variant="secondary" key={collection.id}>
+                      {collection.name}
+                    </Badge>
+                  ))
+                : "No collections assigned."}
+            </div>
           </div>
 
         </div>
