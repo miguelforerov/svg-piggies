@@ -2,20 +2,31 @@
 import Layout from "@/layouts/admin/Layout.astro";
 import MaxWidthLayout from "@/layouts/admin/MaxWidthLayout.astro";
 import { ProductShow } from "@/components/admin/product/ProductShow";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 const { productId } = Astro.params;
 ---
 
 <Layout title="Product">
   <MaxWidthLayout>
-    <div>
-      <a
-        href="/admin/products"
-        class="text-sm text-muted-foreground hover:text-foreground"
-      >
-        ← Back to Products
-      </a>
-    </div>
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink href="/admin/products">Products</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>Show</BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
 
     <ProductShow
       productId={productId ?? ""}

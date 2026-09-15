@@ -2,20 +2,31 @@
 import Layout from "@/layouts/admin/Layout.astro";
 import MaxWidthLayout from "@/layouts/admin/MaxWidthLayout.astro";
 import { CollectionShow } from "@/components/admin/collection/CollectionShow";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 const { collectionId } = Astro.params;
 ---
 
 <Layout title="Collection">
   <MaxWidthLayout>
-    <div>
-      <a
-        href="/admin/collections"
-        class="text-sm text-muted-foreground hover:text-foreground"
-      >
-        ← Back to Collections
-      </a>
-    </div>
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink href="/admin/collections">Collections</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>Show</BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
 
     <CollectionShow
       collectionId={collectionId ?? ""}
