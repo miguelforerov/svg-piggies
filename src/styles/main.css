@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@plugin "@tailwindcss/forms";
+/* @plugin "@tailwindcss/forms"; */
 @plugin "@tailwindcss/typography";
 @plugin 'tailwind-bootstrap-grid';
 @custom-variant dark (&:where(.dark, .dark *));
@@ -17,5 +17,5 @@
 @layer components {
   @import "./components.css";
   @import "./navigation.css";
-  @import "./buttons.css";
+  /* @import "./buttons.css"; */
 }
