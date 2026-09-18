@@ -2,6 +2,7 @@
 import type { Product } from "@/types/product";
 import Pagination from "./Pagination.astro";
 import ProductLayoutViews from "../functional-components/ProductLayoutViews";
+import MaxWidthContainer from "@/layouts/shortcodes/MaxWidthContainer.astro"
 
 interface Props {
   products: Product[];
@@ -20,7 +21,7 @@ const pageStart = (currentPage - 1) * pageSize;
 const paginatedProducts = products.slice(pageStart, pageStart + pageSize);
 ---
 
-<div class="col-12 lg:col-9">
+<MaxWidthContainer>
   <ProductLayoutViews
     initialProducts={paginatedProducts}
     searchValue={searchValue}
@@ -31,4 +32,4 @@ const paginatedProducts = products.slice(pageStart, pageStart + pageSize);
   <div class="my-10">
     <Pagination currentPage={currentPage} totalPages={totalPages} />
   </div>
-</div>
+</MaxWidthContainer>

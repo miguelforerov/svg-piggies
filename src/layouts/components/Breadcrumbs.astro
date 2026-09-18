@@ -39,13 +39,13 @@ if (currentLabel && parts.length > 1) {
         <li class="mx-1 capitalize" role="listitem">
           {index > 0 && <span class="inlin-block mr-1">/</span>}
           {index !== parts.length - 1 ? (
-            <a class="text-primary dark:text-darkmode-primary" {...attrs}>
+            <a class="text-text-gray hover:text-text-gray/80" {...attrs}>
               {label}
             </a>
           ) : (
             <span
               aria-current="page"
-              class="text-text-light dark:text-darkmode-text-light"
+              class="text-text-gray"
             >
               {label}
             </span>

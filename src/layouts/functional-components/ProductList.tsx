@@ -62,7 +62,7 @@ const ProductList = ({ initialProducts, searchValue }: ProductListProps) => {
                   </p>
                   <AddToCart
                     productId={product.id}
-                    stylesClass="btn btn-outline-primary max-md:btn-sm drop-shadow-md"
+                    className="btn btn-outline-primary max-md:btn-sm drop-shadow-md"
                   />
                 </div>
               </div>

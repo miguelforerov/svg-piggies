@@ -23,8 +23,8 @@ const ShareLink = ({ href, ariaLabel, children }: ShareLinkProps) => (
     target="_blank"
     rel="noopener noreferrer"
     aria-label={ariaLabel}
-    className="social-icons"
-    // className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors duration-300 text-text-light hover:bg-primary hover:text-white"
+    // className="social-icons"
+    className="flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-300 text-primary hover:bg-primary hover:text-white"
   >
     {children}
   </a>
@@ -105,7 +105,7 @@ const SocialShare = ({ title, url, imageUrl }: SocialShareProps) => {
         type="button"
         onClick={copyLink}
         aria-label="Copy product link"
-        className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors duration-300 text-text-light hover:bg-primary hover:text-white"
+        className="flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-300 text-primary hover:bg-primary hover:text-white"
       >
         {copied ? <FiCheck size={17} /> : <FiCopy size={17} />}
       </button>

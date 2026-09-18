@@ -1,21 +1,22 @@
-import React, { useState } from "react";
-import { BiLoaderAlt } from "react-icons/bi";
+import { useState } from "react"
+import { LoaderCircle } from "lucide-react"
+import Button from "@/layouts/shortcodes/Button"
 
 interface AddToCartProps {
-  productId: string;
-  stylesClass?: string;
+  productId: string
+  className?: string
 }
 
 export function AddToCart({
   productId,
-  stylesClass = "btn btn-primary",
+  className,
 }: AddToCartProps) {
-  const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [pending, setPending] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
 
   const handleSubmit = async () => {
-    setPending(true);
-    setMessage(null);
+    setPending(true)
+    setMessage(null)
 
     try {
       /*
@@ -26,38 +27,34 @@ export function AddToCart({
        * selected without depending on Shopify.
        */
 
-      console.log("Add product to cart:", productId);
+      console.log("Add product to cart:", productId)
 
-      setMessage("Product added to cart");
+      setMessage("Product added to cart")
     } catch (error) {
-      console.error("Failed to add product to cart:", error);
-      setMessage("Unable to add product to cart");
+      console.error("Failed to add product to cart:", error)
+      setMessage("Unable to add product to cart")
     } finally {
-      setPending(false);
+      setPending(false)
     }
-  };
+  }
 
   return (
     <>
-      <button
-        type="button"
+      <Button
         onClick={handleSubmit}
         disabled={pending}
-        aria-label="Add to cart"
         aria-disabled={pending}
-        className={`${stylesClass} ${
-          pending ? "cursor-not-allowed opacity-70" : "btn-primary"
-        }`}
+        className={className}
       >
         {pending ? (
-          <BiLoaderAlt
+          <LoaderCircle
             className="animate-spin"
             size={26}
           />
         ) : (
           "Add To Cart"
         )}
-      </button>
+      </Button>
 
       <p
         aria-live="polite"
@@ -67,5 +64,5 @@ export function AddToCart({
         {message}
       </p>
     </>
-  );
+  )
 }

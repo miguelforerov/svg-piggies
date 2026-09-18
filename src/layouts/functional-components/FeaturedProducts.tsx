@@ -19,7 +19,7 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
           <article className="group relative text-center" key={product.id}>
             <div className="overflow-hidden rounded-md">
               <img
-                src={image?.url || "/images/product-placeholder.jpg"}
+                src={image?.url || "/images/Listing_1_SVG_Piggies_16oz_Christmas_4_Candy_Canes.jpg"}
                 width={312}
                 height={269}
                 alt={product.title}
@@ -36,7 +36,7 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
                   {product.title}
                 </a>
               </h3>
-              <p className="mt-2 font-bold text-text-dark md:text-lg">
+              <p className="mt-2 font-bold text-text-primary md:text-lg">
                 ${product.price.toFixed(2)}
               </p>
               {/* TODO(catalog): show sale/compare-at price when supported. */}

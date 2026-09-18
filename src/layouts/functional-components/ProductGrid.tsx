@@ -15,7 +15,7 @@ const ProductGrid = ({
     initialProducts.length === 1 ? "result" : "results";
 
   return (
-    <div className="px-4">
+    <div className="">
       {searchValue ? (
         <p className="mb-4">
           {initialProducts.length === 0
@@ -36,29 +36,29 @@ const ProductGrid = ({
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+      <div className="grid flex sm:grid-cols-2 md:grid-cols-3 gap-8">
         {initialProducts.map((product) => {
           const image = product.images[0];
 
           return (
             <div
               key={product.id}
-              className="group relative text-center"
+              className="relative group items-center flex flex-col"
             >
-              <div className="overflow-hidden md:relative">
+              <div className="overflow-hidden relative md:w-[20rem] md:h-[20rem] group-hover:border-border group-hover:border rounded-md">
                 <img
                   src={
                     image?.url ||
-                    "/images/product-placeholder.jpg"
+                    "/images/Listing_1_SVG_Piggies_16oz_Christmas_4_Candy_Canes.jpg"
                   }
-                  width={312}
-                  height={269}
+                  width={320}
+                  height={320}
                   alt={product.title}
-                  className="mx-auto h-[200px] w-full rounded-md object-cover sm:w-[312px] md:h-[269px]"
+                  className="mx-auto rounded-md object-cover md:w-[20rem] md:h-[20rem] group-hover:scale-110 transition duration-300"
                 />
               </div>
 
-              <div className="z-20 py-2 text-center md:py-4">
+              <div className="z-10 py-2 text-center md:py-4">
                 <h2 className="text-base font-medium md:text-xl">
                   <a
                     className="after:absolute after:inset-0 text-primary"

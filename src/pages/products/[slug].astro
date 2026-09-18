@@ -4,6 +4,7 @@ import Breadcrumbs from "@/layouts/components/Breadcrumbs.astro";
 import { AddToCart } from "@/layouts/functional-components/cart/AddToCart";
 import ProductGallery from "@/layouts/functional-components/product/ProductGallery";
 import SocialShare from "@/layouts/functional-components/SocialShare";
+import MaxWidthContainer from "@/layouts/shortcodes/MaxWidthContainer.astro";
 import { getProductBySlug } from "@/lib/catalog";
 
 export const prerender = false;
@@ -39,13 +40,32 @@ const galleryImages = product
       }))
     : [
         {
-          url: "/images/product-placeholder.jpg",
+          url: "/images/Listing_1_SVG_Piggies_16oz_Christmas_4_Candy_Canes.jpg",
+          altText: product.title,
+          width: 800,
+          height: 800,
+        },
+        {
+          url: "/images/Listing_2_SVG_Piggies_16oz_Christmas_4_Candy_Canes.jpg",
+          altText: product.title,
+          width: 800,
+          height: 800,
+        },
+        {
+          url: "/images/Listing_3_SVG_Piggies_16oz_Christmas_4_Candy_Canes.png",
+          altText: product.title,
+          width: 800,
+          height: 800,
+        },
+        {
+          url: "/images/Listing_4_SVG_Piggies_16oz_Christmas_4_Candy_Canes.jpg",
           altText: product.title,
           width: 800,
           height: 800,
         },
       ]
   : [];
+
 
 /*
  * TODO(product-detail): hydrate real image metadata once a GET images endpoint
@@ -73,7 +93,7 @@ const galleryImages = product
         </div>
       </section>
     ) : (
-      <>
+      <MaxWidthContainer>
         <div class="container pt-6">
           <Breadcrumbs currentLabel={product.title} />
         </div>
@@ -88,26 +108,28 @@ const galleryImages = product
               <div class="col-10 py-6 md:col-8 md:ml-7 lg:col-5 lg:py-0">
                 <h1 class="mb-2 text-3xl md:h2 md:mb-6">{product.title}</h1>
 
-                <div class="flex items-center gap-2">
-                  <h4 class="text-text-light max-md:h2">
+                <div class="flex flex-col gap-2">
+                  <div class="text-text-gray text-xl line-through">
                     ${product.price.toFixed(2)}
-                  </h4>
+                  </div>
+                  <div class="text-text-green text-3xl font-bold">
+                    ${product.price.toFixed(2)}
+                  </div>
                   {/* TODO(catalog): render sale/compare-at price when supported. */}
                 </div>
 
                 {/* TODO(catalog): render variants when supported by Product. */}
-                <div class="mt-8 mb-6 flex gap-4 md:mt-10">
+                <div class="mt-4 mb-6 flex gap-4">
                   <AddToCart
                     client:only="react"
                     productId={product.id}
-                    stylesClass="btn max-md:btn-sm btn-primary"
                   />
                 </div>
 
                 <hr class="my-6 border border-border" />
 
                 <div class="mb-6 flex items-center gap-3">
-                  <h5 class="text-primary max-md:text-base">Share:</h5>
+                  <h5 class="max-md:text-base">Share:</h5>
                   <SocialShare
                     client:load
                     title={product.title}
@@ -117,7 +139,7 @@ const galleryImages = product
                 {product.description && (
                   <section>
                       <h5 class="mb-6">Description</h5>
-                    <div class="prose ">
+                    <div class="">
                       <p class="whitespace-pre-wrap">{product.description}</p>
                     </div>
                   </section>
@@ -126,7 +148,7 @@ const galleryImages = product
             </div>
           </div>
         </section>
-      </>
+      </MaxWidthContainer>
     )
   }
 </Base>

@@ -90,29 +90,8 @@ const ProductLayouts = ({
         <div className="row">
           <div className="col-3 max-lg:hidden" />
 
-          <div className="col-12 lg:col-9">
+          <div className="">
             <div className="flex justify-between items-center mb-4">
-              <div className="flex gap-x-4 items-center font-medium text-xs md:text-base">
-                <p className="max-md:hidden text-text-dark dark:text-darkmode-text-dark">
-                  Views
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => layoutChange("card")}
-                    className={`btn border dark:border-darkmode-border ${isListView ? "btn-outline-primary" : "btn-primary"
-                      } p-2 hover:scale-105 duration-300`}
-                  >
-                    <BsGridFill />
-                  </button>
-                  <button
-                    onClick={() => layoutChange("list")}
-                    className={`btn dark:border-darkmode-border ${isListView ? "btn-primary" : "btn-outline-primary"
-                      } p-2 hover:scale-105 duration-300`}
-                  >
-                    <FaList />
-                  </button>
-                </div>
-              </div>
 
               <div className="flex gap-x-8">
                 <div className="filter-button-container block lg:hidden mt-1">
@@ -130,7 +109,7 @@ const ProductLayouts = ({
                 </div>
 
                 <div className="flex gap-x-4 items-center font-medium text-sm md:text-base relative z-20">
-                  <p className="max-md:hidden text-text-dark dark:text-darkmode-text-dark">
+                  <p className="max-md:hidden">
                     Sort By
                   </p>
                   <Suspense>

@@ -41,7 +41,7 @@ for (let i = 1; i <= totalPages; i++) {
           href={
             pageLink(currentPage - 1)
           }
-          class="rounded px-2 py-1.5 text-text-dark hover:bg-light dark:text-darkmode-text-dark dark:hover:bg-darkmode-light"
+          class="rounded px-2 py-1.5 text-primary hover:bg-primary hover:text-white transition-colors duration-300"
         >
           <span class="sr-only">Previous</span>
           <svg
@@ -59,7 +59,7 @@ for (let i = 1; i <= totalPages; i++) {
           </svg>
         </a>
       ) : (
-        <span class="rounded px-2 py-1.5 text-text-light">
+        <span class="rounded px-2 py-1.5 text-gray-light">
           <span class="sr-only">Previous</span>
           <svg
             viewBox="0 0 20 20"
@@ -82,14 +82,14 @@ for (let i = 1; i <= totalPages; i++) {
         pagination === currentPage ? (
           <span
             aria-current="page"
-            class="rounded bg-primary px-4 py-2 text-white dark:bg-darkmode-primary dark:text-text-dark"
+            class="rounded px-4 py-2 text-text-primary bg-primary-light font-bold"
           >
             {pagination}
           </span>
         ) : (
           <a
             href={pageLink(pagination)}
-            class="rounded px-4 py-2 text-text-dark hover:bg-light dark:text-darkmode-text-dark dark:hover:bg-darkmode-light"
+            class="rounded px-4 py-2 text-primary hover:bg-primary hover:text-white transition-colors duration-300"
           >
             {pagination}
           </a>
@@ -100,7 +100,7 @@ for (let i = 1; i <= totalPages; i++) {
       {hasNextPage ? (
         <a
           href={pageLink(currentPage + 1)}
-          class="rounded px-2 py-1.5 text-text-dark hover:bg-light dark:text-darkmode-text-dark dark:hover:bg-darkmode-light"
+          class="rounded px-2 py-1.5 text-primary hover:bg-primary hover:text-white transition-colors duration-300"
         >
           <span class="sr-only">Next</span>
           <svg
@@ -118,7 +118,7 @@ for (let i = 1; i <= totalPages; i++) {
           </svg>
         </a>
       ) : (
-        <span class="rounded px-2 py-1.5 text-text-light">
+        <span class="rounded px-2 py-1.5 text-gray-light">
           <span class="sr-only">Next</span>
           <svg
             viewBox="0 0 20 20"

@@ -6,6 +6,7 @@ import HeroSlider from "@/layouts/functional-components/HeroSlider";
 import PaginatedProductLayoutViews from "@/layouts/components/PaginatedProductLayoutViews.astro";
 import CallToAction from "@/layouts/partials/CallToAction.astro";
 import { getCatalog } from "@/lib/catalog";
+import MaxWidthContainer from "@/layouts/shortcodes/MaxWidthContainer.astro";
 
 let catalogError = false;
 let catalog = { products: [], collections: [], productTypes: [] } as Awaited<
@@ -32,58 +33,57 @@ const collectionProducts = catalog.collections.map((collection) => ({
 ---
 
 <Base title="SVG Piggies">
-  {
-    catalogError && (
-      <div class="container pt-6">
-        <div class="rounded-md border border-red-300 bg-red-50 p-4 text-red-800">
-          The product catalog could not be loaded. Please try again later.
+  <MaxWidthContainer>
+    {
+      catalogError && (
+        <div class="container pt-6">
+          <div class="rounded-md border border-red-300 bg-red-50 p-4 text-red-800">
+            The product catalog could not be loaded. Please try again later.
+          </div>
         </div>
-      </div>
-    )
-  }
+      )
+    }
 
-  {catalog.products.length > 0 && (
-    <section class="section-sm">
-      <div class="container">
-        <div class="row justify-center">
-          <PaginatedProductLayoutViews products={catalog.products} />
+    {catalog.products.length > 0 && (
+      <section class="section-sm">
+        <div class="container">
+          <div class="row justify-center">
+            <PaginatedProductLayoutViews products={catalog.products} />
+          </div>
         </div>
-      </div>
-    </section>
-  )}
+      </section>
+    )}
 
-  {heroProducts.length > 0 && (
-    <section>
-      <div class="container">
-        <div class="bg-gradient rounded-md py-10">
-          <HeroSlider products={heroProducts} client:load />
+    {heroProducts.length > 0 && (
+        <section>
+          <div class="container">
+            <div class="bg-gradient rounded-md py-10">
+              <HeroSlider products={heroProducts} client:load />
+            </div>
+          </div>
+        </section>
+    )}
+
+    {collectionProducts.length > 0 && (
+      <section class="w-full section">
+        <div class="container">
+          <div class="mb-6 text-center md:mb-14">
+            <h2>Collections</h2>
+          </div>
+          <CollectionsSlider collections={collectionProducts} client:load />
         </div>
-      </div>
-    </section>
-  )}
+      </section>
+    )}
 
-  {collectionProducts.length > 0 && (
-    <section class="section">
-      <div class="container">
-        <div class="mb-6 text-center md:mb-14">
-          <h2>Collections</h2>
+    {featuredProducts.length > 0 && (
+      <section class="section">
+        <div class="container">
+          <div class="mb-6 text-center md:mb-14">
+            <h2 class="mb-2">Featured Products</h2>
+          </div>
+          <FeaturedProducts products={featuredProducts} client:load />
         </div>
-        <CollectionsSlider collections={collectionProducts} client:load />
-      </div>
-    </section>
-  )}
-
-  {featuredProducts.length > 0 && (
-    <section class="section">
-      <div class="container">
-        <div class="mb-6 text-center md:mb-14">
-          <h2 class="mb-2">Featured Products</h2>
-          <p class="md:h5">Explore Today's Featured Picks!</p>
-        </div>
-        <FeaturedProducts products={featuredProducts} client:load />
-      </div>
-    </section>
-  )}
-
-  <CallToAction />
+      </section>
+    )}
+  </MaxWidthContainer>
 </Base>

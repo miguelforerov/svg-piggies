@@ -54,12 +54,12 @@ function SortFilterItem({ item }: { item: any }) {
 
   return (
     <li
-      className="flex text-sm text-text-dark hover:bg-dark/50 hover:text-white"
+      className="flex text-sm text-text-primary hover:bg-primary "
       key={item.title}
     >
       <DynamicTag
         href={href}
-        className={`w-full pl-4 py-2 ${active ? "bg-dark text-white" : ""}`}
+        className={`w-full pl-4 py-2 hover:text-text-white ${active ? "font-bold" : ""}`}
       >
         {item.title}
       </DynamicTag>

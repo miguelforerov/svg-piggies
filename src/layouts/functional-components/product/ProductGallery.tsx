@@ -209,7 +209,7 @@ const ProductGallery = ({ images }: ProductGalleryProps): JSX.Element => {
         {images.map((item, index) => (
           <div
             key={item.url}
-            className="aspect-[722/623] overflow-hidden rounded-md border border-border"
+            className="aspect-[1/1] overflow-hidden rounded-md"
           >
             <CustomZoomImage
               src={item.url}

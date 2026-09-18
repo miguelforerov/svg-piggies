@@ -6,6 +6,7 @@ import CallToAction from "@/layouts/partials/CallToAction.astro";
 import Base from "@/layouts/Base.astro";
 import { defaultSort, sorting } from "@/lib/constants";
 import { getCatalog } from "@/lib/catalog";
+import MaxWidthContainer from "@/layouts/shortcodes/MaxWidthContainer.astro";
 
 const searchParams = Astro.url.searchParams;
 const sortSlug = searchParams.get("sort") ?? "";
@@ -86,28 +87,19 @@ const maxPriceData = { amount: String(Math.ceil(highestPrice)), currencyCode: "U
 ---
 
 <Base title="Products | SVG Piggies">
-  {
-    catalogError && (
-      <div class="container pt-6">
-        <div class="rounded-md border border-red-300 bg-red-50 p-4 text-red-800">
-          The product catalog could not be loaded. Please try again later.
-        </div>
-      </div>
-    )
-  }
+  <MaxWidthContainer>
+    <div class="flex gap-8">
+      {
+        catalogError && (
+          <div class="container pt-6">
+            <div class="rounded-md border border-red-300 bg-red-50 p-4 text-red-800">
+              The product catalog could not be loaded. Please try again later.
+            </div>
+          </div>
+        )
+      }
 
-  <ProductLayouts
-    collections={collections}
-    productTypes={productTypes}
-    maxPriceData={maxPriceData}
-    collectionCounts={collectionCounts}
-    productTypeCounts={productTypeCounts}
-    client:only="react"
-  />
-
-  <div class="container">
-    <div class="row">
-      <div class="col-3 hidden lg:block -mt-14">
+      <div class="w-[20rem]">
         <ProductFilters
           collections={collections}
           productTypes={productTypes}
@@ -115,14 +107,32 @@ const maxPriceData = { amount: String(Math.ceil(highestPrice)), currencyCode: "U
           collectionCounts={collectionCounts}
           productTypeCounts={productTypeCounts}
           client:only="react"
-        />
+          />
       </div>
+      <div>
+        <ProductLayouts
+          collections={collections}
+          productTypes={productTypes}
+          maxPriceData={maxPriceData}
+          collectionCounts={collectionCounts}
+          productTypeCounts={productTypeCounts}
+          client:only="react"
+        />
 
-      <PaginatedProductLayoutViews
-        products={filteredProducts}
-        searchValue={searchValue}
-      />
-      <CallToAction />
+        <div class="container">
+          <div class="row">
+            <div class="col-3 hidden lg:block -mt-14">
+
+            </div>
+
+            <PaginatedProductLayoutViews
+              products={filteredProducts}
+              searchValue={searchValue}
+            />
+            <CallToAction />
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
+  </MaxWidthContainer>
 </Base>

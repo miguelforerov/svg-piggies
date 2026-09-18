@@ -6,6 +6,7 @@ import social from "@/config/social.json";
 import DynamicIcon from "@/layouts/components/helpers/DynamicIcon";
 import { markdownify } from "../../lib/utils/textConverter";
 const { copyright } = config.params;
+import MaxWidthContainer from "@/layouts/shortcodes/MaxWidthContainer.astro"
 
 export interface ISocial {
   name: string;
@@ -14,54 +15,19 @@ export interface ISocial {
 }
 ---
 
-<footer class="bg-light dark:bg-darkmode-light">
-  <div class="container">
-    <div
-      class="flex flex-col md:flex-row justify-between items-center py-10 md:pt-20 md:pb-14"
-    >
-      <Logo />
-
-      <ul class="flex gap-x-4 lg:gap-x-10 my-3">
-        {
-          menu.footer.map((menu) => (
-            <li class="footer-link">
-              <a href={menu.url}>{menu.name}</a>
-            </li>
-          ))
-        }
-      </ul>
-
-      {/* social share */}
-      <div class="flex flex-col items-center font-semibold text-primary">
-        <div>Follow Us</div>
-        <ul class="social-icons-list">
-          {
-            social?.main.map((social: ISocial) => (
-              <li>
-                <a
-                  class="social-icons social-icons-footer"
-                  aria-label={social.name}
-                  href={social.link}
-                  target="_blank"
-                  rel="noopener noreferrer nofollow"
-                >
-                  <span class="sr-only">{social.name}</span>
-                  <DynamicIcon className="inline-block h-6 w-6" icon={social.icon} />
-                </a>
-              </li>
-            ))
-          }
-        </ul>
-      </div>
-    </div>
-
-    <div class="border-t border-border py-5 dark:border-darkmode-border">
+<footer class="flex bg-light justify-center">
+  <MaxWidthContainer>
+    <div class="container">
       <div
-        class="flex flex-col md:flex-row gap-y-2 justify-between items-center text-text-light dark:text-darkmode-text-light"
+        class="flex flex-col md:flex-row justify-between items-center py-10 md:pt-20 md:pb-14"
       >
-        <ul class="flex gap-x-4">
+        <div class="w-[7rem] h-[7rem]">
+          <Logo />
+        </div>
+
+        <ul class="flex gap-x-4 lg:gap-x-10 my-3">
           {
-            menu.footerCopyright.map((menu) => (
+            menu.footer.map((menu) => (
               <li class="footer-link">
                 <a href={menu.url}>{menu.name}</a>
               </li>
@@ -69,13 +35,50 @@ export interface ISocial {
           }
         </ul>
 
-        <div class="flex">
-          <div class="text-sm text-text-gray font-light mr-1" set:html={markdownify(copyright)} />
-          <a href="https://zeon.studio" target="_blank" rel="noopener noreferrer nofollow" class="text-sm text-text-gray font-light">
-            Zen Studio
-          </a>
+        {/* social share */}
+        <div class="flex flex-col items-center text-primary gap-2">
+          <div class="text-md lg:text-lg font-bold">Follow Us</div>
+          <ul class="flex items-center gap-x-8 ">
+            {
+              social?.main.map((social: ISocial) => (
+                  <a
+                    class="flex justify-center items-center rounded-md hover:bg-primary hover:text-white duration-300 h-10 w-10"
+                    aria-label={social.name}
+                    href={social.link}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                  >
+                    <span class="sr-only">{social.name}</span>
+                    <DynamicIcon className="inline-block h-6 w-6" icon={social.icon} />
+                  </a>
+              ))
+            }
+          </ul>
+        </div>
+      </div>
+
+      <div class="py-5 border-t border-border">
+        <div
+          class="flex flex-col md:flex-row gap-y-2 justify-between items-center text-text-light dark:text-darkmode-text-light"
+        >
+          <ul class="flex gap-x-4">
+            {
+              menu.footerCopyright.map((menu) => (
+                <li class="footer-link">
+                  <a href={menu.url}>{menu.name}</a>
+                </li>
+              ))
+            }
+          </ul>
+
+          <div class="flex">
+            <div class="text-sm text-text-gray font-light mr-1" set:html={markdownify(copyright)} />
+            <a href="https://zeon.studio" target="_blank" rel="noopener noreferrer nofollow" class="text-sm text-text-gray font-light">
+              Zen Studio
+            </a>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </MaxWidthContainer>
 </footer>
