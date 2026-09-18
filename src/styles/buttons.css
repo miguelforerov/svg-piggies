@@ -1,0 +1,11 @@
+.btn {
+  @apply inline-block rounded-md border border-transparent px-5 py-2 font-semibold transition cursor-pointer;
+}
+
+.btn-primary {
+  @apply bg-primary text-white hover:bg-primary/80 dark:border-darkmode-primary dark:bg-white dark:text-text-dark text-center;
+}
+
+/* .btn-outline-primary {
+  @apply border-primary bg-transparent text-primary hover:bg-light hover:text-primary dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-text-dark;
+} */

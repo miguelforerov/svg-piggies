@@ -1,8 +1,8 @@
 @import "tailwindcss";
 /* @plugin "@tailwindcss/forms"; */
-@plugin "@tailwindcss/typography";
+/* @plugin "@tailwindcss/typography"; */
 @plugin 'tailwind-bootstrap-grid';
-@custom-variant dark (&:where(.dark, .dark *));
+/* @custom-variant dark (&:where(.dark, .dark *)); */
 
 /* Auto-generated theme from "theme.json"*/
 @import "./generated-theme.css";
@@ -15,7 +15,7 @@
 }
 
 @layer components {
-  @import "./components.css";
-  @import "./navigation.css";
+  /* @import "./components.css"; */
+  /* @import "./navigation.css"; */
   /* @import "./buttons.css"; */
 }

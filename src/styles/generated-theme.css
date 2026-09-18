@@ -7,14 +7,23 @@
 @theme {
   /* === Colors === */
   --color-primary: #FF7FB0;
-  --color-body: #fff;
-  --color-border: #FF9FC4;
+  --color-primary-light: #FFD3E3;
+  --color-primary-dark: #D94B87;
+  --color-body: #FFFFFF;
+  --color-border: #FFD3E3;
   --color-light: #FFF7FB;
+  --color-gray-light: #A9A9A9;
   --color-dark: #000;
-  --color-text: #2f2f2f;
-  --color-text-dark: #D94B87;
-  --color-text-light: #FF7FB0;
+  --color-white: #FFFFFF;
+  --color-text-base: #2F2F2F;
+  --color-text-primary: #FF7FB0;
+  --color-text-primary-light: #FF7FB0;
+  --color-text-primary-dark: #D94B87;
+  --color-text-dark: #efefef;
+  --color-text-light: #cfcfcf;
   --color-text-gray: #A9A9A9;
+  --color-text-green: #3CB043;
+  --color-text-white: #FFFFFF;
 
   /* === Darkmode Colors === */
   --color-darkmode-primary: #fff;

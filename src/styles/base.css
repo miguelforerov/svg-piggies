@@ -1,28 +1,33 @@
 html {
-  @apply text-base-sm md:text-base;
+  @apply text-text-base text-base-sm md:text-base;
 }
 
 body {
-  @apply bg-body text-base dark:bg-darkmode-body font-primary font-normal leading-relaxed text-text dark:text-darkmode-text;
+  @apply bg-body text-base font-primary font-normal leading-relaxed text-text-base;
+}
+
+/* container */
+a {
+  @apply text-primary hover:text-primary/80 ;
 }
 
 h1 {
-  @apply text-primary font-bold leading-tight dark:text-darkmode-text-dark;
+  @apply font-bold leading-tight;
 }
 h2 {
-  @apply text-primary font-bold leading-tight dark:text-darkmode-text-dark;
+  @apply font-bold leading-tight;
 }
 h3 {
-  @apply text-primary font-bold leading-tight dark:text-darkmode-text-dark;
+  @apply font-bold leading-tight;
 }
 h4 {
-  @apply text-primary font-bold leading-tight dark:text-darkmode-text-dark;
+  @apply font-bold leading-tight;
 }
 h5 {
-  @apply text-primary font-bold leading-tight dark:text-darkmode-text-dark;
+  @apply font-bold leading-tight;
 }
 h6 {
-  @apply font-primary font-bold leading-tight dark:text-darkmode-text-dark;
+  @apply font-bold leading-tight;
 }
 
 h1,
