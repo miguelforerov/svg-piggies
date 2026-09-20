@@ -1,11 +1,18 @@
 ---
 interface Props {
   className?: string;
+  gap?: string;
 }
 
-const { className } = Astro.props;
+const { className, gap = "gap-16" } = Astro.props;
 ---
 
-<div class:list={`flex flex-col max-w-[82rem] px-4 lg:px-8 items-center gap-16 my-4 w-full ${className}`}>
+<div
+  class:list={[
+    "flex flex-col max-w-[82rem] px-4 lg:px-8 items-center my-4 w-full",
+    gap,
+    className,
+  ]}
+>
   <slot />
 </div>
