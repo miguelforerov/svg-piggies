@@ -23,7 +23,7 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
                 width={312}
                 height={269}
                 alt={product.title}
-                className="h-[150px] w-full rounded-md border border-border object-cover transition duration-300 group-hover:scale-105 md:h-[269px]"
+                className="h-[150px] w-full rounded-md border border-border-main object-cover transition duration-300 group-hover:scale-105 md:h-[269px]"
               />
             </div>
 

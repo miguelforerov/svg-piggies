@@ -45,7 +45,7 @@ const ProductGrid = ({
               key={product.id}
               className="relative group items-center flex flex-col"
             >
-              <div className="overflow-hidden relative md:w-[20rem] md:h-[20rem] group-hover:border-border group-hover:border rounded-md">
+              <div className="overflow-hidden relative md:w-[20rem] md:h-[20rem] group-hover:border-border-main group-hover:border rounded-md">
                 <img
                   src={
                     image?.url ||

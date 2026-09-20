@@ -40,7 +40,7 @@ const ProductList = ({ initialProducts, searchValue }: ProductListProps) => {
                     width={312}
                     height={269}
                     alt={product.title}
-                    className="h-[150px] w-[312px] rounded-md border border-border object-cover md:h-[269px]"
+                    className="h-[150px] w-[312px] rounded-md border border-border-main object-cover md:h-[269px]"
                   />
                 </div>
 
@@ -50,14 +50,14 @@ const ProductList = ({ initialProducts, searchValue }: ProductListProps) => {
                   </h2>
 
                   <div className="mt-2 flex items-center gap-x-2">
-                    <span className="text-xs font-bold text-text-light md:text-lg">
+                    <span className="text-xs font-bold text-text-gray md:text-lg">
                       ${product.price.toFixed(2)} USD
                     </span>
                     {/* TODO(catalog): show the regular price crossed out once
                         sale/compare-at pricing exists in our Product domain. */}
                   </div>
 
-                  <p className="my-4 line-clamp-1 text-text-light max-md:text-xs md:mb-8 md:line-clamp-3">
+                  <p className="my-4 line-clamp-1 text-text-gray max-md:text-xs md:mb-8 md:line-clamp-3">
                     {product.description}
                   </p>
                   <AddToCart

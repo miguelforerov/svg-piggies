@@ -2,49 +2,30 @@
   "colors": {
     "default": {
       "theme_color": {
-        "primary": "#FF7FB0",
-        "primary-light": "#FFD3E3",
-        "primary-dark": "#D94B87",
         "body": "#FFFFFF",
-        "border": "#FFD3E3",
-        "light": "#FFF7FB",
-        "gray-light": "#A9A9A9",
-        "dark": "#000",
+        "primary": "#FF7FB0",
+        "primary-dark": "#D94B87",
+        "primary-light": "#FFD3E3",
+        "background-main": "#FFF7F9",
+        "border-main": "#FFD3E3",
         "white": "#FFFFFF"
       },
       "text_color": {
         "text-base": "#2F2F2F",
         "text-primary": "#FF7FB0",
-        "text-primary-light": "#FF7FB0",
-        "text-primary-dark": "#D94B87",
-        "text-dark": "#efefef",
-        "text-light": "#cfcfcf",
-        "text-gray": "#A9A9A9",
+        "text-gray": "#6D6D6D",
+        "text-gray-light": "#ABABAB",
         "text-green": "#3CB043",
         "text-white": "#FFFFFF"
-      }
-    },
-    "darkmode": {
-      "theme_color": {
-        "primary": "#fff",
-        "body": "#252525",
-        "border": "#3E3E3E",
-        "light": "#222222",
-        "dark": "#000"
-      },
-      "text_color": {
-        "text": "#DDD",
-        "text-dark": "#fff",
-        "text-light": "#DDD"
       }
     }
   },
   "fonts": {
     "font_family": {
-      "primary": "Karla:wght@400;500;700",
+      "primary": "Open Sans",
       "primary_type": "sans-serif",
-      "secondary": "",
-      "secondary_type": ""
+      "secondary": "Dancing Script",
+      "secondary_type": "cursive"
     },
     "font_size": {
       "base": "16",

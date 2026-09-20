@@ -37,15 +37,15 @@ if (currentLabel && parts.length > 1) {
     {
       parts.map(({ label, ...attrs }, index) => (
         <li class="mx-1 capitalize" role="listitem">
-          {index > 0 && <span class="inlin-block mr-1">/</span>}
+          {index > 0 && <span class="inlin-block mr-1 text-text-gray-light">/</span>}
           {index !== parts.length - 1 ? (
-            <a class="text-text-gray hover:text-text-gray/80" {...attrs}>
+            <a class="text-text-gray-light hover:text-text-gray-light/80" {...attrs}>
               {label}
             </a>
           ) : (
             <span
               aria-current="page"
-              class="text-text-gray"
+              class="text-text-gray-light"
             >
               {label}
             </span>

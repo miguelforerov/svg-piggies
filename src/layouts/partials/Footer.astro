@@ -15,7 +15,7 @@ export interface ISocial {
 }
 ---
 
-<footer class="flex bg-light justify-center">
+<footer class="flex bg-background-main justify-center">
   <MaxWidthContainer>
     <div class="container">
       <div
@@ -28,7 +28,7 @@ export interface ISocial {
         <ul class="flex gap-x-4 lg:gap-x-10 my-3">
           {
             menu.footer.map((menu) => (
-              <li class="footer-link">
+              <li class="text-text-primary hover:text-text-primary/80 font-semibold">
                 <a href={menu.url}>{menu.name}</a>
               </li>
             ))
@@ -36,35 +36,41 @@ export interface ISocial {
         </ul>
 
         {/* social share */}
-        <div class="flex flex-col items-center text-primary gap-2">
-          <div class="text-md lg:text-lg font-bold">Follow Us</div>
+        <div class="flex flex-col items-center gap-2">
+          <div class="text-md lg:text-lg font-bold text-text-primary">Follow Us</div>
           <ul class="flex items-center gap-x-8 ">
             {
               social?.main.map((social: ISocial) => (
+                <li>
                   <a
-                    class="flex justify-center items-center rounded-md hover:bg-primary hover:text-white duration-300 h-10 w-10"
+                    class="flex text-primary justify-center items-center rounded-md hover:bg-primary hover:text-white duration-300 h-10 w-10"
                     aria-label={social.name}
                     href={social.link}
                     target="_blank"
                     rel="noopener noreferrer nofollow"
                   >
-                    <span class="sr-only">{social.name}</span>
-                    <DynamicIcon className="inline-block h-6 w-6" icon={social.icon} />
+                    <DynamicIcon
+                      aria-hidden="true"
+                      focusable="false"
+                      className="inline-block h-6 w-6"
+                      icon={social.icon}
+                    />
                   </a>
+                </li>
               ))
             }
           </ul>
         </div>
       </div>
 
-      <div class="py-5 border-t border-border">
+      <div class="py-5 border-t border-border-main">
         <div
-          class="flex flex-col md:flex-row gap-y-2 justify-between items-center text-text-light dark:text-darkmode-text-light"
+          class="flex flex-col md:flex-row gap-y-2 justify-between items-center text-text-primary"
         >
           <ul class="flex gap-x-4">
             {
               menu.footerCopyright.map((menu) => (
-                <li class="footer-link">
+                <li class="">
                   <a href={menu.url}>{menu.name}</a>
                 </li>
               ))
@@ -72,8 +78,8 @@ export interface ISocial {
           </ul>
 
           <div class="flex">
-            <div class="text-sm text-text-gray font-light mr-1" set:html={markdownify(copyright)} />
-            <a href="https://zeon.studio" target="_blank" rel="noopener noreferrer nofollow" class="text-sm text-text-gray font-light">
+            <div class="text-sm text-text-gray-light font-light mr-1" set:html={markdownify(copyright)} />
+            <a href="https://zeon.studio" target="_blank" rel="noopener noreferrer nofollow" class="text-sm text-text-gray-light font-light">
               Zen Studio
             </a>
           </div>

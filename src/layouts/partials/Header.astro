@@ -72,7 +72,7 @@ const isParentActive = (children: any[]) => {
           </div>
 
           <div
-            class="fixed top-0 left-0 h-full bg-white dark:bg-darkmode-body overflow-y-auto w-full md:w-96 p-9 sidebar transform -translate-x-full transition-transform"
+            class="fixed top-0 left-0 h-full bg-white overflow-y-auto w-full md:w-96 p-9 sidebar transform -translate-x-full transition-transform"
           >
             <div class="flex justify-between items-center mb-14">
               <Logo />
@@ -98,7 +98,7 @@ const isParentActive = (children: any[]) => {
                       <>
                         <button
                           class:list={[
-                            "nav-link w-full flex justify-between items-center",
+                            "w-full flex justify-between items-center",
                             "py-2 px-3",
                             isParentActive(menuItem.children) &&
                               "text-primary font-medium",
@@ -122,7 +122,7 @@ const isParentActive = (children: any[]) => {
                           </svg>
                         </button>
 
-                        <ul class="submenu hidden pl-4 mt-2 space-y-2 bg-white dark:bg-dark rounded-md shadow py-4">
+                        <ul class="submenu hidden pl-4 mt-2 space-y-2 bg-white rounded-md shadow py-4">
                           {menuItem.children.map((child) => (
                             <li>
                               <a
@@ -203,7 +203,7 @@ const isParentActive = (children: any[]) => {
           {/* Mobile menu toggle button */}
           <label
             for="nav-toggle-mobile"
-            class="cursor-pointer flex items-center text-text-dark dark:text-white border border-border dark:border-border/40 p-1 rounded-md"
+            class="cursor-pointer flex items-center text-text-primary border border-border-main p-1 rounded-md"
           >
             <button id="nav-toggle-mobile" class="focus:outline-none">
               <svg class="h-5 fill-current block menu-open" viewBox="0 0 20 20">
@@ -225,7 +225,7 @@ const isParentActive = (children: any[]) => {
           >
           </div>
           <div
-            class="fixed top-0 left-0 h-full bg-white dark:bg-darkmode-body overflow-y-auto w-full md:w-96 p-9 sidebar-mobile transform -translate-x-full transition-transform"
+            class="fixed top-0 left-0 h-full bg-white overflow-y-auto w-full md:w-96 p-9 sidebar-mobile transform -translate-x-full transition-transform"
           >
             {/* Same navigation list as desktop but for mobile */}
             <div class="flex justify-between items-center mb-14">
@@ -275,7 +275,7 @@ const isParentActive = (children: any[]) => {
                             />
                           </svg>
                         </button>
-                        <ul class="submenu hidden pl-4 mt-2 space-y-2 bg-white dark:bg-dark rounded-md shadow py-4">
+                        <ul class="submenu hidden pl-4 mt-2 space-y-2 bg-white rounded-md shadow py-4">
                           {menuItem.children.map((child) => (
                             <li>
                               <a

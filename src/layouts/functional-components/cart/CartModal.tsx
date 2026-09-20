@@ -66,7 +66,7 @@ const CartModal: React.FC = () => {
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex h-full flex-col border-l border-neutral-200 bg-body p-6 text-black drop-shadow-lg dark:border-neutral-700 dark:bg-darkmode-body dark:text-white">
+        <div className="flex h-full flex-col border-l border-neutral-200 bg-body p-6 text-black drop-shadow-lg">
           
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -77,7 +77,7 @@ const CartModal: React.FC = () => {
             </button>
           </div>
 
-          <div className="absolute left-0 top-16 h-px w-full bg-dark dark:bg-light" />
+          <div className="absolute left-0 top-16 h-px w-full bg-dark" />
 
           {/* Empty cart */}
           {currentCart.length === 0 ? (
@@ -102,7 +102,7 @@ const CartModal: React.FC = () => {
                   {currentCart.map((item) => (
                     <li
                       key={item.variantId}
-                      className="flex w-full flex-col border-b border-neutral-300 dark:border-neutral-700"
+                      className="flex w-full flex-col border-b border-neutral-300"
                     >
                       <div className="flex w-full flex-row justify-between px-1 py-4">
 
@@ -185,25 +185,25 @@ const CartModal: React.FC = () => {
 
                 {/* Summary */}
                 <div className="py-4 text-sm text-neutral-500 dark:text-neutral-400">
-                  <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1 dark:border-neutral-700">
+                  <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1">
                     <p>Subtotal</p>
 
-                    <p className="text-right text-base text-black dark:text-white">
+                    <p className="text-right text-base text-black ">
                       {formatPrice(total)}
                     </p>
                   </div>
 
-                  {/* <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1 pt-1 dark:border-neutral-700">
+                  {/* <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1 pt-1">
                     <p>Shipping</p>
                     <p className="text-right">
                       Calculated at checkout
                     </p>
                   </div> */}
 
-                  <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1 pt-1 dark:border-neutral-700">
+                  <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1 pt-1">
                     <p>Total</p>
 
-                    <p className="text-right text-base text-black dark:text-white">
+                    <p className="text-right text-base text-black ">
                       {formatPrice(total)}
                     </p>
                   </div>
@@ -212,7 +212,7 @@ const CartModal: React.FC = () => {
                 {/* Checkout */}
                 <button
                   type="button"
-                  className="block w-full rounded-md bg-primary  p-3 text-center text-sm font-medium text-white opacity-100 hover:opacity-90 dark:bg-light dark:text-text-dark"
+                  className="block w-full rounded-md bg-primary  p-3 text-center text-sm font-medium text-white opacity-100 hover:opacity-90"
                   onClick={() => {
                     console.log("Checkout:", currentCart);
                   }}

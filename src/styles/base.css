@@ -60,11 +60,6 @@ h6,
   @apply text-h6;
 }
 
-b,
-strong {
-  @apply font-semibold;
-}
-
 code {
   @apply after:border-none;
 }
