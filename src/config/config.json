@@ -1,7 +1,7 @@
 {
   "site": {
     "title": "SVG Piggies",
-    "base_url": "https://storeplate.vercel.app/",
+    "base_url": "https://svgpiggies.com/",
     "base_path": "/",
     "trailing_slash": false,
     "favicon": "/images/favicon.png",
