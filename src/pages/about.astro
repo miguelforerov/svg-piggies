@@ -1,0 +1,104 @@
+---
+import Base from "@/layouts/Base.astro";
+import { Content } from "@/data/about.md";
+import MaxWidthContainer from "@/layouts/shortcodes/MaxWidthContainer.astro";
+
+const features = [
+  {
+    image: "/icons/Handmade.png",
+    title: "100% Handmade",
+    description: "Real People. Real Creativity No AI.",
+  },
+  {
+    image: "/icons/HighQuality.png",
+    title: "Hight Quality Designs",
+    description: "Clean, well crafted and ready for your projects.",
+  },
+  {
+    image: "/icons/MadeForCrafters.png",
+    title: "Made for Crafters",
+    description: "Because we know how special it is to create something unique.",
+  },
+];
+
+
+const sales = [
+  {
+    image: "/icons/StarSeller.png",
+    title: "Etsy Star Seller",
+    description: "Proud to be recognized as an Etsy Star Seller, trusted by our crafting community.",
+  },
+  {
+    image: "/icons/HighSales.png",
+    title: "6,000+ Etsy Sales",
+    description: "Over 6,000 sales on Etsy and thousands of creative projects brought to life.",
+  },
+];
+
+---
+
+<Base title="About | SVG Piggies">
+  <MaxWidthContainer gap="gap-4">
+    <div class="flex items-center gap-[1rem]">
+      <div class="bg-primary h-[1px] w-[124px]"></div>
+      <div class="text-2xl font-bold">ABOUT US</div>
+      <div class="bg-primary h-[1px] w-[124px]"></div>
+    </div>
+    <div class="text-[4rem] font-bold">Handmade Designs</div>
+    <div class="relative font-secondary text-text-primary text-[4rem] -mt-12">width love</div>
+    <div class="flex flex-col lg:flex-row rounded-[32px] p-[2rem] lg:p-[4rem] bg-background-main gap-6">
+      <div class="flex flex-col lg:w-1/2 justify-center text-[24px] font-semibold">
+        <p>
+          We are a small creative team that loves to design unique and fun products
+          for DIY projects and special moments.
+          <br /><br />
+          All our designs are <b>Handmade by us</b>, with care and attention to details.
+          We do not use AI. Every design is created with real passion and a personal touch.
+        </p>
+      </div>
+      <div class="hidden lg:flex self-stretch w-[3px] bg-primary" />
+      <div class="flex flex-col lg:w-1/2 gap-[2rem]">
+        {
+          features.map(({ image, title, description }) => (
+            <div class="flex flex-col lg:flex-row items-center lg:items-start gap-[2rem]">
+              <div class="block flex-none">
+                <img
+                  src={image}
+                  width={96}
+                  height={96}
+                  alt={title}
+                  class="w-[6rem] h-[6rem]"
+                />
+              </div>
+              <div class="flex flex-col">
+                <p class="font-bold text-[2rem] text-center lg:text-left">{title}</p>
+                <p class="font-light text-[1.5rem] text-center lg:text-left">{description}</p>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+    <div class="flex flex-col lg:flex-row w-full rounded-[32px] p-8 gap-[4rem]">
+      {
+        sales.map(({ image, title, description }) => (
+          <div class="flex flex-col items-center gap-[2rem]">
+            <div class="block flex-none">
+              <img
+                src={image}
+                width={96}
+                height={96}
+                alt={title}
+                class="w-[6rem] h-[6rem]"
+              />
+            </div>
+            <div class="flex flex-col items-center gap-[1rem]">
+              <p class="font-bold text-[2rem] text-center">{title}</p>
+              <p class="font-light text-[1.5rem] text-center">{description}</p>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </MaxWidthContainer>
+</Base>
