@@ -32,8 +32,8 @@ const isParentActive = (children: any[]) => {
     "[padding,box-shadow] duration-300 ease-in-out",
   ]}
 >
-  <MaxWidthContainer>
-    <div class="grid grid-cols-2 lg:grid-cols-4 items-center w-full">
+  <MaxWidthContainer gap="gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-4 items-center w-full">
       <div class="flex items-center gap-4">
         <div class="flex">
           <logo
@@ -184,7 +184,7 @@ const isParentActive = (children: any[]) => {
         </div>
       </div>
 
-      <div class="hidden lg:flex col-span-2 w-full">
+      <div class="hidden sm:flex col-span-2 w-full">
         {settings.search && <SearchBar client:load />}
       </div>
 
@@ -314,7 +314,7 @@ const isParentActive = (children: any[]) => {
         </div>
       </div>
     </div>
-    <div class="flex lg:hidden col-span-2 w-full">
+    <div class="flex sm:hidden col-span-2 w-full">
       {settings.search && <SearchBar client:load />}
     </div>
   </MaxWidthContainer>
