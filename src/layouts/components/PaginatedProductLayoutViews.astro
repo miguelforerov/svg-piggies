@@ -10,7 +10,7 @@ interface Props {
   pageSize?: number;
 }
 
-const { products, searchValue, pageSize = 9 } = Astro.props;
+const { products, searchValue, pageSize = 12 } = Astro.props;
 const requestedPage = Number.parseInt(Astro.url.searchParams.get("page") ?? "1", 10);
 const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
 const currentPage = Math.min(
@@ -25,7 +25,6 @@ const paginatedProducts = products.slice(pageStart, pageStart + pageSize);
   <ProductLayoutViews
     initialProducts={paginatedProducts}
     searchValue={searchValue}
-    className="w-full"
     client:load
   />
 

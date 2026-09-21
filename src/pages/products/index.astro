@@ -88,7 +88,7 @@ const maxPriceData = { amount: String(Math.ceil(highestPrice)), currencyCode: "U
 
 <Base title="Products | SVG Piggies">
   <MaxWidthContainer>
-    <div class="flex gap-8">
+    <div class="flex w-full gap-8">
       {
         catalogError && (
           <div class="container pt-6">
@@ -99,7 +99,7 @@ const maxPriceData = { amount: String(Math.ceil(highestPrice)), currencyCode: "U
         )
       }
 
-      <div class="w-[20rem]">
+      <div class="hidden shrink-0 lg:flex">
         <ProductFilters
           collections={collections}
           productTypes={productTypes}
@@ -109,7 +109,7 @@ const maxPriceData = { amount: String(Math.ceil(highestPrice)), currencyCode: "U
           client:only="react"
           />
       </div>
-      <div>
+      <div class="w-full">
         <ProductLayouts
           collections={collections}
           productTypes={productTypes}
@@ -119,19 +119,10 @@ const maxPriceData = { amount: String(Math.ceil(highestPrice)), currencyCode: "U
           client:only="react"
         />
 
-        <div class="container">
-          <div class="row">
-            <div class="col-3 hidden lg:block -mt-14">
-
-            </div>
-
-            <PaginatedProductLayoutViews
-              products={filteredProducts}
-              searchValue={searchValue}
-            />
-            <CallToAction />
-          </div>
-        </div>
+        <PaginatedProductLayoutViews
+          products={filteredProducts}
+          searchValue={searchValue}
+        />
       </div>
     </div>
   </MaxWidthContainer>

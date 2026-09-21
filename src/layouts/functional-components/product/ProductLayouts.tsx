@@ -88,12 +88,11 @@ const ProductLayouts = ({
     <section className="pt-4">
       <div className="container">
         <div className="row">
-          <div className="col-3 max-lg:hidden" />
+          <div className="col-3 lg:hidden" />
 
-          <div className="">
             <div className="flex justify-between items-center mb-4">
 
-              <div className="flex gap-x-8">
+              <div className="flex justify-between lg:justify-end gap-x-8 w-full items-center w-full">
                 <div className="filter-button-container block lg:hidden mt-1">
                   <button onClick={() => setExpanded(!isExpanded)}>
                     {isExpanded ? (
@@ -116,7 +115,6 @@ const ProductLayouts = ({
                     <DropdownMenu list={sorting} />
                   </Suspense>
                 </div>
-              </div>
             </div>
           </div>
 

@@ -13,7 +13,7 @@ interface ProductLayoutViewsProps {
 const ProductLayoutViews = ({
   initialProducts,
   searchValue,
-  className = "col-12 lg:col-9",
+  className = "w-full",
 }: ProductLayoutViewsProps) => {
   const layout = useStore(layoutView);
 

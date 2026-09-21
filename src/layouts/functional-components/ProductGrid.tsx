@@ -36,32 +36,32 @@ const ProductGrid = ({
         </div>
       )}
 
-      <div className="grid flex sm:grid-cols-2 md:grid-cols-3 gap-8">
+      <div className="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8">
         {initialProducts.map((product) => {
           const image = product.images[0];
 
           return (
             <div
               key={product.id}
-              className="relative group items-center flex flex-col"
+              className="group relative flex w-full flex-col items-center"
             >
-              <div className="overflow-hidden relative md:w-[20rem] md:h-[20rem] group-hover:border-border-main group-hover:border rounded-md">
+              <div className="relative flex items-center aspect-square overflow-hidden max-w-[20rem] h-auto group-hover:border-border-main group-hover:border rounded-md">
                 <img
                   src={
                     image?.url ||
-                    "/images/Listing_1_SVG_Piggies_16oz_Christmas_4_Candy_Canes.jpg"
+                    "/images/product-placeholder.jpg"
                   }
                   width={320}
                   height={320}
                   alt={product.title}
-                  className="mx-auto rounded-md object-cover md:w-[20rem] md:h-[20rem] group-hover:scale-110 transition duration-300"
+                  className="rounded-md group-hover:scale-110 transition duration-300"
                 />
               </div>
 
               <div className="z-10 py-2 text-center md:py-4">
-                <h2 className="text-base font-medium md:text-xl">
+                <h2 className="font-medium text-base lg:text-xl">
                   <a
-                    className="after:absolute after:inset-0 text-primary"
+                    className="after:absolute after:inset-0 text-text-primary group-hover:text-text-primary/80"
                     href={`/products/${product.slug}`}
                   >
                     {product.title}
@@ -69,7 +69,7 @@ const ProductGrid = ({
                 </h2>
 
                 <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 md:mt-4">
-                  <span className="text-base font-bold text-primary md:text-xl">
+                  <span className="font-bold text-text-primary md:text-xl group-hover:text-text-primary/80">
                     {currencySymbol} {product.price.toFixed(2)}
                   </span>
                 </div>

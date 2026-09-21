@@ -44,7 +44,7 @@ const ProductFilters = ({
   };
 
   return (
-    <div>
+    <div className="w-full">
       <div>
         <h5 className="mb-2 lg:text-xl">Select Price Range</h5>
         <hr className="border-border-main" />
@@ -62,7 +62,7 @@ const ProductFilters = ({
               <li key={collection.id}>
                 <button
                   type="button"
-                  className={`flex w-full cursor-pointer items-center justify-between ${
+                  className={`flex w-full cursor-pointer items-center justify-between gap-4 ${
                     selectedCollection === collection.slug
                       ? "font-semibold text-text-primary"
                       : "text-text-gray"
