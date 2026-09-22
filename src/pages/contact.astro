@@ -38,37 +38,38 @@ const { contact_form_action: contactFormAction } = config.params;
         >
           <div class="grid gap-6 sm:grid-cols-2">
             <div class="flex flex-col gap-y-2">
-              <Label htmlFor="first-name">
-                First Name <span aria-hidden="true">*</span>
+              <Label htmlFor="first-name" className="text-lg">
+                First Name <span aria-hidden="true" class="text-xs text-red-500">*</span>
               </Label>
               <Input
                 id="first-name"
                 name="firstName"
                 type="text"
                 autoComplete="given-name"
-                placeholder="Your first name"
+                placeholder="First name"
+                className="text-[16px] md:text-[18px]"
                 required
               />
             </div>
 
             <div class="flex flex-col gap-y-2">
-              <Label htmlFor="last-name">
-                Last Name <span aria-hidden="true">*</span>
+              <Label htmlFor="last-name" className="text-lg">
+                Last Name
               </Label>
               <Input
                 id="last-name"
                 name="lastName"
                 type="text"
                 autoComplete="family-name"
-                placeholder="Your last name"
-                required
+                placeholder="Last name"
+                className="text-[16px] md:text-[18px]"
               />
             </div>
           </div>
 
           <div class="flex flex-col gap-y-2">
-            <Label htmlFor="email">
-              Email <span aria-hidden="true">*</span>
+            <Label htmlFor="email" className="text-lg">
+              Email <span aria-hidden="true" class="text-xs text-red-500">*</span>
             </Label>
             <Input
               id="email"
@@ -76,27 +77,29 @@ const { contact_form_action: contactFormAction } = config.params;
               type="email"
               autoComplete="email"
               inputMode="email"
-              placeholder="you@example.com"
+              placeholder="Email"
+              className="text-[16px] md:text-[18px]"
               required
             />
           </div>
 
           <div class="flex flex-col gap-y-2">
-            <Label htmlFor="message">
-              Message <span aria-hidden="true">*</span>
+            <Label htmlFor="message" className="text-lg">
+              Message <span aria-hidden="true" class="text-xs text-red-500">*</span>
             </Label>
             <Textarea
               id="message"
               name="message"
-              rows={7}
+              rows={8}
               minLength={10}
               placeholder="How can we help you?"
+              className="text-[16px] md:text-[18px]"
               required
             />
           </div>
 
-          <div class="flex justify-end">
-            <Button>Send</Button>
+          <div class="flex justify-center">
+            <Button className="!px-10">Send</Button>
           </div>
         </form>
       </div>
