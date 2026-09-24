@@ -1,12 +1,11 @@
 html {
-  @apply text-text-base text-base-sm md:text-base;
+  @apply text-text-base;
 }
 
 body {
   @apply bg-body text-base font-primary font-normal leading-relaxed text-text-base;
 }
 
-/* container */
 a {
   @apply text-primary hover:text-primary/80 ;
 }
@@ -58,16 +57,4 @@ h5,
 h6,
 .h6 {
   @apply text-h6;
-}
-
-code {
-  @apply after:border-none;
-}
-
-blockquote > p {
-  @apply my-0!;
-}
-
-button {
-  @apply cursor-pointer;
 }
