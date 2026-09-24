@@ -14,13 +14,6 @@ export interface CartItem {
 
 export const $cart = atom<CartItem[]>([]);
 
-// Atom to manage the layout view state (card or list)
-export const layoutView = atom<"card" | "list">("card");
-
-// Function to set a new layout view
-export function setLayoutView(view: "card" | "list") {
-  layoutView.set(view);
-}
 export const $cartCount = computed($cart, (items) =>
   items.reduce((total, item) => total + item.quantity, 0),
 );

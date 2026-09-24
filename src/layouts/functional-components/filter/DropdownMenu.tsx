@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import type { ListItem } from "../product/ProductLayouts";
+import type { ListItem } from "../../../components/product/ShortBy";
 import { FilterDropdownItem } from "./FilterDropdownItem";
 
 

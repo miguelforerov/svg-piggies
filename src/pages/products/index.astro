@@ -1,12 +1,9 @@
 ---
-import ProductFilters from "@/layouts/functional-components/ProductFilters";
-import ProductLayouts from "@/layouts/functional-components/product/ProductLayouts";
-import PaginatedProductLayoutViews from "@/layouts/components/PaginatedProductLayoutViews.astro";
-import CallToAction from "@/layouts/partials/CallToAction.astro";
-import Base from "@/layouts/Base.astro";
+import PaginatedProductGrid from "@/components/product/PaginatedProductGrid.astro";
+import Base from "@/components/layout/Base.astro";
 import { defaultSort, sorting } from "@/lib/constants";
 import { getCatalog } from "@/lib/catalog";
-import MaxWidthContainer from "@/layouts/shortcodes/MaxWidthContainer.astro";
+import MaxWidthContainer from "@/components/layout/MaxWidthContainer.astro";
 
 const searchParams = Astro.url.searchParams;
 const sortSlug = searchParams.get("sort") ?? "";
@@ -88,7 +85,7 @@ const maxPriceData = { amount: String(Math.ceil(highestPrice)), currencyCode: "U
 
 <Base title="Products | SVG Piggies">
   <MaxWidthContainer>
-    <div class="flex w-full gap-8">
+    <div class="w-full">
       {
         catalogError && (
           <div class="container pt-6">
@@ -98,32 +95,18 @@ const maxPriceData = { amount: String(Math.ceil(highestPrice)), currencyCode: "U
           </div>
         )
       }
-
-      <div class="hidden shrink-0 lg:flex">
-        <ProductFilters
-          collections={collections}
-          productTypes={productTypes}
-          maxPriceData={maxPriceData}
-          collectionCounts={collectionCounts}
-          productTypeCounts={productTypeCounts}
-          client:only="react"
-          />
-      </div>
-      <div class="w-full">
-        <ProductLayouts
-          collections={collections}
-          productTypes={productTypes}
-          maxPriceData={maxPriceData}
-          collectionCounts={collectionCounts}
-          productTypeCounts={productTypeCounts}
-          client:only="react"
-        />
-
-        <PaginatedProductLayoutViews
-          products={filteredProducts}
-          searchValue={searchValue}
-        />
-      </div>
+      <PaginatedProductGrid
+        products={filteredProducts}
+        searchValue={searchValue}
+        shortBy={true}
+        filters={{
+          collections,
+          productTypes,
+          maxPriceData,
+          collectionCounts,
+          productTypeCounts,
+        }}
+      />
     </div>
   </MaxWidthContainer>
 </Base>

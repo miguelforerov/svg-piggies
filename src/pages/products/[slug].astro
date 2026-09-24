@@ -1,10 +1,10 @@
 ---
-import Base from "@/layouts/Base.astro";
-import Breadcrumbs from "@/layouts/components/Breadcrumbs.astro";
-import { AddToCart } from "@/layouts/functional-components/cart/AddToCart";
-import ProductGallery from "@/layouts/functional-components/product/ProductGallery";
-import SocialShare from "@/layouts/functional-components/SocialShare";
-import MaxWidthContainer from "@/layouts/shortcodes/MaxWidthContainer.astro";
+import Base from "@/components/layout/Base.astro";
+import Breadcrumbs from "@/components/store-ui/Breadcrumbs.astro";
+import { AddToCart } from "@/components/cart/AddToCart";
+import ProductGallery from "@/components/product/ProductGallery";
+import SocialShare from "@/components/store-ui/SocialShare";
+import MaxWidthContainer from "@/components/layout/MaxWidthContainer.astro";
 import { getProductBySlug } from "@/lib/catalog";
 
 export const prerender = false;

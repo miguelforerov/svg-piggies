@@ -1,0 +1,70 @@
+---
+import menu from "@/config/menu.json";
+import social from "@/config/social.json";
+import DynamicIcon from "@/layouts/components/helpers/DynamicIcon";
+import MaxWidthContainer from "@/components/layout/MaxWidthContainer.astro"
+
+export interface ISocial {
+  name: string;
+  icon: string;
+  link: string;
+}
+---
+
+<footer class="flex bg-background-main justify-center">
+  <MaxWidthContainer>
+    <div class="flex flex-row w-full justify-between items-center py-10">
+      <a href="/" class="flex w-[7rem] h-[7rem] shrink-0">
+        <img src="/images/logo.png" alt="SVG Piggies" class="w-full h-full object-contain" />
+      </a>
+
+      <div class="flex flex-col items-center justify-center md:flex-row flex-auto">
+        <ul class="flex flex-col gap-y-4 mb-4 md:mb-0 text-center md:w-1/2">
+          {
+            menu.footerLinks.map((menu) => (
+              <li class="text-text-primary hover:text-text-primary/80 font-semibold">
+                <a href={menu.url}>{menu.name}</a>
+              </li>
+            ))
+          }
+        </ul>
+        
+        <ul class="flex flex-col gap-y-4 text-center md:w-1/2">
+          {
+            menu.footerTerms.map((menu) => (
+              <li class="text-text-primary hover:text-text-primary/80 font-semibold">
+                <a href={menu.url}>{menu.name}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <div class="flex flex-col items-center gap-2">
+        <div class="text-md lg:text-lg font-bold text-text-primary">Follow Us</div>
+        <ul class="flex items-center gap-x-8 ">
+          {
+            social?.main.map((social: ISocial) => (
+              <li>
+                <a
+                  class="flex text-primary justify-center items-center rounded-md hover:bg-primary hover:text-white duration-300 h-10 w-10"
+                  aria-label={social.name}
+                  href={social.link}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                >
+                  <DynamicIcon
+                    aria-hidden="true"
+                    focusable="false"
+                    className="inline-block h-6 w-6"
+                    icon={social.icon}
+                  />
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+  </MaxWidthContainer>
+</footer>

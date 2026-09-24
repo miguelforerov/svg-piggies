@@ -1,13 +1,10 @@
 ---
-import Base from "@/layouts/Base.astro";
-import config from "@/config/config.json";
-import Button from "@/layouts/shortcodes/Button";
-import { Input } from "@/layouts/shortcodes/Input";
-import { Textarea } from "@/layouts/shortcodes/Textarea";
-import { Label } from "@/components/ui/label";
-import MaxWidthContainer from "@/layouts/shortcodes/MaxWidthContainer.astro";
+import Base from "@/components/layout/Base.astro";
+import Button from "@/components/store-ui/Button";
+import { Input } from "@/components/store-ui/Input";
+import { Textarea } from "@/components/store-ui/Textarea";
+import MaxWidthContainer from "@/components/layout/MaxWidthContainer.astro";
 
-const { contact_form_action: contactFormAction } = config.params;
 ---
 
 <Base title="Get In Touch | SVG Piggies">
@@ -31,16 +28,15 @@ const { contact_form_action: contactFormAction } = config.params;
         </div>
 
         <form
-          action={contactFormAction}
           method="POST"
           aria-describedby="contact-description"
           class="flex flex-col gap-y-6 w-full"
         >
           <div class="grid gap-6 sm:grid-cols-2">
             <div class="flex flex-col gap-y-2">
-              <Label htmlFor="first-name" className="text-lg">
+              <label for="first-name" class="flex items-center gap-2 text-lg leading-none font-medium select-none">
                 First Name <span aria-hidden="true" class="text-xs text-red-500">*</span>
-              </Label>
+              </label>
               <Input
                 id="first-name"
                 name="firstName"
@@ -53,9 +49,9 @@ const { contact_form_action: contactFormAction } = config.params;
             </div>
 
             <div class="flex flex-col gap-y-2">
-              <Label htmlFor="last-name" className="text-lg">
+              <label for="last-name" class="flex items-center gap-2 text-lg leading-none font-medium select-none">
                 Last Name
-              </Label>
+              </label>
               <Input
                 id="last-name"
                 name="lastName"
@@ -68,9 +64,9 @@ const { contact_form_action: contactFormAction } = config.params;
           </div>
 
           <div class="flex flex-col gap-y-2">
-            <Label htmlFor="email" className="text-lg">
+            <label for="email" class="flex items-center gap-2 text-lg leading-none font-medium select-none">
               Email <span aria-hidden="true" class="text-xs text-red-500">*</span>
-            </Label>
+            </label>
             <Input
               id="email"
               name="email"
@@ -84,9 +80,9 @@ const { contact_form_action: contactFormAction } = config.params;
           </div>
 
           <div class="flex flex-col gap-y-2">
-            <Label htmlFor="message" className="text-lg">
+            <label for="message" class="flex items-center gap-2 text-lg leading-none font-medium select-none">
               Message <span aria-hidden="true" class="text-xs text-red-500">*</span>
-            </Label>
+            </label>
             <Textarea
               id="message"
               name="message"

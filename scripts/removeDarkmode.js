@@ -19,7 +19,7 @@ const path = require("path");
 
   const filePaths = [
     {
-      filePath: "src/layouts/partials/Header.astro",
+      filePath: "src/components/layout/Header.astro",
       patterns: [
         "<ThemeSwitchers*(?:\\s+[^>]+)?\\s*(?:\\/\\>|>([\\s\\S]*?)<\\/ThemeSwitchers*>)",
       ],

@@ -1,0 +1,87 @@
+---
+import type { Product } from "@/types/product";
+import type { Collection } from "@/types/collection";
+import type { ProductType } from "@/types/product-type";
+import Pagination from "@/components/store-ui/Pagination.astro";
+import ProductFilters from "@/components/product/ProductFilters";
+import ProductGrid from "@/components/product/ProductGrid";
+import MaxWidthContainer from "@/components/layout/MaxWidthContainer.astro";
+import ShortBy from "@/components/product/ShortBy";
+import { TbFilter, TbFilterX } from "react-icons/tb";
+
+type ProductCount = { id: string; productCount: number };
+
+interface Props {
+  products: Product[];
+  searchValue?: string | null;
+  pageSize?: number;
+  shortBy?: boolean;
+  filters?: {
+    collections: Collection[];
+    productTypes: ProductType[];
+    maxPriceData: { amount: string; currencyCode: string };
+    collectionCounts: ProductCount[];
+    productTypeCounts: ProductCount[];
+  };
+}
+
+const { products, searchValue, pageSize = 12, shortBy, filters } = Astro.props;
+const requestedPage = Number.parseInt(Astro.url.searchParams.get("page") ?? "1", 10);
+const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
+const currentPage = Math.min(
+  Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1,
+  totalPages,
+);
+const pageStart = (currentPage - 1) * pageSize;
+const paginatedProducts = products.slice(pageStart, pageStart + pageSize);
+---
+
+<MaxWidthContainer>
+  <div>
+    <div class="flex w-full flex-col gap-8 lg:flex-row">
+      {filters && (
+        <div class="w-full lg:w-64 lg:shrink-0">
+          <div class="flex items-center justify-between lg:hidden">
+            <button
+              id="catalog-filters-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="catalog-filters-panel"
+              class="group flex cursor-pointer items-center gap-2 font-medium"
+            >
+              Filters
+              <TbFilter className="group-aria-expanded:hidden" aria-hidden="true" />
+              <TbFilterX className="hidden group-aria-expanded:block" aria-hidden="true" />
+            </button>
+            <ShortBy client:only="react" />
+          </div>
+          <aside>
+            <ProductFilters
+              {...filters}
+              toggleId="catalog-filters-toggle"
+              panelId="catalog-filters-panel"
+              client:only="react"
+            />
+          </aside>
+        </div>
+      )}
+      <div class="flex flex-col min-w-0 flex-1 gap-8">
+        {shortBy && (<div class="hidden lg:block">
+          <ShortBy
+            client:only="react"
+          />
+        </div>)}
+        <ProductGrid
+          initialProducts={paginatedProducts}
+          searchValue={searchValue}
+        />
+  
+        <div class="my-10">
+          <Pagination currentPage={currentPage} totalPages={totalPages} />
+        </div>
+      </div>
+
+    </div>
+    
+  </div>
+</MaxWidthContainer>
