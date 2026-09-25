@@ -32,14 +32,16 @@
       "url": "/contact"
     }
   ],
-  "footerLinks": [
-    {
-      "name": "About",
-      "url": "/about"
-    },
+  "footerProducts": [
     {
       "name": "Products",
       "url": "/products"
+    }
+  ],
+  "footerInfo": [
+    {
+      "name": "About",
+      "url": "/about"
     },
     {
       "name": "Contact",
