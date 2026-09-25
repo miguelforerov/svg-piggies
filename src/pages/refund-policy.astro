@@ -1,0 +1,16 @@
+---
+import Base from "@/components/store/layout/Base.astro";
+import InfoPageHeader from "@/components/store/ui/InfoPageHeader.astro";
+import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro";
+import refundMarkdown from "@/data/refund-policy.md?raw";
+import { marked } from "marked";
+
+const refundHtml = await marked.parse(refundMarkdown);
+---
+
+<Base title="Refund Policy | SVG Piggies">
+  <MaxWidthContainer narrow>
+    <InfoPageHeader label="refund policy" />
+    <article class="markdown-content w-full max-w-[62rem]" set:html={refundHtml} />
+  </MaxWidthContainer>
+</Base>
