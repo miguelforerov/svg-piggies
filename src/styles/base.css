@@ -58,3 +58,24 @@ h6,
 .h6 {
   @apply text-h6;
 }
+
+.markdown-content h1 {
+  @apply mb-6;
+}
+
+.markdown-content h2 {
+  @apply mt-8 mb-4;
+}
+
+.markdown-content p,
+.markdown-content ul {
+  @apply mb-4;
+}
+
+.markdown-content ul {
+  @apply list-disc pl-6;
+}
+
+.markdown-content li + li {
+  @apply mt-2;
+}
