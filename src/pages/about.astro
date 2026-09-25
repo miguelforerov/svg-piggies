@@ -1,5 +1,6 @@
 ---
 import Base from "@/components/store/layout/Base.astro";
+import InfoPageHeader from "@/components/store/ui/InfoPageHeader.astro";
 import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro";
 
 const features = [
@@ -38,11 +39,7 @@ const sales = [
 
 <Base title="About | SVG Piggies">
   <MaxWidthContainer gap="gap-4">
-    <div class="flex items-center gap-[1rem]">
-      <div class="bg-primary h-[1px] w-[124px]"></div>
-      <div class="text-2xl font-bold">ABOUT US</div>
-      <div class="bg-primary h-[1px] w-[124px]"></div>
-    </div>
+    <InfoPageHeader label="about us" />
     <div class="text-[4rem] font-bold">Handmade Designs</div>
     <div class="relative font-secondary text-text-primary text-[4rem] -mt-12">width love</div>
     <div class="flex flex-col lg:flex-row rounded-[32px] p-[2rem] lg:p-[4rem] bg-background-main gap-6">
