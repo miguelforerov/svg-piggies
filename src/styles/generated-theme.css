@@ -27,16 +27,16 @@
   /* === Font Sizes === */
   --text-base: 16px;
   --text-base-sm: 12.8px;
-  --text-h6: 1.2rem;
-  --text-h6-sm: 1.08rem;
-  --text-h5: 1.44rem;
-  --text-h5-sm: 1.296rem;
-  --text-h4: 1.728rem;
-  --text-h4-sm: 1.5552rem;
-  --text-h3: 2.0736rem;
-  --text-h3-sm: 1.86624rem;
-  --text-h2: 2.48832rem;
-  --text-h2-sm: 2.239488rem;
-  --text-h1: 2.9859839999999997rem;
-  --text-h1-sm: 2.6873856rem;
+  --text-h6: 1.12rem;
+  --text-h6-sm: 1.0080000000000002rem;
+  --text-h5: 1.2544000000000002rem;
+  --text-h5-sm: 1.1289600000000002rem;
+  --text-h4: 1.4049280000000004rem;
+  --text-h4-sm: 1.2644352000000003rem;
+  --text-h3: 1.5735193600000006rem;
+  --text-h3-sm: 1.4161674240000006rem;
+  --text-h2: 1.7623416832000007rem;
+  --text-h2-sm: 1.5861075148800008rem;
+  --text-h1: 1.973822685184001rem;
+  --text-h1-sm: 1.776440416665601rem;
 }
