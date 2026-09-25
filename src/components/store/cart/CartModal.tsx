@@ -9,11 +9,11 @@ import {
   updateQuantity,
 } from "@/cartStore";
 
-import CloseCart from "../../layouts/functional-components/cart/CloseCart";
+import CloseCart from "../../../layouts/functional-components/cart/CloseCart";
 import AddIcon from "./AddIcon";
-import DeleteIcon from "../store-ui/DeleteIcon";
-import OpenCart from "../../layouts/functional-components/cart/OpenCart";
-import RemoveIcon from "../../layouts/functional-components/cart/RemoveIcon";
+import DeleteIcon from "../ui/DeleteIcon";
+import OpenCart from "../../../layouts/functional-components/cart/OpenCart";
+import RemoveIcon from "../../../layouts/functional-components/cart/RemoveIcon";
 
 const CartModal: React.FC = () => {
   const currentCart = useStore($cart);

@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { LoaderCircle } from "lucide-react"
-import Button from "@/components/store-ui/Button"
+import Button from "@/components/store/ui/Button"
 
 interface AddToCartProps {
   productId: string

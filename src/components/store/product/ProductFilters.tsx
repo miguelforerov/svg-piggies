@@ -2,7 +2,7 @@ import type { Collection } from "@/types/collection";
 import type { ProductType } from "@/types/product-type";
 import { useEffect, useState } from "react";
 import { BsCheckLg } from "react-icons/bs";
-import RangeSlider from "../rangeSlider/RangeSlider";
+import RangeSlider from "../../rangeSlider/RangeSlider";
 
 type ProductCount = { id: string; productCount: number };
 

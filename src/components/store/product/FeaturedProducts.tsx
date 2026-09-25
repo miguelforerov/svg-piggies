@@ -1,5 +1,5 @@
 import type { Product } from "@/types/product";
-import SkeletonFeaturedProducts from "../../layouts/functional-components/loadings/skeleton/SkeletonFeaturedProducts";
+import SkeletonFeaturedProducts from "../../../layouts/functional-components/loadings/skeleton/SkeletonFeaturedProducts";
 
 interface FeaturedProductsProps {
   products: Product[];

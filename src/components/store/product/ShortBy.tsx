@@ -1,6 +1,6 @@
 import { type SortFilterItem, sorting } from "@/lib/constants";
 import { Suspense } from "react";
-import DropdownMenu from "../../layouts/functional-components/filter/DropdownMenu";
+import DropdownMenu from "../../../layouts/functional-components/filter/DropdownMenu";
 
 export type ListItem = SortFilterItem | PathFilterItem;
 export type PathFilterItem = { title: string; path: string };

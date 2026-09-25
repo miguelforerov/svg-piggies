@@ -1,11 +1,11 @@
 ---
-import Base from "@/components/layout/Base.astro";
-import CollectionsSlider from "@/components/product/CollectionsSlider";
-import FeaturedProducts from "@/components/product/FeaturedProducts";
-import HeroSlider from "@/components/product/HeroSlider";
-import PaginatedProductGrid from "@/components/product/PaginatedProductGrid.astro";
+import Base from "@/components/store/layout/Base.astro";
+import CollectionsSlider from "@/components/store/product/CollectionsSlider";
+import FeaturedProducts from "@/components/store/product/FeaturedProducts";
+import HeroSlider from "@/components/store/product/HeroSlider";
+import PaginatedProductGrid from "@/components/store/product/PaginatedProductGrid.astro";
 import { getCatalog } from "@/lib/catalog";
-import MaxWidthContainer from "@/components/layout/MaxWidthContainer.astro";
+import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro";
 
 let catalogError = false;
 let catalog = { products: [], collections: [], productTypes: [] } as Awaited<

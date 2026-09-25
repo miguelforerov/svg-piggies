@@ -1,4 +1,4 @@
-import { Avatar } from "@/components/store-ui/Avatar";
+import { Avatar } from "@/components/store/ui/Avatar";
 
 export default function NavUser() {
   return (

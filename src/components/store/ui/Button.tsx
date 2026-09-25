@@ -15,7 +15,7 @@ const Button = ({
   return (
     <button
       type={type}
-      className={`inline-block rounded-md bg-primary w-full sm:w-auto px-5 py-2 font-semibold text-white transition-colors duration-300 hover:bg-primary/80 hover:no-underline disabled:cursor-not-allowed disabled:opacity-50 ${className ?? ""}`}
+      className={`inline-block rounded-md bg-primary w-full sm:w-auto px-5 py-2 font-semibold text-white cursor-pointer transition-colors duration-300 hover:bg-primary/80 hover:no-underline disabled:cursor-not-allowed disabled:opacity-50 ${className ?? ""}`}
       {...props}
     >
       {children}

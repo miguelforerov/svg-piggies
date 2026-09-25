@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { FaXmark } from "react-icons/fa6";
 import { removeItemFromCart, refreshCartState } from "@/cartStore";
-import LoadingDots from "../../layouts/functional-components/loadings/LoadingDots";
+import LoadingDots from "../../../layouts/functional-components/loadings/LoadingDots";
 
 interface SubmitButtonProps {
   onClick: () => void;

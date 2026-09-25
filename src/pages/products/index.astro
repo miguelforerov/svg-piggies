@@ -1,9 +1,9 @@
 ---
-import PaginatedProductGrid from "@/components/product/PaginatedProductGrid.astro";
-import Base from "@/components/layout/Base.astro";
+import PaginatedProductGrid from "@/components/store/product/PaginatedProductGrid.astro";
+import Base from "@/components/store/layout/Base.astro";
 import { defaultSort, sorting } from "@/lib/constants";
 import { getCatalog } from "@/lib/catalog";
-import MaxWidthContainer from "@/components/layout/MaxWidthContainer.astro";
+import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro";
 
 const searchParams = Astro.url.searchParams;
 const sortSlug = searchParams.get("sort") ?? "";

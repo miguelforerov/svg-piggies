@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Search, X } from "lucide-react"
-import { Input } from "@/components/store-ui/Input"
+import { Input } from "@/components/store/ui/Input"
 
 interface SearchInputProps
   extends Omit<

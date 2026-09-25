@@ -9,7 +9,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
-import SkeletonCategory from "../../layouts/functional-components/loadings/skeleton/SkeletonCategory";
+import SkeletonCategory from "../../../layouts/functional-components/loadings/skeleton/SkeletonCategory";
 
 export interface CollectionSlide extends Collection {
   productCount: number;

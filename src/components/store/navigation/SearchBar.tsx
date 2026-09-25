@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import SearchInput from "../../components/navigation/SearchInput"
+import SearchInput from "@/components/store/navigation/SearchInput"
 
 const SearchBar = () => {
   const [defaultValue, setDefaultValue] = useState("")
