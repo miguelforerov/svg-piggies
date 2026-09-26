@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createUrl } from "@/lib/utils";
+import { CATALOG_CHANGE_EVENT } from "@/lib/catalog-navigation";
 
 function PathFilterItem({ item }: { item: any }) {
   const [pathname, setPathname] = useState("");
@@ -34,8 +35,17 @@ function SortFilterItem({ item }: { item: any }) {
   const [searchParams, setSearchParams] = useState(new URLSearchParams());
 
   useEffect(() => {
-    setPathname(window.location.pathname);
-    setSearchParams(new URLSearchParams(window.location.search));
+    const syncLocation = () => {
+      setPathname(window.location.pathname);
+      setSearchParams(new URLSearchParams(window.location.search));
+    };
+    syncLocation();
+    window.addEventListener(CATALOG_CHANGE_EVENT, syncLocation);
+    window.addEventListener("popstate", syncLocation);
+    return () => {
+      window.removeEventListener(CATALOG_CHANGE_EVENT, syncLocation);
+      window.removeEventListener("popstate", syncLocation);
+    };
   }, []);
 
   // const q = searchParams.get("q");

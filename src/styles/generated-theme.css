@@ -7,12 +7,15 @@
 @theme {
   /* === Colors === */
   --color-body: #FFFFFF;
+  --color-white: #FFFFFF;
   --color-primary: #FF7FB0;
   --color-primary-dark: #D94B87;
   --color-primary-light: #FFD3E3;
+  --color-gray: #6D6D6D;
+  --color-gray-light: #ABABAB;
   --color-background-main: #FFF7F9;
   --color-border-main: #FFD3E3;
-  --color-white: #FFFFFF;
+  --color-border-primary: #FF7FB0;
   --color-text-base: #2F2F2F;
   --color-text-primary: #FF7FB0;
   --color-text-gray: #6D6D6D;

@@ -3,12 +3,15 @@
     "default": {
       "theme_color": {
         "body": "#FFFFFF",
+        "white": "#FFFFFF",
         "primary": "#FF7FB0",
         "primary-dark": "#D94B87",
         "primary-light": "#FFD3E3",
+        "gray": "#6D6D6D",
+        "gray-light": "#ABABAB",
         "background-main": "#FFF7F9",
         "border-main": "#FFD3E3",
-        "white": "#FFFFFF"
+        "border-primary": "#FF7FB0"
       },
       "text_color": {
         "text-base": "#2F2F2F",

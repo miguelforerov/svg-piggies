@@ -1,9 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import { CATALOG_CHANGE_EVENT, navigateCatalog } from "@/lib/catalog-navigation";
 import "./rangeSlider.css";
-
-function createUrl(path: string, params: URLSearchParams) {
-  return `${path}?${params.toString()}`;
-}
 
 const RangeSlider = ({
   maxPriceData,
@@ -27,15 +24,21 @@ const RangeSlider = ({
   const maxThumbRef = useRef<HTMLDivElement>(null);
   const rangeLineRef = useRef<HTMLDivElement>(null);
 
-  const searchParams = new URLSearchParams(window.location.search);
-  const getMinPrice = searchParams.get("minPrice");
-  const getMaxPrice = searchParams.get("maxPrice");
-
-  // Initialize from URL
   useEffect(() => {
-    setMinValue(parseInt(getMinPrice || "0"));
-    setMaxValue(parseInt(getMaxPrice || maxPriceData?.amount));
-  }, [maxPriceData]);
+    const syncPrice = () => {
+      const params = new URLSearchParams(window.location.search);
+      setMinValue(Number(params.get("minPrice") ?? 0));
+      setMaxValue(Number(params.get("maxPrice") ?? maxAmount));
+    };
+
+    syncPrice();
+    window.addEventListener("popstate", syncPrice);
+    window.addEventListener(CATALOG_CHANGE_EVENT, syncPrice);
+    return () => {
+      window.removeEventListener("popstate", syncPrice);
+      window.removeEventListener(CATALOG_CHANGE_EVENT, syncPrice);
+    };
+  }, [maxAmount]);
 
   useEffect(() => {
     updateRangeBar();
@@ -70,6 +73,8 @@ const RangeSlider = ({
     const rangeWidth = rangeRect.width;
     const initialMinVal = minValue;
     const initialMaxVal = maxValue;
+    let nextMinValue = initialMinVal;
+    let nextMaxValue = initialMaxVal;
 
     const handleMouseMove = (e: MouseEvent) => {
       const dx = e.clientX - startX;
@@ -81,6 +86,7 @@ const RangeSlider = ({
           0,
           Math.min(maxValue - 1, Math.round((newPercent * maxAmount) / 100))
         );
+        nextMinValue = newValue;
         setMinValue(newValue);
       } else {
         const newPercent = (initialMaxVal / maxAmount) * 100 + dPercent;
@@ -88,6 +94,7 @@ const RangeSlider = ({
           minValue + 1,
           Math.min(maxAmount, Math.round((newPercent * maxAmount) / 100))
         );
+        nextMaxValue = newValue;
         setMaxValue(newValue);
       }
     };
@@ -95,6 +102,7 @@ const RangeSlider = ({
     const handleMouseUp = () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
+      priceChange(nextMinValue, nextMaxValue);
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -102,19 +110,20 @@ const RangeSlider = ({
   };
 
   function priceChange(min: number, max: number) {
-    const searchParams = new URLSearchParams(window.location.search);
-    searchParams.set("minPrice", min.toString());
-    searchParams.set("maxPrice", max.toString());
-    searchParams.delete("page");
+    const params = new URLSearchParams(window.location.search);
+    const appliedMin = Number(params.get("minPrice") ?? 0);
+    const appliedMax = Number(params.get("maxPrice") ?? maxAmount);
+    if (min === appliedMin && max === appliedMax) return;
 
-    const newUrl = createUrl("/products", searchParams);
-    window.location.href = newUrl;
+    if (min === 0) params.delete("minPrice");
+    else params.set("minPrice", String(min));
+    if (max === maxAmount) params.delete("maxPrice");
+    else params.set("maxPrice", String(max));
+    params.delete("page");
+
+    const query = params.toString();
+    navigateCatalog(query ? `/products?${query}` : "/products");
   }
-
-  const appliedMinPrice = getMinPrice ? parseInt(getMinPrice) : 0;
-  const appliedMaxPrice = getMaxPrice ? parseInt(getMaxPrice) : maxAmount;
-  const showSubmitButton =
-    minValue !== appliedMinPrice || maxValue !== appliedMaxPrice;
 
   return (
     <div className="range-slider-container">
@@ -130,7 +139,7 @@ const RangeSlider = ({
       </div>
 
       <div className="range-slider" ref={rangeRef}>
-        <div className="slider-track"></div>
+        <div className="slider-track !bg-primary-light"></div>
         <div className="slider-range" ref={rangeLineRef}></div>
         <div
           className="slider-thumb thumb-min"
@@ -143,15 +152,6 @@ const RangeSlider = ({
           onMouseDown={handleMouseDown("max")}
         ></div>
       </div>
-
-      {showSubmitButton && (
-        <button
-          className="btn btn-sm btn-primary w-full mb-4"
-          onClick={() => priceChange(minValue, maxValue)}
-        >
-          Submit
-        </button>
-      )}
     </div>
   );
 };
