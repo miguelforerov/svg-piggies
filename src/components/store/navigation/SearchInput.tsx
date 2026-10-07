@@ -1,6 +1,16 @@
 import * as React from "react"
-import { Search, X } from "lucide-react"
-import { Input } from "@/components/store/ui/Input"
+import { Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import Close from "@/components/store/icons/Close"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group"
+import { ButtonGroup } from "@/components/ui/button-group"
+
 
 interface SearchInputProps
   extends Omit<
@@ -28,7 +38,6 @@ const SearchInput = ({
 
   const handleClear = () => {
     setValue("")
-    onSearch?.("")
   }
 
   const handleSubmit = (
@@ -43,35 +52,29 @@ const SearchInput = ({
       onSubmit={handleSubmit}
       className="relative w-full"
     >
-      <Input
-        {...props}
-        type="text"
-        value={value}
-        onChange={handleChange}
-        placeholder={placeholder}
-        
-      />
-
-      <div className="absolute inset-y-0 right-2 flex items-center gap-1">
+      <InputGroup className="gap-0 flex">
+        <InputGroupInput
+          {...props}
+          type="text"
+          value={value}
+          onChange={handleChange}
+          placeholder={placeholder}
+          className={`${className ?? ""}`}
+        />
         {value && (
-          <button
-            type="button"
+          <InputGroupAddon
             onClick={handleClear}
-            className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            aria-label="Clear search"
+            align="inline-end"
+            className="pr-1"
           >
-            <X className="size-4" />
-          </button>
+            <Button variant="ghost" className=""><Close /></Button>
+          </InputGroupAddon>
         )}
-
-        <button
-          type="submit"
-          className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          aria-label="Search"
-        >
-          <Search className="size-4" />
-        </button>
-      </div>
+        <InputGroupAddon  align="inline-end" className="pr-1">
+          <Button variant="ghost" className=""><Search /></Button>
+          {/* <Button variant="outline" className="m-1">Search</Button> */}
+        </InputGroupAddon>
+      </InputGroup>
     </form>
   )
 }
