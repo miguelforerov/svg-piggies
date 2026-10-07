@@ -1,19 +1,17 @@
-{
-  "main": [
-    {
-      "name": "pinterest",
-      "icon": "FaPinterest",
-      "link": "https://www.pinterest.com/svgpiggies/"
-    },
-    {
-      "name": "instagram",
-      "icon": "FaInstagram",
-      "link": "https://www.instagram.com/svgpiggies/"
-    },
-    {
-      "name": "facebook",
-      "icon": "FaFacebook",
-      "link": "https://www.facebook.com/svgpiggies/"
-    }
-  ]
-}
+[
+  {
+    "name": "pinterest",
+    "icon": "FaPinterest",
+    "link": "https://www.pinterest.com/svgpiggies/"
+  },
+  {
+    "name": "instagram",
+    "icon": "FaInstagram",
+    "link": "https://www.instagram.com/svgpiggies/"
+  },
+  {
+    "name": "facebook",
+    "icon": "FaFacebook",
+    "link": "https://www.facebook.com/svgpiggies/"
+  }
+]
