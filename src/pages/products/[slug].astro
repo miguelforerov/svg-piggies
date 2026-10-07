@@ -1,11 +1,21 @@
 ---
 import Base from "@/components/store/layout/Base.astro";
-import Breadcrumbs from "@/components/store/ui/Breadcrumbs.astro";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { AddToCart } from "@/components/store/cart/AddToCart";
-import ProductGallery from "@/components/store/product/ProductGallery";
+import ProductGalery from "@/components/store/product/ProductGallery";
 import SocialShare from "@/components/store/ui/SocialShare";
 import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro";
 import { getProductBySlug } from "@/lib/catalog";
+import ProductFeature from "@/components/store/ui/ProductFeature.astro";
+import FileType from "@/components/store/ui/FileType.astro";
+import Price from "@/components/store/product/Price"
 
 export const prerender = false;
 
@@ -40,25 +50,25 @@ const galleryImages = product
       }))
     : [
         {
-          url: "/images/Listing_1_SVG_Piggies_16oz_Christmas_4_Candy_Canes.jpg",
+          url: "/images/product-placeholder.jpg",
           altText: product.title,
           width: 800,
           height: 800,
         },
         {
-          url: "/images/Listing_2_SVG_Piggies_16oz_Christmas_4_Candy_Canes.jpg",
+          url: "/images/product-placeholder.jpg",
           altText: product.title,
           width: 800,
           height: 800,
         },
         {
-          url: "/images/Listing_3_SVG_Piggies_16oz_Christmas_4_Candy_Canes.png",
+          url: "/images/product-placeholder.jpg",
           altText: product.title,
           width: 800,
           height: 800,
         },
         {
-          url: "/images/Listing_4_SVG_Piggies_16oz_Christmas_4_Candy_Canes.jpg",
+          url: "/images/product-placeholder.jpg",
           altText: product.title,
           width: 800,
           height: 800,
@@ -94,60 +104,69 @@ const galleryImages = product
       </section>
     ) : (
       <MaxWidthContainer>
-        <div class="container pt-6">
-          <Breadcrumbs currentLabel={product.title} />
+        <div class="w-full">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/proxducts">Products</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{product.title}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </div>
 
-        <section class="md:section-sm">
-          <div class="container">
-            <div class="row justify-center">
-              <div class="col-10 md:col-8 lg:col-6">
-                <ProductGallery client:only="react" images={galleryImages} />
+        <div class="flex w-full flex-col md:flex-row gap-8">
+
+          <ProductGalery client:only="react" images={galleryImages} />
+
+          <div class="flex flex-col md:max-w-[17.5rem] lg:max-w-[25rem] gap-6">
+            <div class="flex flex-col gap-6">
+              <div class="text-heading-2">
+                {product.title}
               </div>
+              <div class="flex gap-2 md:gap-3 xl:gap-4 items-center">
+                {/* TODO Change OriginalAmmount */}
+                <Price amount={product.price.toFixed(2)} originalAmount={product.price.toFixed(2)} />
 
-              <div class="col-10 py-6 md:col-8 md:ml-7 lg:col-5 lg:py-0">
-                <h1 class="mb-2 text-3xl md:h2 md:mb-6">{product.title}</h1>
-
-                <div class="flex flex-col gap-2">
-                  <div class="text-text-gray text-xl line-through">
-                    ${product.price.toFixed(2)}
-                  </div>
-                  <div class="text-text-green text-3xl font-bold">
-                    ${product.price.toFixed(2)}
-                  </div>
-                  {/* TODO(catalog): render sale/compare-at price when supported. */}
-                </div>
-
-                {/* TODO(catalog): render variants when supported by Product. */}
-                <div class="mt-4 mb-6 flex gap-4">
-                  <AddToCart
-                    client:only="react"
-                    productId={product.id}
-                  />
-                </div>
-
-                <hr class="my-6 border border-border-main" />
-
-                <div class="mb-6 flex items-center gap-3">
-                  <h5 class="max-md:text-base">Share:</h5>
-                  <SocialShare
-                    client:load
-                    title={product.title}
-                    imageUrl={galleryImages[0]?.url}
-                  />
-                </div>
-                {product.description && (
-                  <section>
-                      <h5 class="mb-6">Description</h5>
-                    <div class="">
-                      <p class="whitespace-pre-wrap">{product.description}</p>
-                    </div>
-                  </section>
-                )}
               </div>
+              <AddToCart
+                client:only="react"
+                productId={product.id}
+              />
+              <div class="flex flex-col gap-2">
+                <ProductFeature
+                  type="DigitalDownload"
+                />
+                <ProductFeature
+                  type="Supplies"
+                />
+              </div>
+              <FileType svg png dxf pdf />
+            <hr class="border border-border" />
+              <SocialShare
+                client:load
+                title={product.title}
+                imageUrl={galleryImages[0]?.url}
+              />
             </div>
+
+            {product.description && (
+              <div class="flex flex-col gap-2">
+                <div class="font-bold">Description</div>
+                <div>
+                  <p class="whitespace-pre-wrap">{product.description}</p>
+                </div>
+              </div>
+            )}
           </div>
-        </section>
+        </div>
       </MaxWidthContainer>
     )
   }
