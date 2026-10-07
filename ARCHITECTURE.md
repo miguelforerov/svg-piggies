@@ -6,12 +6,12 @@ instructions.
 
 ## Goal
 
-Build a storefront for private digital products using StorePlate, a Go backend,
+Build a storefront for private digital products using Astro and shadcn/ui, a Go backend,
 Cloudflare, Neon, and Stripe.
 
 ## Runtime architecture
 
-- StorePlate frontend: customer-facing storefront built with Astro, Tailwind,
+- Astro frontend: customer-facing storefront built with shadcn/ui, Tailwind,
   and TypeScript.
 - Go backend deployed with Cloudflare Workers: API and server-side logic for
   checkout orchestration, authentication, Stripe webhooks, entitlement checks,

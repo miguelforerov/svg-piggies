@@ -1,6 +1,6 @@
 # SVG Piggies
 
-Digital-product storefront built with StorePlate, a Go backend on Cloudflare
+Digital-product storefront built with Astro and shadcn/ui, a Go backend on Cloudflare
 Workers, Neon PostgreSQL, Cloudflare R2, and Stripe.
 
 ## Development setup
