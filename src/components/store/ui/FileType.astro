@@ -1,0 +1,16 @@
+---
+import { fileFormats, type FileFormatsType } from "@/types/store";
+import { Badge } from "@/components/ui/badge"
+
+type Props = Partial<Record<FileFormatsType, boolean>>;
+
+const selectedFormats = (Object.keys(fileFormats) as FileFormatsType[])
+  .filter((format) => Astro.props[format])
+  .map((format) => fileFormats[format]);
+---
+<div class="flex flex-col gap-2">
+  <span class="text-sm font-medium">File Type</span>
+  <div class="flex flex-wrap gap-2 text-secondary">
+    {selectedFormats.map((format) => <Badge variant="secondary">{format}</Badge>)}
+  </div>
+</div>

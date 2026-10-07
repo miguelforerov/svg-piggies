@@ -1,0 +1,17 @@
+---
+import { productFeatures, type ProductFeatureType } from "@/types/store";
+
+interface Props {
+  type: ProductFeatureType;
+}
+
+const { type } = Astro.props;
+const { Icon, label } = productFeatures[type];
+---
+
+<div class="flex items-center gap-2 text-foreground">
+  <span class="size-6 shrink-0">
+    <Icon className="size-full" />
+  </span>
+  <span>{label}</span>
+</div>
