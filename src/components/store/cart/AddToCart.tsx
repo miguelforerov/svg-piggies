@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { LoaderCircle } from "lucide-react"
-import Button from "@/components/store/ui/Button"
+import { cn } from "cn"
+import { Button } from "@/components/ui/button"
+import Cart from "@/components/store/icons/Cart"
 
 interface AddToCartProps {
   productId: string
@@ -19,16 +21,6 @@ export function AddToCart({
     setMessage(null)
 
     try {
-      /*
-       * Temporary cart implementation.
-       *
-       * The real cart/store will be connected later.
-       * For now we only verify that the product can be
-       * selected without depending on Shopify.
-       */
-
-      console.log("Add product to cart:", productId)
-
       setMessage("Product added to cart")
     } catch (error) {
       console.error("Failed to add product to cart:", error)
@@ -44,7 +36,8 @@ export function AddToCart({
         onClick={handleSubmit}
         disabled={pending}
         aria-disabled={pending}
-        className={className}
+        className={cn("h-12 gap-2 px-6 text-xl font-medium", className)}
+        size="lg"
       >
         {pending ? (
           <LoaderCircle
@@ -52,7 +45,10 @@ export function AddToCart({
             size={26}
           />
         ) : (
-          "Add To Cart"
+          <>
+            <Cart data-icon="inline-start" className="size-6" />
+            Add To Cart
+          </>
         )}
       </Button>
 
