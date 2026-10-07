@@ -1,6 +1,10 @@
 import { useState, type ReactNode } from "react";
 import { FaFacebookF, FaPinterestP, FaWhatsapp } from "react-icons/fa";
 import { FiCheck, FiCopy } from "react-icons/fi";
+import { Button } from "@/components/ui/button";
+
+const shareActionClassName =
+  "flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-300 text-primary hover:bg-primary hover:text-white";
 
 interface SocialShareProps {
   title: string;
@@ -14,14 +18,13 @@ interface ShareLinkProps {
   children: ReactNode;
 }
 
-const ShareLink = ({ href, ariaLabel, children }: ShareLinkProps) => (
+const Link = ({ href, ariaLabel, children }: ShareLinkProps) => (
   <a
     href={href}
     target="_blank"
     rel="noopener noreferrer"
     aria-label={ariaLabel}
-    // className="social-icons"
-    className="flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-300 text-primary hover:bg-primary hover:text-white"
+    className={shareActionClassName}
   >
     {children}
   </a>
@@ -46,13 +49,8 @@ const SocialShare = ({ title, url, imageUrl }: SocialShareProps) => {
       )
     : "";
 
-  // Pinterest
   const pinterestUrl = `https://www.pinterest.com/pin/create/button/?url=${encodedUrl}&media=${encodedImageUrl}&description=${encodedTitle}`;
-
-  // Facebook
   const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
-
-  // WhatsApp
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
     `${title} ${shareUrl}`,
   )}`;
@@ -71,41 +69,38 @@ const SocialShare = ({ title, url, imageUrl }: SocialShareProps) => {
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-4">
+      <div className="text-sm font-medium text-primary">Share</div>
 
-      {/* Pinterest */}
-      <ShareLink
+      <Link
         href={pinterestUrl}
         ariaLabel={`Share ${title} on Pinterest`}
       >
         <FaPinterestP size={16} />
-      </ShareLink>
+      </Link>
 
-      {/* Facebook */}
-      <ShareLink
+      <Link
         href={facebookUrl}
         ariaLabel={`Share ${title} on Facebook`}
       >
-        <FaFacebookF size={15} />
-      </ShareLink>
+        <FaFacebookF size={16} />
+      </Link>
 
-      {/* WhatsApp */}
-      <ShareLink
+      <Link
         href={whatsappUrl}
         ariaLabel={`Share ${title} on WhatsApp`}
       >
-        <FaWhatsapp size={17} />
-      </ShareLink>
+        <FaWhatsapp size={16} />
+      </Link>
 
-      {/* Copy link */}
-      <button
-        type="button"
+      <Button
+        variant="ghost"
         onClick={copyLink}
         aria-label="Copy product link"
-        className="flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-300 text-primary hover:bg-primary hover:text-white"
+        className={shareActionClassName}
       >
-        {copied ? <FiCheck size={17} /> : <FiCopy size={17} />}
-      </button>
+        {copied ? <FiCheck size={16} /> : <FiCopy size={16} />}
+      </Button>
 
       <span className="sr-only" aria-live="polite">
         {copied ? "Product link copied" : ""}
