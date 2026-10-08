@@ -1,0 +1,32 @@
+{
+  "footerProducts": [
+    {
+      "name": "Products",
+      "url": "/products"
+    }
+  ],
+  "footerInfo": [
+    {
+      "name": "About",
+      "url": "/about"
+    },
+    {
+      "name": "Contact",
+      "url": "/contact"
+    }
+  ],
+  "footerTerms": [
+    {
+      "name": "Privacy & Policy",
+      "url": "/privacy-policy"
+    },
+    {
+      "name": "Terms of Service",
+      "url": "/terms-of-service"
+    },
+    {
+      "name": "Refund Policy",
+      "url": "/refund-policy"
+    }
+  ]
+}
