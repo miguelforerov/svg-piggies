@@ -11,6 +11,6 @@ const termsHtml = await marked.parse(termsMarkdown);
 <Base title="Terms of Service | SVG Piggies">
   <MaxWidthContainer narrow>
     <InfoPageHeader label="terms of service" />
-    <article class="markdown-content w-full max-w-[62rem]" set:html={termsHtml} />
+    <article class="prose prose-lg prose-headings:text-foreground prose-a:text-primary w-full" set:html={termsHtml} />
   </MaxWidthContainer>
 </Base>

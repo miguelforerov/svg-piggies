@@ -11,6 +11,6 @@ const privacyHtml = await marked.parse(privacyMarkdown);
 <Base title="Privacy Policy | SVG Piggies">
   <MaxWidthContainer narrow>
     <InfoPageHeader label="privacy policy" />
-    <article class="markdown-content w-full max-w-[62rem]" set:html={privacyHtml} />
+    <article class="prose prose-lg prose-headings:text-foreground prose-a:text-primary w-full" set:html={privacyHtml} />
   </MaxWidthContainer>
 </Base>
