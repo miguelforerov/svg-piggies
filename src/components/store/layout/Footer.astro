@@ -11,7 +11,7 @@ export interface ISocial {
 }
 ---
 
-<footer class="flex bg-background-main justify-center">
+<footer class="flex bg-muted justify-center">
   <MaxWidthContainer gap="gap-0">
     <div class="flex flex-col lg:flex-row w-full items-center py-10">
       <a href="/" class="flex w-[7rem] h-[7rem] shrink-0">
@@ -23,8 +23,8 @@ export interface ISocial {
           <ul class="flex flex-col lg:text-center md:w-1/3 gap-4">
             {
               menu.footerProducts.map((menu) => (
-                <li class="text-text-primary hover:text-text-primary/80 font-semibold">
-                  <a href={menu.url}>{menu.name}</a>
+                <li>
+                  <a href={menu.url} class="hover:text-primary duration-300">{menu.name}</a>
                 </li>
               ))
             }
@@ -33,8 +33,8 @@ export interface ISocial {
           <ul class="flex flex-col lg:text-center md:w-1/3 gap-4">
             {
               menu.footerInfo.map((menu) => (
-                <li class="text-text-primary hover:text-text-primary/80 font-semibold">
-                  <a href={menu.url}>{menu.name}</a>
+                <li>
+                  <a href={menu.url} class="hover:text-primary duration-300">{menu.name}</a>
                 </li>
               ))
             }
@@ -43,8 +43,8 @@ export interface ISocial {
           <ul class="flex flex-col lg:text-center md:w-1/3 gap-4">
             {
               menu.footerTerms.map((menu) => (
-                <li class="flex flex-col text-text-primary hover:text-text-primary/80 font-bold">
-                  <a href={menu.url}>{menu.name}</a>
+                <li>
+                  <a href={menu.url} class="hover:text-primary duration-300">{menu.name}</a>
                 </li>
               ))
             }
@@ -52,7 +52,7 @@ export interface ISocial {
         </div>
 
         <div class="flex flex-col items-center gap-4 flex-auto flex-none">
-          <div class="text-md lg:text-lg font-bold text-text-primary">Follow Us</div>
+          <div class="text-md lg:text-lg font-bold">Follow Us</div>
           <ul class="flex flex-col lg:flex-row items-center gap-6 lg:gap-6">
             {
               social.map((social: ISocial) => (
@@ -78,7 +78,7 @@ export interface ISocial {
         </div>
       </div>
     </div>
-    <div class="flex text-[12px] lg:text-[14px] font-semibold text-text-gray justify-center lg:justify-start w-full">
+    <div class="flex text-[12px] lg:text-[14px] text-muted-foreground justify-center lg:justify-start w-full">
       © {new Date().getFullYear()} SVG Piggies. All rights reserved.
     </div>
   </MaxWidthContainer>
