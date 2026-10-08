@@ -3,9 +3,11 @@ import type { ProductType } from "@/types/product-type";
 import { useEffect, useState } from "react";
 import { TbFilterX } from "react-icons/tb";
 import { CATALOG_CHANGE_EVENT, hasActiveCatalogFilters, navigateCatalog } from "@/lib/catalog-navigation";
-import RangeSlider from "../../rangeSlider/RangeSlider";
-import Checkbox from "@/components/store/ui/Checkbox";
-import Card from "@/components/store/ui/Card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
 
 type ProductCount = { id: string; productCount: number };
 
@@ -24,9 +26,18 @@ const ProductFilters = ({
   collectionCounts,
   productTypeCounts,
 }: ProductFiltersProps) => {
+  const maxAmount = Math.max(0, parseInt(maxPriceData.amount, 10) || 0);
   const [searchParams, setSearchParams] = useState(
     () => new URLSearchParams(window.location.search),
   );
+  const [priceRange, setPriceRange] = useState(() => [
+    Number(searchParams.get("minPrice") ?? 0),
+    Number(searchParams.get("maxPrice") ?? maxAmount),
+  ]);
+  const currencySymbol = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: maxPriceData.currencyCode,
+  }).formatToParts(0).find((part) => part.type === "currency")?.value ?? "$";
 
   const selectedCollections = searchParams.getAll("c");
   const selectedNavCollection = searchParams.get("collection");
@@ -42,6 +53,13 @@ const ProductFilters = ({
       window.removeEventListener(CATALOG_CHANGE_EVENT, syncFilters);
     };
   }, []);
+
+  useEffect(() => {
+    setPriceRange([
+      Number(searchParams.get("minPrice") ?? 0),
+      Number(searchParams.get("maxPrice") ?? maxAmount),
+    ]);
+  }, [searchParams, maxAmount]);
 
   useEffect(() => {
     document.querySelectorAll<HTMLAnchorElement>("a[data-catalog-collection]").forEach((link) => {
@@ -67,7 +85,8 @@ const ProductFilters = ({
       link.classList.toggle("font-bold", selected);
       link.classList.toggle("text-text-gray", selected);
       link.classList.toggle("cursor-default", selected);
-      link.classList.toggle("font-semibold", !selected && !slug);
+      link.classList.toggle("hover:text-primary", !selected);
+      link.classList.toggle("duration-300", !selected);
     });
   }, [searchParams, selectedNavCollection]);
 
@@ -98,85 +117,116 @@ const ProductFilters = ({
     navigateCatalog(query ? `/products?${query}` : "/products");
   };
 
+  const updatePrice = ([min, max]: readonly number[]) => {
+    const params = new URLSearchParams(window.location.search);
+    const appliedMin = Number(params.get("minPrice") ?? 0);
+    const appliedMax = Number(params.get("maxPrice") ?? maxAmount);
+    if (min === appliedMin && max === appliedMax) return;
+
+    if (min === 0) params.delete("minPrice");
+    else params.set("minPrice", String(min));
+    if (max === maxAmount) params.delete("maxPrice");
+    else params.set("maxPrice", String(max));
+    params.delete("page");
+
+    const query = params.toString();
+    navigateCatalog(query ? `/products?${query}` : "/products");
+  };
+
   return (
-    <Card>
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="font-bold lg:text-lg">Filters</h2>
-          <button
-            type="button"
+    <aside className="flex flex-col gap-10">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between mb-2">
+          <div className="font-bold lg:text-lg">Filters</div>
+          <Button
+            variant="ghost"
             onClick={clearFilters}
             disabled={!filtersActive}
             aria-label="Clear filters"
             title="Clear filters"
-            className="flex size-8 cursor-pointer items-center justify-center rounded-md text-primary transition-colors hover:bg-primary hover:text-white disabled:cursor-default disabled:text-gray-light disabled:bg-transparent"
+            className="flex size-8 items-center justify-center"
           >
             <TbFilterX size={20} aria-hidden="true" />
-          </button>
+          </Button>
         </div>
-        <div className="flex flex-col gap-4">
-          <div className="font-semibold">Select Price Range</div>
-          <hr className="border-border-main" />
-          <div className="">
-            <RangeSlider maxPriceData={maxPriceData} />
+        <div className="font-semibold">Select Price Range</div>
+        <Separator />
+        <div className="flex flex-col gap-4 mt-2">
+          <div className="flex justify-between">
+            <span>{currencySymbol}{priceRange[0]} {maxPriceData.currencyCode}</span>
+            <span>{currencySymbol}{priceRange[1]} {maxPriceData.currencyCode}</span>
           </div>
+          <Slider<number[]>
+            aria-label="Price range"
+            min={0}
+            max={maxAmount}
+            minStepsBetweenValues={1}
+            value={priceRange}
+            onValueChange={setPriceRange}
+            onValueCommitted={updatePrice}
+            disabled={maxAmount === 0}
+          />
         </div>
+      </div>
 
-        {collections.length > 0 && (
-          <div>
-            <div className="font-semibold">Collections</div>
-            <hr className="border-border-main" />
-            <ul className="mt-4 space-y-4">
-              {collections.map((collection) => (
-                <li key={collection.id}>
-                  <button
-                    type="button"
-                    aria-pressed={selectedCollections.includes(collection.slug)}
-                    className={`flex w-full cursor-pointer items-center  justify-between gap-4 ${
-                      selectedCollections.includes(collection.slug)
-                        ? "font-semibold text-text-primary"
-                        : "text-text-gray"
-                    }`}
-                    onClick={() => updateFilter("c", collection.slug)}
-                  >
-                    <div className="text-left">
-                      {collection.name} ({collectionCounts.find((item) => item.id === collection.id)?.productCount ?? 0})
-                    </div>
-                    <Checkbox checked={selectedCollections.includes(collection.slug)} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+      {collections.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="font-semibold">Collections</div>
+          <Separator />
+          <ul className="flex flex-col gap-4 mt-2">
+            {collections.map((collection) => (
+              <li key={collection.id}>
+                <div
+                  className={`flex w-full cursor-pointer items-center  justify-between gap-4 ${
+                    selectedCollections.includes(collection.slug)
+                      ? "font-semibold text-text-primary"
+                      : "text-text-gray"
+                  }`}
+                >
+                  <Label htmlFor={`collection-${collection.id}`} className="grow cursor-pointer text-left">
+                    {collection.name} ({collectionCounts.find((item) => item.id === collection.id)?.productCount ?? 0})
+                  </Label>
+                  <Checkbox
+                    id={`collection-${collection.id}`}
+                    checked={selectedCollections.includes(collection.slug)}
+                    onCheckedChange={() => updateFilter("c", collection.slug)}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-        {productTypes.length > 0 && (
-          <div>
-            <div className="font-semibold">Product Types</div>
-            <hr className="border-border-main" />
-            <ul className="mt-4 space-y-4">
-              {productTypes.map((productType) => (
-                <li key={productType.id}>
-                  <button
-                    type="button"
-                    aria-pressed={selectedProductTypes.includes(productType.slug)}
-                    className={`flex w-full cursor-pointer items-center justify-between ${
-                      selectedProductTypes.includes(productType.slug)
-                        ? "font-semibold text-text-primary"
-                        : "text-text-gray"
-                    }`}
-                    onClick={() => updateFilter("pt", productType.slug)}
-                  >
-                    <span>
-                      {productType.name} ({productTypeCounts.find((item) => item.id === productType.id)?.productCount ?? 0})
-                    </span>
-                    <Checkbox checked={selectedProductTypes.includes(productType.slug)} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-    </Card>
+      {productTypes.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="font-semibold">Product Types</div>
+          <Separator />
+          <ul className="flex flex-col gap-4 mt-2">
+            {productTypes.map((productType) => (
+              <li key={productType.id}>
+                <div
+                  className={`flex w-full cursor-pointer items-center justify-between ${
+                    selectedProductTypes.includes(productType.slug)
+                      ? "font-semibold text-text-primary"
+                      : "text-text-gray"
+                  }`}
+                >
+                  <Label htmlFor={`product-type-${productType.id}`} className="grow cursor-pointer">
+                    {productType.name} ({productTypeCounts.find((item) => item.id === productType.id)?.productCount ?? 0})
+                  </Label>
+                  <Checkbox
+                    id={`product-type-${productType.id}`}
+                    checked={selectedProductTypes.includes(productType.slug)}
+                    onCheckedChange={() => updateFilter("pt", productType.slug)}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </aside>
   );
 };
 

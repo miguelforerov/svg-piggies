@@ -54,6 +54,7 @@ const CatalogResults = ({
       if (!link) return;
 
       mouseEvent.preventDefault();
+      link.classList.remove("hover:text-primary", "duration-300");
       navigateCatalog(link.href);
     };
 

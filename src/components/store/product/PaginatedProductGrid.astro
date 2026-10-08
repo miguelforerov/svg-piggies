@@ -7,10 +7,9 @@ import ProductFilters from "@/components/store/product/ProductFilters";
 import ProductGrid from "@/components/store/product/ProductGrid";
 import CatalogResults from "@/components/store/product/CatalogResults";
 import { hasActiveCatalogFilters } from "@/lib/catalog-navigation";
-import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro";
+import { PRODUCT_PAGE_SIZES } from "@/lib/product-page-sizes";
 import ShortBy from "@/components/store/product/ShortBy";
 import { TbFilter, TbX } from "react-icons/tb";
-import Card from "@/components/store/ui/Card";
 
 type ProductCount = { id: string; productCount: number };
 
@@ -32,7 +31,7 @@ interface Props {
 }
 
 const {
-  products, searchValue, pageSize = 12, shortBy, filters,
+  products, searchValue, pageSize = PRODUCT_PAGE_SIZES.home, shortBy, filters,
   currentPage: initialCurrentPage, totalPages: initialTotalPages, resultsQuery,
 } = Astro.props;
 const requestedPage = Number.parseInt(Astro.url.searchParams.get("page") ?? "1", 10);
@@ -66,121 +65,121 @@ const collectionLink = (slug?: string) => {
 };
 ---
 
-<MaxWidthContainer>
-  <div class="flex w-full flex-col gap-8 lg:flex-row">
-    {filters && (
-      <div class="flex flex-col w-full lg:w-[17rem] lg:shrink-0 gap-4">
-        <div class="flex flex-wrap items-center justify-between gap-3 lg:hidden">
-          <button
-            id="catalog-sidebar-toggle"
-            type="button"
-            aria-expanded="false"
-            aria-controls="catalog-sidebar"
-            aria-haspopup="dialog"
-            class="flex cursor-pointer items-center gap-2 font-medium"
-          >
-            Refine
-            <TbFilter aria-hidden="true" />
-          </button>
-          <ShortBy client:only="react" />
-        </div>
-        <div
-          id="catalog-sidebar"
-          class="group pointer-events-none invisible fixed inset-0 z-50 transition-[visibility] duration-300 data-[open]:pointer-events-auto data-[open]:visible lg:pointer-events-auto lg:visible lg:static lg:z-auto lg:flex lg:flex-col lg:gap-4 lg:transition-none"
+<div class="flex w-full flex-col gap-8 lg:flex-row">
+  {filters && (
+    <div class="flex flex-col w-full lg:w-[17rem] lg:shrink-0 gap-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 lg:hidden">
+        <button
+          id="catalog-sidebar-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="catalog-sidebar"
+          aria-haspopup="dialog"
+          class="flex cursor-pointer items-center gap-2 font-medium"
         >
-          <button
-            id="catalog-sidebar-backdrop"
-            type="button"
-            tabindex="-1"
-            aria-label="Close collections and filters"
-            class="absolute inset-0 cursor-pointer bg-black/50 opacity-0 transition-opacity duration-300 group-data-[open]:opacity-100 motion-reduce:transition-none lg:hidden"
-          ></button>
-          <div
-            id="catalog-sidebar-panel"
-            aria-labelledby="catalog-sidebar-title"
-            class="absolute inset-y-0 left-0 flex w-[min(24rem,90vw)] -translate-x-full flex-col gap-4 overflow-y-auto bg-white p-4 shadow-xl transition-transform duration-300 ease-in-out group-data-[open]:translate-x-0 motion-reduce:transition-none lg:static lg:w-auto lg:translate-x-0 lg:overflow-visible lg:bg-transparent lg:p-0 lg:shadow-none lg:transition-none"
-          >
-            <div class="flex items-center justify-between lg:hidden">
-              <h2 id="catalog-sidebar-title" class="text-lg font-bold">Collections &amp; Filters</h2>
-              <button
-                id="catalog-sidebar-close"
-                type="button"
-                aria-label="Close collections and filters"
-                class="flex size-9 cursor-pointer items-center justify-center rounded-md hover:bg-background-main"
-              >
-                <TbX size={22} aria-hidden="true" />
-              </button>
-            </div>
+          Refine
+          <TbFilter aria-hidden="true" />
+        </button>
+        <ShortBy client:only="react" />
+      </div>
+      <div
+        id="catalog-sidebar"
+        class="group pointer-events-none invisible fixed inset-0 z-50 transition-[visibility] duration-300 data-[open]:pointer-events-auto data-[open]:visible lg:pointer-events-auto lg:visible lg:static lg:z-auto lg:flex lg:flex-col lg:gap-4 lg:transition-none"
+      >
+        <button
+          id="catalog-sidebar-backdrop"
+          type="button"
+          tabindex="-1"
+          aria-label="Close collections and filters"
+          class="absolute inset-0 cursor-pointer bg-black/50 opacity-0 transition-opacity duration-300 group-data-[open]:opacity-100 motion-reduce:transition-none lg:hidden"
+        ></button>
+        <div
+          id="catalog-sidebar-panel"
+          aria-labelledby="catalog-sidebar-title"
+          class="absolute inset-y-0 left-0 flex w-[min(24rem,90vw)] -translate-x-full flex-col gap-4 overflow-y-auto bg-white p-4 shadow-xl transition-transform duration-300 ease-in-out group-data-[open]:translate-x-0 motion-reduce:transition-none lg:static lg:w-auto lg:translate-x-0 lg:overflow-visible lg:bg-transparent lg:p-0 lg:shadow-none lg:transition-none"
+        >
+          <div class="flex items-center justify-between lg:hidden">
+            <h2 id="catalog-sidebar-title" class="text-lg font-bold">Collections &amp; Filters</h2>
+            <button
+              id="catalog-sidebar-close"
+              type="button"
+              aria-label="Close collections and filters"
+              class="flex size-9 cursor-pointer items-center justify-center rounded-md hover:bg-background-main"
+            >
+              <TbX size={22} aria-hidden="true" />
+            </button>
+          </div>
+          <div class="flex flex-col gap-8 bg-muted p-4 rounded-xl">
             {filters.collections.length > 0 && (
-              <nav aria-label="Collections" >
-                <Card>
-                  <div class="text-lg font-bold">Collections</div>
-                  <ul class="flex flex-wrap gap-2">
+              <nav aria-label="Collections" class="flex flex-col gap-4">
+                <div class="font-bold lg:text-lg">Collections</div>
+                <ul class="flex flex-wrap gap-2">
+                  <li>
+                    <a
+                      data-catalog-collection=""
+                      href={collectionLink()}
+                      aria-current={allProductsSelected ? "page" : undefined}
+                      class={allProductsSelected ? "font-bold cursor-default" : "hover:text-primary duration-300"}>
+                      All products
+                    </a>
+                  </li>
+                  {filters.collections.map((collection) => (
                     <li>
                       <a
-                        data-catalog-collection=""
-                        href={collectionLink()}
-                        aria-current={allProductsSelected ? "page" : undefined}
-                        class={allProductsSelected ? "font-bold text-text-gray cursor-default" : "font-semibold"}>
-                        All products
+                        data-catalog-collection={collection.slug}
+                        href={collectionLink(collection.slug)}
+                        aria-current={selectedNavCollection === collection.slug ? "page" : undefined}
+                        class={selectedNavCollection === collection.slug ? "font-bold cursor-default" : "hover:text-primary duration-300"}>
+                        {collection.name}
                       </a>
                     </li>
-                    {filters.collections.map((collection) => (
-                      <li>
-                        <a
-                          data-catalog-collection={collection.slug}
-                          href={collectionLink(collection.slug)}
-                          aria-current={selectedNavCollection === collection.slug ? "page" : undefined}
-                          class={selectedNavCollection === collection.slug ? "text-text-gray font-bold cursor-default" : ""}>
-                          {collection.name}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
+                  ))}
+                </ul>
               </nav>
             )}
+          </div>
+          <div class="flex flex-col gap-8 bg-muted p-4 rounded-xl">
             <aside>
               <ProductFilters {...filters} client:only="react" />
             </aside>
           </div>
         </div>
       </div>
-    )}
+    </div>
+  )}
 
-    <div class="flex flex-col min-w-0 flex-1 gap-8">
-      {shortBy && (<div class="hidden lg:block">
-        <ShortBy
-          client:only="react"
-        />
-      </div>)}
-      {resultsQuery !== undefined ? (
-        <CatalogResults
-          initialProducts={paginatedProducts}
-          initialSearchValue={searchValue ?? ""}
-          initialCurrentPage={currentPage}
-          initialTotalPages={totalPages}
-          initialQuery={resultsQuery}
-          client:only="react"
-        >
-          <div slot="fallback">
-            <ProductGrid initialProducts={paginatedProducts} searchValue={searchValue} />
-            <div class="my-10">
-              <Pagination currentPage={currentPage} totalPages={totalPages} />
-            </div>
-          </div>
-        </CatalogResults>
-      ) : (
-        <>
+  <div class="flex flex-col min-w-0 flex-1 gap-8">
+    {shortBy && (<div class="hidden lg:block">
+      <ShortBy
+        client:only="react"
+      />
+    </div>)}
+    {resultsQuery !== undefined ? (
+      <CatalogResults
+        initialProducts={paginatedProducts}
+        initialSearchValue={searchValue ?? ""}
+        initialCurrentPage={currentPage}
+        initialTotalPages={totalPages}
+        initialQuery={resultsQuery}
+        client:only="react"
+      >
+        <div slot="fallback">
           <ProductGrid initialProducts={paginatedProducts} searchValue={searchValue} />
           <div class="my-10">
             <Pagination currentPage={currentPage} totalPages={totalPages} />
           </div>
-        </>
-      )}
-    </div>
+        </div>
+      </CatalogResults>
+    ) : (
+      <>
+        <ProductGrid initialProducts={paginatedProducts} searchValue={searchValue} />
+        <div class="my-10">
+          <Pagination currentPage={currentPage} totalPages={totalPages} />
+        </div>
+      </>
+    )}
   </div>
-</MaxWidthContainer>
+</div>
 
 <script>
   const sidebarToggle = document.getElementById("catalog-sidebar-toggle");

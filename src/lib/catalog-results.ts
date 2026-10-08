@@ -1,7 +1,6 @@
 import type { CatalogProduct } from "@/lib/catalog";
 import { defaultSort, sorting } from "@/lib/constants";
-
-export const CATALOG_PAGE_SIZE = 12;
+import { PRODUCT_PAGE_SIZES } from "@/lib/product-page-sizes";
 
 export function getCatalogResults(products: CatalogProduct[], params: URLSearchParams) {
   const searchValue = params.get("q")?.trim() ?? "";
@@ -40,16 +39,16 @@ export function getCatalogResults(products: CatalogProduct[], params: URLSearchP
       return reverse ? -comparison : comparison;
     });
 
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / CATALOG_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCT_PAGE_SIZES.catalog));
   const requestedPage = Number.parseInt(params.get("page") ?? "1", 10);
   const currentPage = Math.min(
     Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1,
     totalPages,
   );
-  const pageStart = (currentPage - 1) * CATALOG_PAGE_SIZE;
+  const pageStart = (currentPage - 1) * PRODUCT_PAGE_SIZES.catalog;
 
   return {
-    products: filteredProducts.slice(pageStart, pageStart + CATALOG_PAGE_SIZE),
+    products: filteredProducts.slice(pageStart, pageStart + PRODUCT_PAGE_SIZES.catalog),
     searchValue,
     currentPage,
     totalPages,
