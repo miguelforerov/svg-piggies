@@ -1,15 +1,11 @@
 import * as React from "react"
-import { Search } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import Close from "@/components/store/icons/Close"
+import { Search, X } from "lucide-react"
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-  InputGroupText,
+  InputGroupButton,
 } from "@/components/ui/input-group"
-import { ButtonGroup } from "@/components/ui/button-group"
 
 
 interface SearchInputProps
@@ -29,6 +25,10 @@ const SearchInput = ({
   ...props
 }: SearchInputProps) => {
   const [value, setValue] = React.useState(defaultValue)
+
+  React.useEffect(() => {
+    setValue(defaultValue)
+  }, [defaultValue])
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -67,12 +67,15 @@ const SearchInput = ({
             align="inline-end"
             className="pr-1"
           >
-            <Button variant="ghost" className=""><Close /></Button>
+            <InputGroupButton variant="ghost" size="icon-sm">
+              <X />
+            </InputGroupButton>
           </InputGroupAddon>
         )}
         <InputGroupAddon  align="inline-end" className="pr-1">
-          <Button variant="ghost" className=""><Search /></Button>
-          {/* <Button variant="outline" className="m-1">Search</Button> */}
+          <InputGroupButton variant="ghost" size="icon-sm">
+            <Search />
+          </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
     </form>
