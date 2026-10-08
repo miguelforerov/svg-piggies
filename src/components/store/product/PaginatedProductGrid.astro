@@ -9,7 +9,7 @@ import CatalogResults from "@/components/store/product/CatalogResults";
 import { hasActiveCatalogFilters } from "@/lib/catalog-navigation";
 import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro";
 import ShortBy from "@/components/store/product/ShortBy";
-import { TbFilter, TbFilterX } from "react-icons/tb";
+import { TbFilter, TbX } from "react-icons/tb";
 import Card from "@/components/store/ui/Card";
 
 type ProductCount = { id: string; productCount: number };
@@ -70,55 +70,81 @@ const collectionLink = (slug?: string) => {
   <div class="flex w-full flex-col gap-8 lg:flex-row">
     {filters && (
       <div class="flex flex-col w-full lg:w-[17rem] lg:shrink-0 gap-4">
-        {filters && filters.collections.length > 0 && (
-          <Card>
-            <div class="text-lg font-bold">Collections</div>
-            <ul class="flex flex-wrap gap-2">
-              <li>
-                <a
-                  data-catalog-collection=""
-                  href={collectionLink()}
-                  aria-current={allProductsSelected ? "page" : undefined}
-                  class={allProductsSelected ? "font-bold text-text-gray cursor-default" : "font-semibold"}>
-                  All products
-                </a>
-              </li>
-              {filters.collections.map((collection) => (
-                <li>
-                  <a
-                    data-catalog-collection={collection.slug}
-                    href={collectionLink(collection.slug)}
-                    aria-current={selectedNavCollection === collection.slug ? "page" : undefined}
-                    class={selectedNavCollection === collection.slug ? "text-text-gray font-bold cursor-default" : ""}>
-                    {collection.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
-        <div class="flex items-center justify-between lg:hidden">
+        <div class="flex flex-wrap items-center justify-between gap-3 lg:hidden">
           <button
-            id="catalog-filters-toggle"
+            id="catalog-sidebar-toggle"
             type="button"
             aria-expanded="false"
-            aria-controls="catalog-filters-panel"
-            class="group flex cursor-pointer items-center gap-2 font-medium"
+            aria-controls="catalog-sidebar"
+            aria-haspopup="dialog"
+            class="flex cursor-pointer items-center gap-2 font-medium"
           >
-            Filters
-            <TbFilter className="group-aria-expanded:hidden" aria-hidden="true" />
-            <TbFilterX className="hidden group-aria-expanded:block" aria-hidden="true" />
+            Refine
+            <TbFilter aria-hidden="true" />
           </button>
           <ShortBy client:only="react" />
         </div>
-        <aside>
-          <ProductFilters
-            {...filters}
-            toggleId="catalog-filters-toggle"
-            panelId="catalog-filters-panel"
-            client:only="react"
-          />
-        </aside>
+        <div
+          id="catalog-sidebar"
+          class="group pointer-events-none invisible fixed inset-0 z-50 transition-[visibility] duration-300 data-[open]:pointer-events-auto data-[open]:visible lg:pointer-events-auto lg:visible lg:static lg:z-auto lg:flex lg:flex-col lg:gap-4 lg:transition-none"
+        >
+          <button
+            id="catalog-sidebar-backdrop"
+            type="button"
+            tabindex="-1"
+            aria-label="Close collections and filters"
+            class="absolute inset-0 cursor-pointer bg-black/50 opacity-0 transition-opacity duration-300 group-data-[open]:opacity-100 motion-reduce:transition-none lg:hidden"
+          ></button>
+          <div
+            id="catalog-sidebar-panel"
+            aria-labelledby="catalog-sidebar-title"
+            class="absolute inset-y-0 left-0 flex w-[min(24rem,90vw)] -translate-x-full flex-col gap-4 overflow-y-auto bg-white p-4 shadow-xl transition-transform duration-300 ease-in-out group-data-[open]:translate-x-0 motion-reduce:transition-none lg:static lg:w-auto lg:translate-x-0 lg:overflow-visible lg:bg-transparent lg:p-0 lg:shadow-none lg:transition-none"
+          >
+            <div class="flex items-center justify-between lg:hidden">
+              <h2 id="catalog-sidebar-title" class="text-lg font-bold">Collections &amp; Filters</h2>
+              <button
+                id="catalog-sidebar-close"
+                type="button"
+                aria-label="Close collections and filters"
+                class="flex size-9 cursor-pointer items-center justify-center rounded-md hover:bg-background-main"
+              >
+                <TbX size={22} aria-hidden="true" />
+              </button>
+            </div>
+            {filters.collections.length > 0 && (
+              <nav aria-label="Collections" >
+                <Card>
+                  <div class="text-lg font-bold">Collections</div>
+                  <ul class="flex flex-wrap gap-2">
+                    <li>
+                      <a
+                        data-catalog-collection=""
+                        href={collectionLink()}
+                        aria-current={allProductsSelected ? "page" : undefined}
+                        class={allProductsSelected ? "font-bold text-text-gray cursor-default" : "font-semibold"}>
+                        All products
+                      </a>
+                    </li>
+                    {filters.collections.map((collection) => (
+                      <li>
+                        <a
+                          data-catalog-collection={collection.slug}
+                          href={collectionLink(collection.slug)}
+                          aria-current={selectedNavCollection === collection.slug ? "page" : undefined}
+                          class={selectedNavCollection === collection.slug ? "text-text-gray font-bold cursor-default" : ""}>
+                          {collection.name}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              </nav>
+            )}
+            <aside>
+              <ProductFilters {...filters} client:only="react" />
+            </aside>
+          </div>
+        </div>
       </div>
     )}
 
@@ -155,3 +181,74 @@ const collectionLink = (slug?: string) => {
     </div>
   </div>
 </MaxWidthContainer>
+
+<script>
+  const sidebarToggle = document.getElementById("catalog-sidebar-toggle");
+  const sidebar = document.getElementById("catalog-sidebar");
+  const sidebarPanel = document.getElementById("catalog-sidebar-panel");
+  const sidebarClose = document.getElementById("catalog-sidebar-close");
+  const sidebarBackdrop = document.getElementById("catalog-sidebar-backdrop");
+  const mobileView = window.matchMedia("(max-width: 1023px)");
+  let previousOverflow = "";
+
+  const closeSidebar = (restoreFocus = true) => {
+    if (!sidebar?.hasAttribute("data-open")) return;
+
+    sidebar.removeAttribute("data-open");
+    sidebarPanel?.removeAttribute("role");
+    sidebarPanel?.removeAttribute("aria-modal");
+    sidebarToggle?.setAttribute("aria-expanded", "false");
+    document.body.style.overflow = previousOverflow;
+    if (restoreFocus) sidebarToggle?.focus();
+  };
+
+  sidebarToggle?.addEventListener("click", () => {
+    if (!sidebar || !mobileView.matches) return;
+
+    previousOverflow = document.body.style.overflow;
+    sidebar.setAttribute("data-open", "");
+    sidebarPanel?.setAttribute("role", "dialog");
+    sidebarPanel?.setAttribute("aria-modal", "true");
+    sidebarToggle?.setAttribute("aria-expanded", "true");
+    document.body.style.overflow = "hidden";
+    sidebarClose?.focus();
+  });
+
+  sidebarClose?.addEventListener("click", () => closeSidebar());
+  sidebarBackdrop?.addEventListener("click", () => closeSidebar());
+  sidebarPanel?.querySelector<HTMLElement>('nav[aria-label="Collections"]')?.addEventListener("click", (event) => {
+    if (
+      event.button !== 0 || event.metaKey || event.ctrlKey ||
+      event.shiftKey || event.altKey || !(event.target instanceof Element)
+    ) return;
+    if (event.target.closest("a[data-catalog-collection]")) closeSidebar();
+  });
+
+  sidebar?.addEventListener("keydown", (event) => {
+    if (!sidebar?.hasAttribute("data-open")) return;
+    if (event.key === "Escape") {
+      closeSidebar();
+      return;
+    }
+    if (event.key !== "Tab" || !sidebarPanel) return;
+
+    const focusable = Array.from(sidebarPanel.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )).filter((element) => element.getClientRects().length > 0);
+    const first = focusable[0];
+    const last = focusable.at(-1);
+    if (!first || !last) return;
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  mobileView.addEventListener("change", () => {
+    if (!mobileView.matches) closeSidebar(false);
+  });
+</script>

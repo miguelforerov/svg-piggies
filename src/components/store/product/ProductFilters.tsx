@@ -10,8 +10,6 @@ import Card from "@/components/store/ui/Card";
 type ProductCount = { id: string; productCount: number };
 
 interface ProductFiltersProps {
-  toggleId: string;
-  panelId: string;
   collections: Collection[];
   productTypes: ProductType[];
   maxPriceData: { amount: string; currencyCode: string };
@@ -20,15 +18,12 @@ interface ProductFiltersProps {
 }
 
 const ProductFilters = ({
-  toggleId,
-  panelId,
   collections,
   productTypes,
   maxPriceData,
   collectionCounts,
   productTypeCounts,
 }: ProductFiltersProps) => {
-  const [expanded, setExpanded] = useState(false);
   const [searchParams, setSearchParams] = useState(
     () => new URLSearchParams(window.location.search),
   );
@@ -37,19 +32,6 @@ const ProductFilters = ({
   const selectedNavCollection = searchParams.get("collection");
   const selectedProductTypes = searchParams.getAll("pt");
   const filtersActive = hasActiveCatalogFilters(searchParams) || Boolean(selectedNavCollection);
-
-  useEffect(() => {
-    const toggle = document.getElementById(toggleId);
-    if (!toggle) return;
-
-    const handleToggle = () => setExpanded((current) => !current);
-    toggle.addEventListener("click", handleToggle);
-    return () => toggle.removeEventListener("click", handleToggle);
-  }, [toggleId]);
-
-  useEffect(() => {
-    document.getElementById(toggleId)?.setAttribute("aria-expanded", String(expanded));
-  }, [expanded, toggleId]);
 
   useEffect(() => {
     const syncFilters = () => setSearchParams(new URLSearchParams(window.location.search));
@@ -117,16 +99,7 @@ const ProductFilters = ({
   };
 
   return (
-    <div
-      id={panelId}
-      className={`grid overflow-hidden transition-[grid-template-rows,opacity,visibility] duration-300 ease-in-out motion-reduce:transition-none lg:block lg:visible lg:overflow-visible lg:opacity-100 lg:transition-none ${
-        expanded
-          ? "visible grid-rows-[1fr] opacity-100"
-          : "invisible grid-rows-[0fr] opacity-0"
-      }`}
-    >
-      <div className="min-h-0 overflow-hidden lg:overflow-visible">
-        <Card>
+    <Card>
         <div className="mb-6 flex items-center justify-between">
           <h2 className="font-bold lg:text-lg">Filters</h2>
           <button
@@ -203,9 +176,7 @@ const ProductFilters = ({
             </ul>
           </div>
         )}
-        </Card>
-      </div>
-    </div>
+    </Card>
   );
 };
 

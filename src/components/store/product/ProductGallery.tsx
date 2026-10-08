@@ -104,7 +104,7 @@ const CustomZoomImage = ({
 
   return (
     <div
-      className="relative w-full h-full overflow-hidden rounded-md cursor-zoom-in"
+      className="relative w-full h-full overflow-hidden cursor-zoom-in"
       ref={imageRef}
       onMouseEnter={() => !isTouchDevice && setShowMagnifier(true)}
       onMouseLeave={() => !isTouchDevice && setShowMagnifier(false)}
@@ -205,11 +205,11 @@ const ProductGallery = ({ images }: ProductGalleryProps): JSX.Element => {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="flex flex-col gap-8 w-full">
         {images.map((item, index) => (
           <div
             key={item.url}
-            className="aspect-[1/1] overflow-hidden rounded-md"
+            className="aspect-[1/1] overflow-hidden"
           >
             <CustomZoomImage
               src={item.url}
