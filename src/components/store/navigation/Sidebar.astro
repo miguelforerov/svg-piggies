@@ -1,0 +1,13 @@
+---
+import StoreSidebar from "./StoreSidebar";
+
+interface Props {
+  className?: string;
+}
+
+const { className } = Astro.props;
+---
+
+<div class:list={["relative z-40", className]}>
+  <StoreSidebar pathname={Astro.url.pathname} client:load />
+</div>

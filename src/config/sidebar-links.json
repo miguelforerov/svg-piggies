@@ -1,0 +1,45 @@
+{
+  "main": [
+    {
+      "name": "Home",
+      "url": "/"
+    },
+    {
+      "name": "All products",
+      "url": "/products"
+    },
+    {"type": "separator"},
+    {
+      "name": "About",
+      "url": "/about"
+    },
+    {
+      "name": "Contact",
+      "url": "/contact"
+    },
+    {"type": "separator"},
+    {
+      "name": "Privacy & Policy",
+      "url": "/privacy-and-policy"
+    },
+    {
+      "name": "Terms of Service",
+      "url": "/terms-of-service"
+    },
+    {
+      "name": "Refund Policy",
+      "url": "/refund-policy"
+    },
+    {
+      "name": "Temporal",
+      "url": "",
+      "hasChildren": true,
+      "children": [
+        {
+          "name": "404 Page",
+          "url": "/404"
+        }
+      ]
+    }
+  ]
+}
