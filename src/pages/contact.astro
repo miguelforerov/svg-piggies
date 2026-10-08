@@ -2,7 +2,7 @@
 import Base from "@/components/store/layout/Base.astro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/store/ui/Textarea";
+import { Textarea } from "@/components/ui/textarea";
 import InfoPageHeader from "@/components/store/ui/InfoPageHeader.astro";
 import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro";
 
@@ -10,16 +10,15 @@ import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro
 
 <Base title="Get In Touch | SVG Piggies">
   <MaxWidthContainer narrow={true}>
-    <section>
-      <div class="flex flex-col items-center gap-[32px] w-full">
+      <div class="flex flex-col items-center gap-4 md:gap-6 lg:gap-8 w-full">
         <InfoPageHeader label="contact us" />
 
-        <div class="mb-8 text-center w-full">
-          <h1 class="text-3xl font-bold tracking-tight sm:text-[3rem]">
+        <div class="mb-2 md:mb-5 lg:mb-8 text-center w-full">
+          <h1 class="text-[2rem] md:text-[2.5rem] lg:text-[3rem] text-center font-bold tracking-tight">
             We'd love to hear from you!
           </h1>
-          <p class="mt-3 text-2xl">
-            Have a question or need help? Send us a message and we'll get back to
+          <p class="mt-3 text lg md:text-xl lg:text-2xl">
+            Have a question or need help? <br class="flex md:hidden" /> Send us a message<br class="hidden md:flex" /> and we'll get back to
             you as soon as possible.
           </p>
         </div>
@@ -27,7 +26,7 @@ import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro
         <form
           method="POST"
           aria-describedby="contact-description"
-          class="flex flex-col gap-y-6 w-full"
+          class="flex flex-col gap-y-6 w-full bg-muted rounded-[32px] p-[1.25rem] md:p-[2rem] lg:p-[4rem]"
         >
           <div class="grid gap-6 sm:grid-cols-2">
             <div class="flex flex-col gap-y-2">
@@ -83,10 +82,9 @@ import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro
             <Textarea
               id="message"
               name="message"
-              rows={8}
               minLength={10}
               placeholder="How can we help you?"
-              className="text-[16px] md:text-[18px]"
+              className="text-[16px] md:text-[18px] h-[13rem] md:h-[15rem]"
               required
             />
           </div>
@@ -96,6 +94,5 @@ import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro
           </div>
         </form>
       </div>
-    </section>
   </MaxWidthContainer>
 </Base>
