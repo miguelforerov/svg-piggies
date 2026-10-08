@@ -2,8 +2,8 @@ import type { Product } from "@/types/product";
 import { CATALOG_CHANGE_EVENT, navigateCatalog } from "@/lib/catalog-navigation";
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
-import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
 import ProductGrid from "./ProductGrid";
+import Pagination from "@/components/store/ui/Pagination";
 
 interface Results {
   products: Product[];
@@ -105,14 +105,6 @@ const CatalogResults = ({
     return () => controller.abort();
   }, [query, retryCount]);
 
-  const pageLink = (page: number) => {
-    const params = new URLSearchParams(query);
-    if (page <= 1) params.delete("page");
-    else params.set("page", String(page));
-    const nextQuery = params.toString();
-    return nextQuery ? `/products?${nextQuery}` : "/products";
-  };
-
   const handlePageClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (
       event.button !== 0 || event.metaKey || event.ctrlKey ||
@@ -136,58 +128,13 @@ const CatalogResults = ({
       <ProductGrid initialProducts={results.products} searchValue={results.searchValue} />
 
       <div className="my-10">
-        {results.totalPages > 1 && (
-          <nav className="flex items-center justify-center space-x-3" aria-label="Pagination">
-            {results.currentPage > 1 && (
-              <a
-                href={pageLink(results.currentPage - 1)}
-                onClick={handlePageClick}
-                className="rounded px-2 py-1.5 text-primary hover:bg-primary hover:text-white transition-colors duration-300"
-              >
-                <span className="sr-only">Previous</span>
-                <BsChevronLeft size={30} aria-hidden="true" />
-              </a>
-            )}
-            {results.currentPage === 1 && (
-              <span className="rounded px-2 py-1.5 text-text-gray-light">
-                <span className="sr-only">Previous</span>
-                <BsChevronLeft size={30} aria-hidden="true" />
-              </span>
-            )}
-            {Array.from({ length: results.totalPages }, (_, index) => index + 1).map((page) =>
-              page === results.currentPage ? (
-                <span key={page} aria-current="page" className="rounded px-4 py-2 text-text-primary bg-primary-light font-bold">
-                  {page}
-                </span>
-              ) : (
-                <a
-                  key={page}
-                  href={pageLink(page)}
-                  onClick={handlePageClick}
-                  className="rounded px-4 py-2 text-primary hover:bg-primary hover:text-white transition-colors duration-300"
-                >
-                  {page}
-                </a>
-              ),
-            )}
-            {results.currentPage < results.totalPages && (
-              <a
-                href={pageLink(results.currentPage + 1)}
-                onClick={handlePageClick}
-                className="rounded px-2 py-1.5 text-primary hover:bg-primary hover:text-white transition-colors duration-300"
-              >
-                <span className="sr-only">Next</span>
-                <BsChevronRight size={30} aria-hidden="true" />
-              </a>
-            )}
-            {results.currentPage === results.totalPages && (
-              <span className="rounded px-2 py-1.5 text-text-gray-light">
-                <span className="sr-only">Next</span>
-                <BsChevronRight size={30} aria-hidden="true" />
-              </span>
-            )}
-          </nav>
-        )}
+        <Pagination
+          currentPage={results.currentPage}
+          totalPages={results.totalPages}
+          basePath="/products"
+          query={query}
+          onPageClick={handlePageClick}
+        />
       </div>
     </div>
   );
