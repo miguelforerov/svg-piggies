@@ -110,7 +110,7 @@
     --popover-foreground: oklch(0.145 0 0);
     --primary: var(--theme-svg-piggies-primary-500);
     --primary-foreground: oklch(0.985 0 0);
-    --secondary: var(--theme-svg-piggies-primary-25);
+    --secondary: var(--theme-svg-piggies-primary-100);
     --secondary-foreground: oklch(0.205 0 0);
     --muted: var(--theme-svg-piggies-primary-25);
     --muted-foreground: oklch(0.556 0 0);
