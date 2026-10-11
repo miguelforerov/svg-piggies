@@ -44,7 +44,7 @@ const Pagination = ({
             href={hasPrevious ? pageLink(currentPage - 1) : undefined}
             onClick={hasPrevious ? onPageClick : undefined}
             aria-disabled={!hasPrevious}
-            className={!hasPrevious ? "pointer-events-none opacity-50" : undefined}
+            isDisabled={!hasPrevious}
           />
         </PaginationItem>
 
@@ -65,7 +65,7 @@ const Pagination = ({
             href={hasNext ? pageLink(currentPage + 1) : undefined}
             onClick={hasNext ? onPageClick : undefined}
             aria-disabled={!hasNext}
-            className={!hasNext ? "pointer-events-none opacity-50" : undefined}
+            isDisabled={!hasNext}
           />
         </PaginationItem>
       </PaginationContent>
