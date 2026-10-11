@@ -39,6 +39,7 @@
     --color-popover: var(--popover);
     --color-card-foreground: var(--card-foreground);
     --color-card: var(--card);
+    --color-price: var(--price);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
     --radius-sm: calc(var(--radius) * 0.6);
@@ -117,6 +118,7 @@
     --accent: oklch(0.97 0 0);
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.577 0.245 27.325);
+    --price: var(--color-green-600);
     --border: var(--theme-svg-piggies-primary-200);
     --input: var(--theme-svg-piggies-primary-200);
     --ring: var(--theme-svg-piggies-primary-100);;

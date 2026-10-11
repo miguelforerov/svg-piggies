@@ -1,5 +1,6 @@
-import type { Product } from "@/types/product";
 import React from "react";
+import type { Product } from "@/types/product";
+import { AddToCart } from "@/components/store/cart/AddToCart";
 
 const ProductGrid = ({
   initialProducts,
@@ -42,37 +43,34 @@ const ProductGrid = ({
           return (
             <div
               key={product.id}
-              className="group relative flex w-full flex-col items-center"
+              className="relative flex w-full flex-col items-center gap-2 hover:bg-muted rounded-lg"
             >
-              <div className="relative flex items-center aspect-square overflow-hidden max-w-[20rem] h-auto group-hover:border-border-main group-hover:border rounded-md">
-                <img
-                  src={
-                    image?.url ||
-                    "/images/product-placeholder.jpg"
-                  }
-                  width={320}
-                  height={320}
-                  alt={product.title}
-                  className="rounded-md group-hover:scale-110 transition duration-300"
-                />
-              </div>
-
-              <div className="z-10 py-2 text-center md:py-4">
-                <h2 className="font-medium text-base lg:text-xl">
-                  <a
-                    className="after:absolute after:inset-0 text-text-primary group-hover:text-text-primary/80"
-                    href={`/products/${product.slug}`}
-                  >
-                    {product.title}
-                  </a>
-                </h2>
-
-                <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 md:mt-4">
-                  <span className="font-bold text-text-primary md:text-xl group-hover:text-text-primary/80">
+              <div className="group relative flex w-full flex-col items-center gap-1 lg:gap-2 h-full">
+                <div className="relative flex items-center aspect-square overflow-hidden max-w-[20rem] h-auto group-hover:border-border-main group-hover:border rounded-md">
+                  <img
+                    src={image?.url || "/images/product-placeholder.jpg"}
+                    width={320}
+                    height={320}
+                    alt={product.title}
+                    className="rounded-md group-hover:scale-110 transition duration-300"
+                  />
+                </div>
+                <a
+                  className="after:absolute after:inset-0 text-center font-medium lg:text-xl line-clamp-2 hover:text-primary duration-300"
+                  href={`/products/${product.slug}`}
+                >
+                  {product.title}
+                </a>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="font-bold text-xl text-price">
+                    {currencySymbol} {product.price.toFixed(2)}
+                  </span>
+                  <span className="text-sm line-through text-muted-foreground">
                     {currencySymbol} {product.price.toFixed(2)}
                   </span>
                 </div>
               </div>
+              <AddToCart productId={product.id} fullWidth variant="ghost" />
             </div>
           );
         })}
