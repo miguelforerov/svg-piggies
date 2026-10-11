@@ -1,16 +1,21 @@
 import { useState } from "react"
 import { LoaderCircle } from "lucide-react"
+import type { ComponentProps } from "react"
 import { cn } from "cn"
 import { Button } from "@/components/ui/button"
 import Cart from "@/components/store/icons/Cart"
 
 interface AddToCartProps {
   productId: string
+  fullWidth?: boolean
+  variant?: ComponentProps<typeof Button>["variant"]
   className?: string
 }
 
 export function AddToCart({
   productId,
+  fullWidth,
+  variant,
   className,
 }: AddToCartProps) {
   const [pending, setPending] = useState(false)
@@ -33,10 +38,15 @@ export function AddToCart({
   return (
     <>
       <Button
+        variant={variant}
         onClick={handleSubmit}
         disabled={pending}
         aria-disabled={pending}
-        className={cn("h-12 gap-2 px-6 text-xl font-medium", className)}
+        className={cn(
+          "h-12 gap-2 px-6 text-xl font-medium",
+          fullWidth && "w-full",
+          className
+        )}
         size="lg"
       >
         {pending ? (
@@ -47,7 +57,7 @@ export function AddToCart({
         ) : (
           <>
             <Cart data-icon="inline-start" className="size-6" />
-            Add To Cart
+            Add to Cart
           </>
         )}
       </Button>
