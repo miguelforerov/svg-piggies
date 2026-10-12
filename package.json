@@ -37,6 +37,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cn": "^0.2.6",
+    "embla-carousel-react": "^8.6.0",
     "lucide-react": "^1.39.0",
     "marked": "^18.0.10",
     "nanostores": "^1.5.2",
