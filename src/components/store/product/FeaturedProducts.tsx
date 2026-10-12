@@ -1,5 +1,5 @@
 import type { Product } from "@/types/product";
-import SkeletonFeaturedProducts from "../../../layouts/functional-components/loadings/skeleton/SkeletonFeaturedProducts";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface FeaturedProductsProps {
   products: Product[];
@@ -7,7 +7,7 @@ interface FeaturedProductsProps {
 
 const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
   if (products.length === 0) {
-    return <SkeletonFeaturedProducts />;
+    return <Skeleton />;
   }
 
   return (
