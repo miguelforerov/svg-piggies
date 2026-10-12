@@ -6,6 +6,8 @@ import HeroSlider from "@/components/store/product/HeroSlider";
 import PaginatedProductGrid from "@/components/store/product/PaginatedProductGrid.astro";
 import { getCatalog } from "@/lib/catalog";
 import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro";
+import TopProductTypesMenu from "@/components/store/ui/TopProductTypesMenu.astro";
+import { topProductTypesMenuSettings } from "@/types/store";
 
 let catalogError = false;
 let catalog = { products: [], collections: [], productTypes: [] } as Awaited<
@@ -21,6 +23,7 @@ try {
 
 const heroProducts = catalog.products.slice(0, 3);
 const featuredProducts = catalog.products.slice(0, 8);
+
 const collectionProducts = catalog.collections.map((collection) => ({
   ...collection,
   productCount: catalog.products.filter((product) =>
@@ -42,6 +45,8 @@ const collectionProducts = catalog.collections.map((collection) => ({
         </div>
       )
     }
+
+    <TopProductTypesMenu productTypes={catalog.productTypes} {...topProductTypesMenuSettings} />
 
     {catalog.products.length > 0 && (
       <section class="section-sm">

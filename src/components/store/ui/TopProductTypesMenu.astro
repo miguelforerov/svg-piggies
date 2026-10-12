@@ -1,0 +1,30 @@
+---
+import type { ProductType } from "@/types/product-type";
+import type { TopProductTypesMenuSettings } from "@/types/store";
+import { buttonVariants } from "@/components/ui/button";
+
+interface Props extends TopProductTypesMenuSettings {
+  productTypes: ProductType[];
+}
+
+const {
+  productTypes,
+  productTypesCount,
+  showAllProducts,
+} = Astro.props;
+
+const visibleProductTypes = productTypes.slice(0, productTypesCount);
+const linkClass = buttonVariants({ variant: "ghost", size: "2xl" });
+---
+
+<nav aria-label="Top product types" class="flex flex-wrap justify-center">
+  {showAllProducts && (
+    <a class:list={[linkClass, "!font-bold"]} href="/products">All Products</a>
+  )}
+  {visibleProductTypes.map((productType) => (
+    <a class={linkClass} href={`/products?pt=${encodeURIComponent(productType.slug)}`}>
+      {productType.name}
+    </a>
+  ))}
+
+</nav>

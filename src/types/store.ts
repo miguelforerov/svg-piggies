@@ -1,6 +1,16 @@
 import { DownloadIcon } from "lucide-react";
 import ScissorsIcon from "@/components/store/icons/Scissors";
 
+export interface TopProductTypesMenuSettings {
+  productTypesCount: 4 | 5 | 6;
+  showAllProducts: boolean;
+}
+
+export const topProductTypesMenuSettings: TopProductTypesMenuSettings = {
+  productTypesCount: 6,
+  showAllProducts: true,
+};
+
 export const currency = {
   code: "USD",
   label: "US",
