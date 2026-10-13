@@ -1,15 +1,13 @@
 import type { Collection } from "@/types/collection";
-import { useState } from "react";
 import {
-  HiOutlineArrowNarrowLeft,
-  HiOutlineArrowNarrowRight,
-} from "react-icons/hi";
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/pagination";
-import { Navigation, Pagination } from "swiper/modules";
-import { Swiper, SwiperSlide } from "swiper/react";
-import SkeletonCategory from "../../../layouts/functional-components/loadings/skeleton/SkeletonCategory";
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import SkeletonVariant from "@/components/store/ui/SkeletonVariant";
+import CollectionCard from "@/components/store/product/CollectionCard";
 
 export interface CollectionSlide extends Collection {
   productCount: number;
@@ -17,95 +15,35 @@ export interface CollectionSlide extends Collection {
 }
 
 const CollectionsSlider = ({ collections }: { collections: CollectionSlide[] }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [prevEl, setPrevEl] = useState<HTMLDivElement | null>(null);
-  const [nextEl, setNextEl] = useState<HTMLDivElement | null>(null);
   const collectionsData = collections ?? [];
 
   if (!collectionsData.length) {
-    return <SkeletonCategory />;
+    return (
+      <SkeletonVariant variant="card" />
+    );
   }
 
   return (
-    <div
-      className="relative"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <Swiper
-        modules={[Pagination, Navigation]}
-        slidesPerView={2}
-        spaceBetween={10}
-        breakpoints={{
-          640: {
-            slidesPerView: 2,
-            spaceBetween: 20,
-          },
-          768: {
-            slidesPerView: 3,
-            spaceBetween: 24,
-          },
-          1024: {
-            slidesPerView: 3,
-            spaceBetween: 24,
-          },
-        }}
-        navigation={{
-          prevEl,
-          nextEl,
-        }}
-      >
-        {collectionsData.map((item) => {
-          return (
-            <SwiperSlide key={item.id}>
-              <div className="text-center relative">
-                <img
-                  src={item.imageUrl || "/images/product-placeholder.jpg"}
-                  width={424}
-                  height={306}
-                  alt={item.name}
-                  className="h-[150px] md:h-[250px] lg:h-[306px] object-cover rounded-md"
-                />
-                <div className="py-6">
-                  <h3 className="mb-2 font-medium h4">
-                    <a
-                      className="after:absolute after:inset-0"
-                      href={`/products?c=${encodeURIComponent(item.slug)}`}
-                    >
-                      {item.name}
-                    </a>
-                  </h3>
-                  <p className="text-text-light text-xs md:text-xl">
-                    {item.productCount} {item.productCount === 1 ? "item" : "items"}
-                  </p>
-                </div>
-              </div>
-            </SwiperSlide>
-          );
-        })}
-
-        <div
-          className={`hidden md:block w-full absolute top-[33%] z-10 px-4 text-primary ${
-            isHovered
-              ? "opacity-100 transition-opacity duration-300 ease-in-out"
-              : "opacity-0 transition-opacity duration-300 ease-in-out"
-          }`}
-        >
-          <div
-            ref={setPrevEl}
-            className="p-2 lg:p-3 rounded-md bg-body cursor-pointer shadow-sm absolute left-4"
-          >
-            <HiOutlineArrowNarrowLeft size={24} />
-          </div>
-          <div
-            ref={setNextEl}
-            className="p-2 lg:p-3 rounded-md bg-body cursor-pointer shadow-sm absolute right-4"
-          >
-            <HiOutlineArrowNarrowRight size={24} />
-          </div>
+    <Carousel opts={{ align: "start" }} aria-label="Collections" className="w-full">
+      <CarouselContent className="-ml-2 md:-ml-6">
+        {collectionsData.map((item) => (
+          <CarouselItem key={item.id} className="basis-full pl-2 sm:basis-1/2 md:basis-1/3 md:pl-6">
+            <CollectionCard
+              id={item.id}
+              images={item.imageUrl ? [{ url: item.imageUrl }] : []}
+              title={item.name}
+              url={item.slug}
+            />
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+      {collectionsData.length > 1 && (
+        <div className="mt-4 flex justify-center gap-3">
+          <CarouselPrevious className="static" aria-label="Previous collection" />
+          <CarouselNext className="static" aria-label="Next collection" />
         </div>
-      </Swiper>
-    </div>
+      )}
+    </Carousel>
   );
 };
 

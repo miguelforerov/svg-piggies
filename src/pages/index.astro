@@ -58,7 +58,7 @@ const collectionProducts = catalog.collections.map((collection) => ({
       </section>
     )}
 
-    {heroProducts.length > 0 && (
+    <!-- {heroProducts.length > 0 && (
         <section>
           <div class="container">
             <div class="bg-gradient rounded-md py-10">
@@ -66,20 +66,18 @@ const collectionProducts = catalog.collections.map((collection) => ({
             </div>
           </div>
         </section>
-    )}
+    )} -->
 
     {collectionProducts.length > 0 && (
-      <section class="w-full section">
-        <div class="container">
-          <div class="mb-6 text-center md:mb-14">
-            <h2>Collections</h2>
-          </div>
-          <CollectionsSlider collections={collectionProducts} client:load />
+      <section class="flex flex-col w-full gap-8 items-center">
+        <div class="text-center text-heading-2">
+          <div>Collections</div>
         </div>
+        <CollectionsSlider collections={collectionProducts} client:load />
       </section>
     )}
 
-    {featuredProducts.length > 0 && (
+    <!-- {featuredProducts.length > 0 && (
       <section class="section">
         <div class="container">
           <div class="mb-6 text-center md:mb-14">
@@ -88,6 +86,6 @@ const collectionProducts = catalog.collections.map((collection) => ({
           <FeaturedProducts products={featuredProducts} client:load />
         </div>
       </section>
-    )}
+    )} -->
   </MaxWidthContainer>
 </Base>
