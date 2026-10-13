@@ -1,6 +1,7 @@
 import React from "react";
 import type { Product } from "@/types/product";
 import { AddToCart } from "@/components/store/cart/AddToCart";
+import PhotoCard from "@/components/store/ui/PhotoCard"
 
 const ProductGrid = ({
   initialProducts,
@@ -46,15 +47,7 @@ const ProductGrid = ({
               className="relative flex w-full flex-col items-center gap-2 hover:bg-muted rounded-lg"
             >
               <div className="group relative flex w-full flex-col items-center gap-1 lg:gap-2 h-full">
-                <div className="relative flex items-center aspect-square overflow-hidden max-w-[20rem] h-auto group-hover:border-border-main group-hover:border rounded-md">
-                  <img
-                    src={image?.url || "/images/product-placeholder.jpg"}
-                    width={320}
-                    height={320}
-                    alt={product.title}
-                    className="rounded-md group-hover:scale-110 transition duration-300"
-                  />
-                </div>
+                <PhotoCard image={image} title={product.title} />
                 <a
                   className="after:absolute after:inset-0 text-center font-medium lg:text-xl line-clamp-2 hover:text-primary duration-300"
                   href={`/products/${product.slug}`}
