@@ -7,7 +7,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import SkeletonVariant from "@/components/store/ui/SkeletonVariant";
-import CollectionCard from "@/components/store/product/CollectionCard";
+import CollectionCard from "@/components/store/collection/CollectionCard";
 
 export interface CollectionSlide extends Collection {
   productCount: number;
