@@ -1,6 +1,36 @@
 import { DownloadIcon } from "lucide-react";
 import ScissorsIcon from "@/components/store/icons/Scissors";
 
+// ---------- Config Store ---------- //
+
+export const store = {
+  name: "SVG Piggies",
+  currency: {
+    code: "USD",
+    label: "US",
+  },
+};
+
+
+// ---------- Style Store ---------- //
+
+export const design = {
+  radius: {
+    default: "0.5rem",
+  },
+  spacing: {
+    section: "4rem",
+    card: "1rem",
+  },
+  gap: {
+    default: "1rem",
+    grid: "1.5rem",
+  },
+} as const;
+
+// ---------------------------------------- //
+
+
 export interface TopProductTypesMenuSettings {
   productTypesCount: 4 | 5 | 6;
   showAllProducts: boolean;

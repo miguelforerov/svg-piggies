@@ -1,0 +1,8 @@
+/* Generated automatically from src/types/store.ts. */
+@theme {
+  --radius-default: 0.5rem;
+  --spacing-section: 4rem;
+  --spacing-card: 1rem;
+  --spacing-default: 1rem;
+  --spacing-grid: 1.5rem;
+}
