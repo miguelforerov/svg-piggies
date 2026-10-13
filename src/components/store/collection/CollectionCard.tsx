@@ -13,7 +13,7 @@ const CollectionCard = ({ id, images, title, url }: CollectionCardProps) => {
   return (
     <article
       id={`collection-${id}`}
-      className="group relative flex w-full flex-col items-center gap-2 rounded-default hover:bg-muted pb-4"
+      className="group relative flex w-full flex-col items-center gap-2 rounded-default hover:bg-muted pb-4 duration-300"
     >
       <PhotoCard image={image} title={title} />
       <a
