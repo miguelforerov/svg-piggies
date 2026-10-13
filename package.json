@@ -7,8 +7,8 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
+    "dev": "node scripts/generate-design-tokens.mjs && astro dev",
+    "build": "node scripts/generate-design-tokens.mjs && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "backend:dev": "cd backend && set -a && . ../.env && set +a && go run ./cmd/api",
@@ -53,6 +53,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260908.1",
     "@tailwindcss/typography": "^0.5.20",
+    "@types/node": "^22.20.5",
     "dbmate": "2.35.0",
     "typescript": "^6.0.3",
     "wrangler": "^4.130.0"
