@@ -29,7 +29,7 @@ const generateDesignTokensPlugin = () => ({
       try {
         await execFileAsync(process.execPath, [scriptPath]);
         server.config.logger.info(
-          "[generate-design-tokens] Tokens actualizados.",
+          "[generate-design-tokens] Tokens updated.",
         );
       } catch (error) {
         server.config.logger.error(
