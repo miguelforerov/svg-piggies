@@ -1,5 +1,5 @@
 ---
-import NavUser from "@/components/store/navigation/NavUser";
+import AccountButton from "@/components/store/navigation/AccountButton";
 import SearchBar from "@/components/store/navigation/SearchBar";
 import Cart from "@/components/store/icons/Cart";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ import StoreSidebar from "@/components/store/navigation/Sidebar.astro";
           className="w-6 h-6 text-primary">
           <Cart filled className="size-6" />
         </Button>
-        <NavUser client:load />
+        <AccountButton client:load />
         <StoreSidebar className="block md:hidden" />
       </div>
     </div>
