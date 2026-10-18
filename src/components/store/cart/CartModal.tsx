@@ -12,8 +12,9 @@ import {
 import CloseCart from "../../../layouts/functional-components/cart/CloseCart";
 import AddIcon from "./AddIcon";
 import DeleteIcon from "../ui/DeleteIcon";
-import OpenCart from "../../../layouts/functional-components/cart/OpenCart";
 import RemoveIcon from "../../../layouts/functional-components/cart/RemoveIcon";
+import CartIcon from "@/components/store/icons/Cart";
+import { Button } from "@/components/ui/button";
 
 const CartModal: React.FC = () => {
   const currentCart = useStore($cart);
@@ -41,14 +42,22 @@ const CartModal: React.FC = () => {
 
   return (
     <>
-      {/* Cart icon */}
-      <div
-        className="cursor-pointer"
+      <Button
+        type="button"
+        variant="link"
+        className="text-primary"
         aria-label="Open cart"
+        aria-expanded={isOpen}
+        aria-controls="cartDialog"
         onClick={openCart}
       >
-        <OpenCart quantity={quantity} />
-      </div>
+        <CartIcon filled className="size-8" />
+        {quantity > 0 && (
+          <span className="absolute -right-3 -top-2 flex size-5 items-center justify-center rounded-full bg-primary text-xs text-white">
+            {quantity}
+          </span>
+        )}
+      </Button>
 
       {/* Overlay */}
       <div

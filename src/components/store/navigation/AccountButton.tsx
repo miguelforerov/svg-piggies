@@ -57,7 +57,7 @@ export default function AccountButton({
       <Dialog>
         <DialogTrigger
           aria-label="Sign in"
-          className="flex size-6 cursor-pointer text-primary hover:text-primary/70 duration-300"
+          className="flex size-8 cursor-pointer text-primary hover:text-primary/70 duration-300"
         >
           <Profile />
         </DialogTrigger>

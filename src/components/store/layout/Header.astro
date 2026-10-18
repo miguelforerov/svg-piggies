@@ -1,8 +1,7 @@
 ---
 import AccountButton from "@/components/store/navigation/AccountButton";
 import SearchBar from "@/components/store/navigation/SearchBar";
-import Cart from "@/components/store/icons/Cart";
-import { Button } from "@/components/ui/button";
+import CartModal from "@/components/store/cart/CartModal";
 import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro"
 import StoreSidebar from "@/components/store/navigation/Sidebar.astro";
 
@@ -26,12 +25,7 @@ import StoreSidebar from "@/components/store/navigation/Sidebar.astro";
         <SearchBar client:load />
       </div>
       <div class="flex items-center justify-end gap-8">
-        <Button
-          variant="link"
-          size="icon"
-          className="w-6 h-6 text-primary">
-          <Cart filled className="size-6" />
-        </Button>
+        <CartModal client:load />
         <AccountButton client:load />
         <StoreSidebar className="block md:hidden" />
       </div>
