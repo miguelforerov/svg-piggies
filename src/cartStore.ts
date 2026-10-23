@@ -13,6 +13,7 @@ export interface CartItem {
 }
 
 export const $cart = atom<CartItem[]>([]);
+export const $cartDrawerOpen = atom(false);
 
 export const $cartCount = computed($cart, (items) =>
   items.reduce((total, item) => total + item.quantity, 0),
@@ -21,6 +22,14 @@ export const $cartCount = computed($cart, (items) =>
 export const $cartTotal = computed($cart, (items) =>
   items.reduce((total, item) => total + item.price * item.quantity, 0),
 );
+
+export const $cartSummary = computed($cartTotal, (total) => [
+  { label: "Subtotal", value: total },
+  { label: "Discount", value: "—" },
+  { label: "Taxes", value: "Calculated at checkout" },
+  { label: "Shipping", value: "Calculated at checkout" },
+  { label: "Total", value: total },
+]);
 
 export function addToCart(item: CartItem) {
   const current = $cart.get();
@@ -97,7 +106,7 @@ export function loadCart() {
   if (!saved) return;
 
   try {
-    $cart.set(JSON.parse(saved));
+    $cart.set(JSON.parse(saved) as CartItem[]);
   } catch {
     localStorage.removeItem("svgpiggies-cart");
   }

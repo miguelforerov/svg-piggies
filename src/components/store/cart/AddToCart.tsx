@@ -1,37 +1,45 @@
 import { useState } from "react"
-import { LoaderCircle } from "lucide-react"
 import type { ComponentProps } from "react"
 import { cn } from "cn"
 import { Button } from "@/components/ui/button"
-import Cart from "@/components/store/icons/Cart"
+import CartIcon from "@/components/store/icons/Cart"
+import { $cartDrawerOpen, addToCart } from "@/cartStore"
+import type { Product } from "@/types/product"
 
 interface AddToCartProps {
-  productId: string
+  product: Pick<Product, "id" | "title" | "price" | "slug" | "images">
   fullWidth?: boolean
   variant?: ComponentProps<typeof Button>["variant"]
   className?: string
 }
 
 export function AddToCart({
-  productId,
+  product,
   fullWidth,
   variant,
   className,
 }: AddToCartProps) {
-  const [pending, setPending] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
-  const handleSubmit = async () => {
-    setPending(true)
+  const handleSubmit = () => {
     setMessage(null)
 
     try {
-      setMessage("Product added to cart")
+      addToCart({
+        id: product.id,
+        productId: product.id,
+        variantId: product.id,
+        name: product.title,
+        price: product.price,
+        quantity: 1,
+        image: product.images[0]?.url ?? "/images/product-placeholder.jpg",
+        slug: product.slug,
+      })
+      $cartDrawerOpen.set(true)
+      setMessage(`${product.title} added to cart`)
     } catch (error) {
       console.error("Failed to add product to cart:", error)
       setMessage("Unable to add product to cart")
-    } finally {
-      setPending(false)
     }
   }
 
@@ -40,8 +48,6 @@ export function AddToCart({
       <Button
         variant={variant}
         onClick={handleSubmit}
-        disabled={pending}
-        aria-disabled={pending}
         className={cn(
           "h-12 gap-2 px-6 text-xl font-medium",
           fullWidth && "w-full",
@@ -49,17 +55,8 @@ export function AddToCart({
         )}
         size="lg"
       >
-        {pending ? (
-          <LoaderCircle
-            className="animate-spin"
-            size={26}
-          />
-        ) : (
-          <>
-            <Cart data-icon="inline-start" className="size-6" />
-            Add to Cart
-          </>
-        )}
+        <CartIcon className="size-6" />
+        Add to Cart
       </Button>
 
       <p

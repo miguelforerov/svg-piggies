@@ -1,37 +1,45 @@
 import { useStore } from "@nanostores/react";
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { FaShoppingCart } from "react-icons/fa";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 import {
   $cart,
   $cartCount,
-  $cartTotal,
+  $cartDrawerOpen,
+  $cartSummary,
+  loadCart,
   updateQuantity,
 } from "@/cartStore";
 
-import CloseCart from "../../../layouts/functional-components/cart/CloseCart";
-import AddIcon from "./AddIcon";
-import DeleteIcon from "../ui/DeleteIcon";
-import RemoveIcon from "../../../layouts/functional-components/cart/RemoveIcon";
+import CloseIcon from "@/components/store/icons/Close";
+import PlusIcon from "@/components/store/icons/Plus";
+import TrashIcon from "@/components/store/icons/Trash";
+import MinusIcon from "@/components/store/icons/Minus";
 import CartIcon from "@/components/store/icons/Cart";
+import CardIcon from "@/components/store/icons/Card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerFooter,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 
 const CartModal: React.FC = () => {
   const currentCart = useStore($cart);
   const quantity = useStore($cartCount);
-  const total = useStore($cartTotal);
+  const summaryItems = useStore($cartSummary);
+  const isOpen = useStore($cartDrawerOpen);
 
-  const [isOpen, setIsOpen] = useState(false);
-
-  const openCart = () => {
-    setIsOpen(true);
-    document.body.style.overflow = "hidden";
-  };
-
-  const closeCart = () => {
-    setIsOpen(false);
-    document.body.style.overflow = "";
-  };
+  useEffect(() => {
+    loadCart();
+  }, []);
 
   const formatPrice = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -41,83 +49,72 @@ const CartModal: React.FC = () => {
   };
 
   return (
-    <>
-      <Button
-        type="button"
-        variant="link"
-        className="text-primary"
-        aria-label="Open cart"
-        aria-expanded={isOpen}
-        aria-controls="cartDialog"
-        onClick={openCart}
+    <Drawer
+      swipeDirection="right"
+      open={isOpen}
+      onOpenChange={(open) => $cartDrawerOpen.set(open)}
+      triggerId="cart-drawer-trigger"
+    >
+      <DrawerTrigger
+        id="cart-drawer-trigger"
+        render={
+          <Button type="button" variant="link" className="relative text-primary" aria-label="Open cart" />
+        }
       >
         <CartIcon filled className="size-8" />
         {quantity > 0 && (
-          <span className="absolute -right-3 -top-2 flex size-5 items-center justify-center rounded-full bg-primary text-xs text-white">
+          <span className="absolute -right-3 -top-2 flex size-5 items-center justify-center rounded-full bg-black text-xs text-white">
             {quantity}
           </span>
         )}
-      </Button>
+      </DrawerTrigger>
 
-      {/* Overlay */}
-      <div
-        id="cartOverlay"
-        className={`fixed inset-0 z-40 bg-black opacity-50 transition-opacity ${
-          isOpen ? "block" : "hidden"
-        }`}
-        onClick={closeCart}
-      />
-
-      {/* Cart drawer */}
-      <div
-        id="cartDialog"
-        className={`fixed inset-y-0 right-0 z-50 w-full transform transition-transform duration-300 ease-in-out md:w-[560px] ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        <div className="flex h-full flex-col border-l border-neutral-200 bg-body p-6 text-black drop-shadow-lg">
-          
+      <DrawerContent className="w-[36rem]">
+        <div className="flex min-h-0 flex-1 flex-col gap-8">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <p className="text-lg font-semibold">Your Cart</p>
+          <DrawerHeader className="flex-row items-center justify-between">
+            <DrawerTitle className="">Shopping Cart</DrawerTitle>
 
-            <button aria-label="Close cart" onClick={closeCart}>
-              <CloseCart />
-            </button>
-          </div>
-
-          <div className="absolute left-0 top-16 h-px w-full bg-dark" />
+            <DrawerClose aria-label="Close cart" className="cursor-pointer">
+              <Button
+                variant="link"
+                size="icon"
+                className="text-muted-foreground"
+                aria-label="Close modal"
+              >
+                <CloseIcon className="size-5" />
+              </Button>
+            </DrawerClose>
+          </DrawerHeader>
 
           {/* Empty cart */}
           {currentCart.length === 0 ? (
             <div className="my-auto flex flex-col items-center justify-center space-y-6">
-              <FaShoppingCart size={76} />
+              <CartIcon filled className="size-32 text-primary" />
 
               <p>Oops. Your Bag Is Empty.</p>
-
-              <a
-                href="/products"
-                className="btn btn-primary w-full"
-                onClick={closeCart}
-              >
-                Don't Miss Out: Add Product
-              </a>
+              <span className="flex gap-2">
+                <p>Don't Miss Out:</p>
+                <DrawerClose
+                  render={<a href="/products" className="text-primary" />}
+                >
+                  Add Product
+                </DrawerClose>
+              </span>
             </div>
           ) : (
             <>
               {/* Items */}
-              <div className="flex h-full flex-col justify-between overflow-hidden p-1">
-                <ul className="flex-grow overflow-auto py-4">
+              <div className="flex-1 overflow-y-auto p-4">
+                <ul className="flex flex-col min-h-0 flex-1 overflow-y-auto gap-4">
                   {currentCart.map((item) => (
-                    <li
+                    <Card
                       key={item.variantId}
-                      className="flex w-full flex-col border-b border-neutral-300"
+                      className="bg-secondary "
                     >
-                      <div className="flex w-full flex-row justify-between px-1 py-4">
-
-                        {/* Product */}
-                        <div className="flex flex-row space-x-4">
-                          <div className="relative h-16 w-16 overflow-hidden rounded-md border border-neutral-300 bg-neutral-300">
+                      <CardContent >
+                        <div className="flex w-full flex-row gap-2">
+                          <div className="h-[8rem] w-[8rem] overflow-hidden rounded-md flex-none">
                             <img
                               className="h-full w-full object-cover"
                               src={
@@ -129,111 +126,116 @@ const CartModal: React.FC = () => {
                               height={64}
                             />
                           </div>
+                          <div className="flex flex-col gap-2 flex-auto">
+                            <div className="flex flex-1 flex-col text-lg">
+                              <span>{item.name}</span>
 
-                          <div className="flex flex-1 flex-col text-base">
-                            <span>{item.name}</span>
-
-                            {item.variantName && (
-                              <p className="text-sm text-neutral-500">
-                                {item.variantName}
-                              </p>
-                            )}
-
-                            <p className="mt-1 text-sm">
-                              {formatPrice(item.price)}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Quantity + delete */}
-                        <div className="ml-1 flex h-16 flex-col items-end justify-center">
-                          <div className="flex items-center space-x-2">
-                            <button
-                              type="button"
-                              className="flex h-6 w-6 items-center justify-center"
-                              onClick={() =>
-                                updateQuantity(
-                                  item.variantId,
-                                  item.quantity - 1,
-                                )
-                              }
-                              aria-label={
-                                item.quantity === 1
-                                  ? `Remove ${item.name}`
-                                  : "Decrease quantity"
-                              }
-                            >
-                              {item.quantity === 1 ? (
-                                <DeleteIcon className="size-5" />
-                              ) : (
-                                <RemoveIcon className="size-5" />
+                              {item.variantName && (
+                                <p className="text-sm text-neutral-500">
+                                  {item.variantName}
+                                </p>
                               )}
-                            </button>
+                            </div>
+                            <div className="flex w-full justify-between items-ceter">
+                              <div className="flex items-center rounded-xl px-2 py-1 bg-background-secondary">
+                                <Button
+                                  variant="link"
+                                  size="icon"
+                                  onClick={() =>
+                                    updateQuantity(
+                                      item.variantId,
+                                      item.quantity - 1,
+                                    )
+                                  }
+                                  aria-label={
+                                    item.quantity === 1
+                                      ? `Remove ${item.name}`
+                                      : "Decrease quantity"
+                                  }
+                                >
+                                  {item.quantity === 1 ? (
+                                    <TrashIcon className="size-5" />
+                                  ) : (
+                                    <MinusIcon className="size-5" />
+                                  )}
+                                </Button>
 
-                            <p>{item.quantity}</p>
+                                <p>{item.quantity}</p>
 
-                            <button
-                              type="button"
-                              className="flex h-6 w-6 items-center justify-center"
-                              onClick={() =>
-                                updateQuantity(
-                                  item.variantId,
-                                  item.quantity + 1,
-                                )
-                              }
-                              aria-label="Increase quantity"
-                            >
-                              <AddIcon className="size-5" />
-                            </button>
+                                <Button
+                                  variant="link"
+                                  size="icon"
+                                  onClick={() =>
+                                    updateQuantity(
+                                      item.variantId,
+                                      item.quantity + 1,
+                                    )
+                                  }
+                                  aria-label="Increase quantity"
+                                >
+                                  <PlusIcon className="size-5" />
+                                </Button>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm text-muted-foreground line-through">
+                                  {formatPrice(item.price)}
+                                </p>
+                                <p className="text-lg font-bold">
+                                  {formatPrice(item.price)}
+                                </p>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </li>
+                      </CardContent>
+                    </Card>
                   ))}
                 </ul>
-
-                {/* Summary */}
-                <div className="py-4 text-sm text-neutral-500 dark:text-neutral-400">
-                  <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1">
-                    <p>Subtotal</p>
-
-                    <p className="text-right text-base text-black ">
-                      {formatPrice(total)}
-                    </p>
-                  </div>
-
-                  {/* <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1 pt-1">
-                    <p>Shipping</p>
-                    <p className="text-right">
-                      Calculated at checkout
-                    </p>
-                  </div> */}
-
-                  <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1 pt-1">
-                    <p>Total</p>
-
-                    <p className="text-right text-base text-black ">
-                      {formatPrice(total)}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Checkout */}
-                <button
-                  type="button"
-                  className="block w-full rounded-md bg-primary  p-3 text-center text-sm font-medium text-white opacity-100 hover:opacity-90"
-                  onClick={() => {
-                    console.log("Checkout:", currentCart);
-                  }}
-                >
-                  Proceed to Checkout
-                </button>
               </div>
+              {/* Summary */}
+              <DrawerFooter className="gap-8">
+                <div className="flex flex-col gap-2">
+                  {summaryItems.map(({ label, value }) => (
+                    <div
+                      key={label}
+                      className={`flex items-center justify-between text-base ${label === "Total" && "font-bold border-t-[1px] pt-1"}`}
+                    >
+                      <p>{label}</p>
+                      <p className="text-right">
+                        {typeof value === "number" ? formatPrice(value) : value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {/* Checkout */}
+                <div className="space-y-4">
+                  <a
+                    className={cn(
+                      buttonVariants({ variant: "default", size: "2xl" }),
+                      "h-auto w-full p-3",
+                    )}
+                    onClick={() => {}}
+                  >
+                    <CardIcon className="size-6"/>
+                    Proceed to Checkout
+                  </a>
+                  <DrawerClose aria-label="Close cart" className="w-full">
+                    <Button
+                      variant="secondary"
+                      size="2xl"
+                      className="text-muted-foreground py-6 w-full"
+                      aria-label="Close modal"
+                    >
+                      Continue Shopping
+                    </Button>
+                  </DrawerClose>
+                </div>
+              </DrawerFooter>
             </>
           )}
         </div>
-      </div>
-    </>
+      </DrawerContent>
+    </Drawer>
   );
 };
 
