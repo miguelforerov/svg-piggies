@@ -69,7 +69,7 @@ const CartModal: React.FC = () => {
         )}
       </DrawerTrigger>
 
-      <DrawerContent className="w-[36rem]">
+      <DrawerContent className="w-full md:w-[36rem]">
         <div className="flex min-h-0 flex-1 flex-col gap-8">
           {/* Header */}
           <DrawerHeader className="flex-row items-center justify-between">
@@ -114,7 +114,7 @@ const CartModal: React.FC = () => {
                     >
                       <CardContent >
                         <div className="flex w-full flex-row gap-2">
-                          <div className="h-[8rem] w-[8rem] overflow-hidden rounded-md flex-none">
+                          <div className="h-[5rem] md:h-[8rem] w-[5rem] md:w-[8rem] overflow-hidden rounded-md flex-none">
                             <img
                               className="h-full w-full object-cover"
                               src={
@@ -127,7 +127,7 @@ const CartModal: React.FC = () => {
                             />
                           </div>
                           <div className="flex flex-col gap-2 flex-auto">
-                            <div className="flex flex-1 flex-col text-lg">
+                            <div className="flex flex-1 flex-col text-sm md:text-lg">
                               <span>{item.name}</span>
 
                               {item.variantName && (
@@ -137,7 +137,7 @@ const CartModal: React.FC = () => {
                               )}
                             </div>
                             <div className="flex w-full justify-between items-ceter">
-                              <div className="flex items-center rounded-xl px-2 py-1 bg-background-secondary">
+                              <div className="flex items-center rounded-xl px-1 py-1 bg-background-secondary">
                                 <Button
                                   variant="link"
                                   size="icon"
