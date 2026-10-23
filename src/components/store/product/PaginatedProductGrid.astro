@@ -174,7 +174,7 @@ const collectionLink = (slug?: string) => {
       </CatalogResults>
     ) : (
       <>
-        <ProductGrid initialProducts={paginatedProducts} searchValue={searchValue} />
+        <ProductGrid initialProducts={paginatedProducts} searchValue={searchValue} client:load />
         <div class="my-10">
           <Pagination currentPage={currentPage} totalPages={totalPages} basePath={paginationBasePath} query={paginationQuery} />
         </div>

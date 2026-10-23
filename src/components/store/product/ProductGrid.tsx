@@ -63,7 +63,7 @@ const ProductGrid = ({
                   </span>
                 </div>
               </div>
-              <AddToCart productId={product.id} fullWidth variant="ghost" />
+              <AddToCart product={product} fullWidth variant="ghost" />
             </div>
           );
         })}
