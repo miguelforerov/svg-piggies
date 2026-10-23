@@ -146,4 +146,4 @@ const css = [
 await mkdir(path.dirname(outputPath), { recursive: true });
 await writeFile(outputPath, css, "utf8");
 
-console.log("Design tokens generados:", outputPath);
+console.log("Generated Design Tokens:", outputPath);
