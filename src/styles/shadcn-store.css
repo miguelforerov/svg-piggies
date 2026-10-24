@@ -106,7 +106,7 @@
     --black: #000000;
 
     --background: var(--theme-svg-piggies-primary-0);
-    --background-secondary: var(--theme-svg-piggies-primary-200);
+    --background-secondary: var(--theme-svg-piggies-primary-100);
     --foreground: var(--theme-svg-piggies-primary-1000);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
@@ -114,16 +114,16 @@
     --popover-foreground: oklch(0.145 0 0);
     --primary: var(--theme-svg-piggies-primary-500);
     --primary-foreground: oklch(0.985 0 0);
-    --secondary: var(--theme-svg-piggies-primary-100);
-    --secondary-foreground: oklch(0.205 0 0);
+    --secondary: var(--theme-svg-piggies-primary-50);
+    --secondary-foreground: var(--theme-svg-piggies-primary-900);
     --muted: var(--theme-svg-piggies-primary-25);
     --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --accent: var(--theme-svg-piggies-primary-200);
+    --accent-foreground: var(--theme-svg-piggies-primary-600);
     --destructive: oklch(0.577 0.245 27.325);
     --price: var(--color-green-600);
-    --border: var(--theme-svg-piggies-primary-200);
-    --input: var(--theme-svg-piggies-primary-200);
+    --border: var(--theme-svg-piggies-primary-400);
+    --input: var(--theme-svg-piggies-primary-400);
     --ring: var(--theme-svg-piggies-primary-100);;
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
@@ -131,41 +131,28 @@
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
     --radius: 0.625rem;
-    --sidebar: var(--sp-primary-25);
+    --sidebar: var(--theme-svg-piggies-primary-25);
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.205 0 0);
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: var(--sp-primary-50);
+    --sidebar-accent: var(--theme-svg-piggies-primary-50);
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: var(--theme-svg-piggies-primary-200);
     --sidebar-ring: oklch(0.708 0 0);
 
     /* SVG Piggies Primary */
-    --sp-primary-25: #F2FBF9;
-    --sp-primary-50: #E6F7F3;
-    --sp-primary-100: #CCEFE7;
-    --sp-primary-200: #99DFCF;
-    --sp-primary-300: #66CEB7;
-    --sp-primary-400: #33BDA6;
-    --sp-primary-500: #00A17B;
-    --sp-primary-600: #008E6D;
-    --sp-primary-700: #007A5E;
-    --sp-primary-800: #00664F;
-    --sp-primary-900: #005342;
-    --sp-primary-950: #00382D;
-  
-    /* SVG Piggies Secondary */
-    --sp-secondary-50: #F3FBEF;
-    --sp-secondary-100: #E7F7DF;
-    --sp-secondary-200: #CFEFBE;
-    --sp-secondary-300: #B8E89D;
-    --sp-secondary-400: #A7E689;
-    --sp-secondary-500: #96E072;
-    --sp-secondary-600: #7FC45F;
-    --sp-secondary-700: #68A84D;
-    --sp-secondary-800: #528C3C;
-    --sp-secondary-900: #3B702B;
-    --sp-secondary-950: #25531A;
+    --sp-primary-25: #F0FFFF;
+    --sp-primary-50: #E0FFFF;
+    --sp-primary-100: #BFFFFF;
+    --sp-primary-200: #80FFFF;
+    --sp-primary-300: #40FFFF;
+    --sp-primary-400: #00E6E6;
+    --sp-primary-500: #00CCCC;
+    --sp-primary-600: #00A3A3;
+    --sp-primary-700: #007A7A;
+    --sp-primary-800: #005252;
+    --sp-primary-900: #002929;
+    --sp-primary-950: #001414;
 
     --theme-svg-piggies-primary-0: var(--white);
     --theme-svg-piggies-primary-25: var(--sp-primary-25);
