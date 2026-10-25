@@ -10,6 +10,7 @@ interface AddToCartProps {
   product: Pick<Product, "id" | "title" | "price" | "slug" | "images">
   fullWidth?: boolean
   variant?: ComponentProps<typeof Button>["variant"]
+  size?: "sm" | "lg",
   className?: string
 }
 
@@ -17,6 +18,7 @@ export function AddToCart({
   product,
   fullWidth,
   variant,
+  size,
   className,
 }: AddToCartProps) {
   const [message, setMessage] = useState<string | null>(null)
@@ -49,13 +51,13 @@ export function AddToCart({
         variant={variant}
         onClick={handleSubmit}
         className={cn(
-          "h-12 gap-2 px-6 text-xl font-medium",
+          "gap-2 px-6",
+          size === "sm" ? "text-sm h-8" : "text-xl h-12",
           fullWidth && "w-full",
           className
         )}
-        size="lg"
       >
-        <CartIcon className="size-6" />
+        <CartIcon className={`${size === "sm" ? "size-4" : "size-6"}`} />
         Add to Cart
       </Button>
 
