@@ -12,10 +12,13 @@ import { AddToCart } from "@/components/store/cart/AddToCart";
 import ProductGalery from "@/components/store/product/ProductGallery";
 import SocialShare from "@/components/store/ui/SocialShare";
 import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro";
-import { getProductBySlug } from "@/lib/catalog";
+import { getCatalog, getProductBySlug } from "@/lib/catalog";
 import ProductFeature from "@/components/store/ui/ProductFeature.astro";
 import FileType from "@/components/store/ui/FileType.astro";
 import Price from "@/components/store/product/Price"
+import RelatedProductsSlider from "@/components/store/product/RelatedProductsSlider"
+import { Separator } from "@/components/ui/separator"
+import type { Product } from "@/types/product";
 
 export const prerender = false;
 
@@ -76,10 +79,41 @@ const galleryImages = product
       ]
   : [];
 
+// Keep the temporary gallery images available to components that read product.images.
+if (product && product.images.length === 0) {
+  product.images = galleryImages.map((image, displayOrder) => ({
+    id: `${product.id}-placeholder-${displayOrder}`,
+    url: image.url,
+    displayOrder,
+  }));
+}
+
+let relatedProducts: Product[] = [];
+
+if (product) {
+  try {
+    const { products } = await getCatalog(Astro.request.headers);
+    const current = products.find((item) => item.id === product.id);
+    const collectionIds = new Set(current?.collections.map((item) => item.id) ?? []);
+    const productTypeIds = new Set(current?.productTypes.map((item) => item.id) ?? []);
+    const otherProducts = products.filter((item) => item.id !== product.id);
+    const sharesCollectionOrType = (item: (typeof products)[number]) =>
+      item.collections.some((collection) => collectionIds.has(collection.id)) ||
+      item.productTypes.some((type) => productTypeIds.has(type.id));
+
+    relatedProducts = [
+      ...otherProducts.filter(sharesCollectionOrType),
+      ...otherProducts.filter((item) => !sharesCollectionOrType(item)),
+    ].slice(0, 8);
+  } catch (error) {
+    console.error(`Unable to load related products for ${slug}:`, error);
+  }
+}
+
 
 /*
  * TODO(product-detail): hydrate real image metadata once a GET images endpoint
- * exists, and restore related products through a public aggregate endpoint.
+ * exists, and replace the catalog lookup above with a public related-products endpoint.
  * Sale price and variants remain documented for their future domain support.
  */
 ---
@@ -133,7 +167,7 @@ const galleryImages = product
               </div>
               <div class="flex gap-2 md:gap-3 xl:gap-4 items-center">
                 {/* TODO Change OriginalAmmount */}
-                <Price amount={product.price.toFixed(2)} originalAmount={product.price.toFixed(2)} />
+                <Price price={product.price.toFixed(2)} originalPrice={product.price.toFixed(2)} />
 
               </div>
               <AddToCart
@@ -149,12 +183,19 @@ const galleryImages = product
                 />
               </div>
               <FileType svg png dxf pdf />
-            <hr class="border border-border" />
+              <Separator />
               <SocialShare
                 client:load
                 title={product.title}
                 imageUrl={galleryImages[0]?.url}
               />
+              {relatedProducts.length > 0 && (
+                <>
+                  <div class="font-bold text-primary">Related Products</div>
+                  <RelatedProductsSlider client:load products={relatedProducts} />
+                  <Separator />
+                </>
+              )}
             </div>
 
             {product.description && (
