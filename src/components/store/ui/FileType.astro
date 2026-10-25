@@ -10,7 +10,7 @@ const selectedFormats = (Object.keys(fileFormats) as FileFormatsType[])
 ---
 <div class="flex flex-col gap-2">
   <span class="text-sm font-medium">File Type</span>
-  <div class="flex flex-wrap gap-2 text-secondary">
-    {selectedFormats.map((format) => <Badge variant="secondary">{format}</Badge>)}
+  <div class="flex flex-wrap gap-2">
+    {selectedFormats.map((format) => <Badge variant="secondary" className="text-accent-foreground">{format}</Badge>)}
   </div>
 </div>
