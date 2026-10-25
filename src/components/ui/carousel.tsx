@@ -102,6 +102,38 @@ function Carousel({
     }
   }, [api, onSelect])
 
+  React.useEffect(() => {
+    if (!api) return
+
+    const viewport = api.rootNode()
+    let lastWheelScroll = 0
+
+    const handleWheel = (event: WheelEvent) => {
+      if (event.ctrlKey) return
+
+      const delta = orientation === "horizontal"
+        ? Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY
+        : Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX
+
+      if (Math.abs(delta) < 2) return
+
+      const scrollForward = delta > 0
+      if (scrollForward ? !api.canScrollNext() : !api.canScrollPrev()) return
+
+      event.preventDefault()
+
+      const now = performance.now()
+      if (now - lastWheelScroll < 300) return
+
+      if (scrollForward) api.scrollNext()
+      else api.scrollPrev()
+      lastWheelScroll = now
+    }
+
+    viewport.addEventListener("wheel", handleWheel, { passive: false })
+    return () => viewport.removeEventListener("wheel", handleWheel)
+  }, [api, orientation])
+
   return (
     <CarouselContext.Provider
       value={{
