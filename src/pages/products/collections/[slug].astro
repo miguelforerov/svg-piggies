@@ -1,0 +1,9 @@
+---
+const slug = Astro.params.slug;
+if (!slug) return Astro.redirect("/products");
+
+const target = new URL("/products", Astro.url);
+target.search = Astro.url.search;
+target.searchParams.set("collection", slug);
+return Astro.rewrite(target);
+---

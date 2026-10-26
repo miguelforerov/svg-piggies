@@ -1,5 +1,5 @@
 import type { Product } from "@/types/product";
-import { CATALOG_CHANGE_EVENT, navigateCatalog } from "@/lib/catalog-navigation";
+import { CATALOG_CHANGE_EVENT, catalogUrl, getCatalogSearchParams, navigateCatalog } from "@/lib/catalog-navigation";
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import ProductGrid from "@/components/store/product/ProductGrid";
@@ -40,33 +40,14 @@ const ProductsList = ({
   const loadedQuery = useRef(initialQuery);
 
   useEffect(() => {
-    const syncQuery = () => setQuery(new URLSearchParams(window.location.search).toString());
-    const collectionNav = document.querySelector('nav[aria-label="Collections"]');
-    const handleCollectionClick = (event: Event) => {
-      const mouseEvent = event as globalThis.MouseEvent;
-      const target = mouseEvent.target;
-      if (
-        mouseEvent.button !== 0 || mouseEvent.metaKey || mouseEvent.ctrlKey ||
-        mouseEvent.shiftKey || mouseEvent.altKey || !(target instanceof Element)
-      ) return;
-
-      const link = target.closest<HTMLAnchorElement>("a[data-catalog-collection]");
-      if (!link) return;
-
-      mouseEvent.preventDefault();
-      link.classList.remove("hover:text-primary", "duration-300");
-      navigateCatalog(link.href);
-    };
-
+    const syncQuery = () => setQuery(getCatalogSearchParams(window.location).toString());
     window.addEventListener(CATALOG_CHANGE_EVENT, syncQuery);
     window.addEventListener("popstate", syncQuery);
-    collectionNav?.addEventListener("click", handleCollectionClick);
     syncQuery();
 
     return () => {
       window.removeEventListener(CATALOG_CHANGE_EVENT, syncQuery);
       window.removeEventListener("popstate", syncQuery);
-      collectionNav?.removeEventListener("click", handleCollectionClick);
     };
   }, []);
 
@@ -130,8 +111,8 @@ const ProductsList = ({
         <Pagination
           currentPage={results.currentPage}
           totalPages={results.totalPages}
-          basePath="/products"
-          query={query}
+          basePath={window.location.pathname}
+          query={new URL(catalogUrl(window.location.pathname, new URLSearchParams(query)), window.location.origin).searchParams.toString()}
           onPageClick={handlePageClick}
         />
       </div>

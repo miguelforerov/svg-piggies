@@ -8,11 +8,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { defaultSort, sorting } from "@/lib/constants";
-import { CATALOG_CHANGE_EVENT, navigateCatalog } from "@/lib/catalog-navigation";
+import { CATALOG_CHANGE_EVENT, catalogUrl, navigateCatalog } from "@/lib/catalog-navigation";
 
-const ShortBy = () => {
+const ShortBy = ({ initialQuery = "" }: { initialQuery?: string }) => {
   const [sortSlug, setSortSlug] = useState<string | null>(
-    () => new URLSearchParams(window.location.search).get("sort"),
+    () => new URLSearchParams(typeof window === "undefined" ? initialQuery : window.location.search).get("sort"),
   );
   const activeSort = sorting.find((item) => item.slug === sortSlug) ?? defaultSort;
 
@@ -34,8 +34,7 @@ const ShortBy = () => {
     else params.delete("sort");
     params.delete("page");
 
-    const query = params.toString();
-    navigateCatalog(query ? `/products?${query}` : "/products");
+    navigateCatalog(catalogUrl(window.location.pathname, params));
   };
 
   return (
