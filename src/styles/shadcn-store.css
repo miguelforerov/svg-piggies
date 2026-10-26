@@ -82,22 +82,32 @@
     --text-heading-1: 40px;
     --text-heading-1--line-height: 40px;
     --text-heading-1--letter-spacing: -1.5px;
-    --text-heading-1--font-weight: 500;
+    --text-heading-1--font-weight: 700;
 
     --text-heading-2: 26px;
     --text-heading-2--line-height: 32px;
     --text-heading-2--letter-spacing: -1px;
-    --text-heading-2--font-weight: 500;
+    --text-heading-2--font-weight: 700;
 
     --text-heading-3: 22px;
     --text-heading-3--line-height: 26.4px;
     --text-heading-3--letter-spacing: -0.5px;
-    --text-heading-3--font-weight: 500;
+    --text-heading-3--font-weight: 700;
 
     --text-heading-4: 18px;
     --text-heading-4--line-height: 21.6px;
     --text-heading-4--letter-spacing: 0px;
-    --text-heading-4--font-weight: 500;
+    --text-heading-4--font-weight: 700;
+
+    --text-heading-5: 16px;
+    --text-heading-5--line-height: 20px;
+    --text-heading-5--letter-spacing: 0px;
+    --text-heading-5--font-weight: 700;
+
+    --text-heading-6: 14px;
+    --text-heading-6--line-height: 18px;
+    --text-heading-6--letter-spacing: 0px;
+    --text-heading-6--font-weight: 700;
 
 }
 
