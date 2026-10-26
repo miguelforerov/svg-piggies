@@ -2,7 +2,7 @@ import type { Product } from "@/types/product";
 import { CATALOG_CHANGE_EVENT, navigateCatalog } from "@/lib/catalog-navigation";
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
-import ProductGrid from "./ProductGrid";
+import ProductGrid from "@/components/store/product/ProductGrid";
 import Pagination from "@/components/store/ui/Pagination";
 
 interface Results {
@@ -20,7 +20,7 @@ interface CatalogResultsProps {
   initialQuery: string;
 }
 
-const CatalogResults = ({
+const ProductsList = ({
   initialProducts,
   initialSearchValue,
   initialCurrentPage,
@@ -126,7 +126,6 @@ const CatalogResults = ({
         </p>
       )}
       <ProductGrid initialProducts={results.products} searchValue={results.searchValue} />
-
       <div className="my-10">
         <Pagination
           currentPage={results.currentPage}
@@ -140,4 +139,4 @@ const CatalogResults = ({
   );
 };
 
-export default CatalogResults;
+export default ProductsList;

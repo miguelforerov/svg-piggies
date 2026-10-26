@@ -5,7 +5,7 @@ import type { ProductType } from "@/types/product-type";
 import Pagination from "@/components/store/ui/Pagination";
 import ProductFilters from "@/components/store/product/ProductFilters";
 import ProductGrid from "@/components/store/product/ProductGrid";
-import CatalogResults from "@/components/store/product/CatalogResults";
+import ProductsList from "@/components/store/product/ProductList";
 import { hasActiveCatalogFilters } from "@/lib/catalog-navigation";
 import { PRODUCT_PAGE_SIZES } from "@/lib/product-page-sizes";
 import ShortBy from "@/components/store/product/ShortBy";
@@ -157,7 +157,7 @@ const collectionLink = (slug?: string) => {
       />
     </div>)}
     {resultsQuery !== undefined ? (
-      <CatalogResults
+      <ProductsList
         initialProducts={paginatedProducts}
         initialSearchValue={searchValue ?? ""}
         initialCurrentPage={currentPage}
@@ -171,7 +171,7 @@ const collectionLink = (slug?: string) => {
             <Pagination currentPage={currentPage} totalPages={totalPages} basePath={paginationBasePath} query={paginationQuery} />
           </div>
         </div>
-      </CatalogResults>
+      </ProductsList>
     ) : (
       <>
         <ProductGrid initialProducts={paginatedProducts} searchValue={searchValue} client:load />
