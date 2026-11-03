@@ -8,6 +8,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+    /* Breakpoints de Tailwind */
+    --breakpoint-sm: 40rem; /* 640px - Mobile */
+    --breakpoint-md: 48rem; /* 768px - Tablet */
+    --breakpoint-lg: 64rem; /* 1024px - Desktop */
+    --breakpoint-xl: 80rem; /* 1280px - Large Desktop */
+    --breakpoint-2xl: 96rem; /* 1536px - Extra-Large Desktop */
+
     --font-heading: var(--font-sans);
     --font-sans: 'Open Sans', sans-serif;
     --font-script: 'Dancing Script', cursive;
@@ -147,7 +154,7 @@
     --sidebar-primary-foreground: oklch(0.985 0 0);
     --sidebar-accent: var(--theme-svg-piggies-primary-50);
     --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: var(--theme-svg-piggies-primary-200);
+    --sidebar-border: var(--theme-svg-piggies-primary-400);
     --sidebar-ring: oklch(0.708 0 0);
 
     /* SVG Piggies Primary */
