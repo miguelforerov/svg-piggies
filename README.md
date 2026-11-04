@@ -86,12 +86,35 @@ Run the Go API through the Cloudflare Workers WebAssembly adapter with:
 npm run worker:dev
 ```
 
-`wrangler.jsonc` declares the runtime contract:
+`backend/wrangler.jsonc` declares the API Worker's runtime contract:
 
 - `HYPERDRIVE` for PostgreSQL connectivity;
-- `PRODUCT_FILES` for private R2 objects;
+- `PRODUCT_FILES` for private R2 downloads and `PRODUCT_ASSETS` for public product images;
 - committed non-secret application variables; and
-- required Stripe secrets loaded locally from `.dev.vars`.
+- required Stripe secrets loaded locally from `backend/.dev.vars`.
+
+### R2 storage prerequisites
+
+The S3 client uses `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`
+(`https://<account-id>.r2.cloudflarestorage.com`), `R2_REGION=auto`, and the
+two `PRODUCT_*_BUCKET` names. The native server reads these values from `.env`.
+The Worker reads its bucket names and region from `backend/wrangler.jsonc` and
+its credentials and endpoint from Worker secrets (locally,
+`backend/.dev.vars`, using `backend/.dev.vars.example` as a template). R2
+bindings and S3 environment variables are separate; keep their bucket names
+aligned. Development uses `svgpiggies-files-dev` and `svgpiggies-assets-dev`;
+production uses `svgpiggies-files` and `svgpiggies-assets`. Keep the files
+bucket private and never expose the secret access key to the storefront.
+
+Before testing browser uploads from the admin panel, configure a CORS policy
+on **both** buckets with the storefront origin, `PUT`, and every header sent
+with the signed request, including `Content-Type` when present. Add `GET`,
+`HEAD`, or other methods only when the final browser flow needs them. The
+browser must send the exact signed header values returned with the PUT URL.
+The API must authorize each operation and derive the bucket and object key from
+trusted server-side data. A presigned PUT URL is reusable until it expires;
+verify uploaded metadata, including size, with HEAD afterward. The client has
+not yet been exercised against real R2 or with HEAD/DELETE in a Worker runtime.
 
 In the Worker, the same repositories acquire a connection through the
 `HYPERDRIVE` binding for each database operation. Hyperdrive performs the
