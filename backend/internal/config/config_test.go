@@ -31,6 +31,15 @@ func TestLoadDefaults(t *testing.T) {
 	if got.DownloadURLTTL != 15*time.Minute {
 		t.Errorf("DownloadURLTTL = %s, want 15m", got.DownloadURLTTL)
 	}
+	if got.R2Region != "auto" {
+		t.Errorf("R2Region = %q, want auto", got.R2Region)
+	}
+	if got.R2AccessKeyID != "" {
+		t.Errorf("R2AccessKeyID = %q, want empty", got.R2AccessKeyID)
+	}
+	if got.R2Endpoint != "" {
+		t.Errorf("R2Endpoint = %q, want empty", got.R2Endpoint)
+	}
 }
 
 func TestLoadRejectsDevelopmentAuthInProduction(t *testing.T) {
@@ -135,5 +144,44 @@ func TestValidatePayments(t *testing.T) {
 	}
 	if err := config.ValidatePayments(); err != nil {
 		t.Fatalf("ValidatePayments() error = %v", err)
+	}
+}
+
+func TestLoadR2Configuration(t *testing.T) {
+	t.Parallel()
+
+	values := map[string]string{
+		"R2_ACCESS_KEY_ID":      "test-access-key",
+		"R2_SECRET_ACCESS_KEY":  "test-secret-key",
+		"R2_ENDPOINT":           "https://example.r2.cloudflarestorage.com/",
+		"R2_REGION":             "auto",
+		"PRODUCT_FILES_BUCKET":  "svgpiggies-files-dev",
+		"PRODUCT_ASSETS_BUCKET": "svgpiggies-assets-dev",
+	}
+
+	got, err := Load(func(name string) string {
+		return values[name]
+	})
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if got.R2AccessKeyID != values["R2_ACCESS_KEY_ID"] {
+		t.Errorf("R2AccessKeyID = %q", got.R2AccessKeyID)
+	}
+	if got.R2SecretAccessKey != values["R2_SECRET_ACCESS_KEY"] {
+		t.Errorf("R2SecretAccessKey does not match")
+	}
+	if got.R2Endpoint != "https://example.r2.cloudflarestorage.com" {
+		t.Errorf("R2Endpoint = %q", got.R2Endpoint)
+	}
+	if got.R2Region != "auto" {
+		t.Errorf("R2Region = %q", got.R2Region)
+	}
+	if got.ProductFilesBucket != values["PRODUCT_FILES_BUCKET"] {
+		t.Errorf("ProductFilesBucket = %q", got.ProductFilesBucket)
+	}
+	if got.ProductAssetsBucket != values["PRODUCT_ASSETS_BUCKET"] {
+		t.Errorf("ProductAssetsBucket = %q", got.ProductAssetsBucket)
 	}
 }

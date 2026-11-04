@@ -31,8 +31,11 @@
   "r2_buckets": [
     {
       "binding": "PRODUCT_FILES",
-      "bucket_name": "svg-piggies-product-files",
-      "preview_bucket_name": "svg-piggies-product-files-preview"
+      "bucket_name": "svgpiggies-files-development",
+    },
+    {
+      "binding": "PRODUCT_ASSETS",
+      "bucket_name": "svgpiggies-assets-development",
     }
   ],
   "observability": {
@@ -65,7 +68,11 @@
       "r2_buckets": [
         {
           "binding": "PRODUCT_FILES",
-          "bucket_name": "svg-piggies-product-files"
+          "bucket_name": "svgpiggies-files"
+        },
+        {
+          "binding": "PRODUCT_ASSETS",
+          "bucket_name": "svgpiggies-assets"
         }
       ]
     }

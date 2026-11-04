@@ -33,6 +33,12 @@ type Config struct {
 	DownloadURLTTL             time.Duration
 	StripeSecretKey            string
 	StripeWebhookSecret        string
+	R2AccessKeyID              string
+	R2SecretAccessKey          string
+	R2Endpoint                 string
+	R2Region                   string
+	ProductFilesBucket         string
+	ProductAssetsBucket        string
 }
 
 func Load(lookup LookupFunc) (Config, error) {
@@ -72,6 +78,12 @@ func Load(lookup LookupFunc) (Config, error) {
 		DownloadURLTTL:           time.Duration(ttlSeconds) * time.Second,
 		StripeSecretKey:          lookup("STRIPE_SECRET_KEY"),
 		StripeWebhookSecret:      lookup("STRIPE_WEBHOOK_SECRET"),
+		R2AccessKeyID:            strings.TrimSpace(lookup("R2_ACCESS_KEY_ID")),
+		R2SecretAccessKey:        lookup("R2_SECRET_ACCESS_KEY"),
+		R2Endpoint:               strings.TrimRight(strings.TrimSpace(lookup("R2_ENDPOINT")), "/"),
+		R2Region:                 valueOrDefault(strings.TrimSpace(lookup("R2_REGION")), "auto"),
+		ProductFilesBucket:       strings.TrimSpace(lookup("PRODUCT_FILES_BUCKET")),
+		ProductAssetsBucket:      strings.TrimSpace(lookup("PRODUCT_ASSETS_BUCKET")),
 	}
 	if err := config.ValidateAuth(); err != nil {
 		return Config{}, err
