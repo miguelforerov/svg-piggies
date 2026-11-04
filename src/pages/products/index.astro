@@ -53,31 +53,29 @@ const maxPriceData = { amount: String(Math.ceil(highestPrice)), currencyCode: "U
 
 <Base title="Products | SVG Piggies">
   <MaxWidthContainer>
-    <div class="w-full">
-      {
-        catalogError && (
-          <div class="container pt-6">
-            <div class="rounded-md border border-red-300 bg-red-50 p-4 text-red-800">
-              The product catalog could not be loaded. Please try again later.
-            </div>
+    {
+      catalogError && (
+        <div class="container pt-6">
+          <div class="rounded-md border border-red-300 bg-red-50 p-4 text-red-800">
+            The product catalog could not be loaded. Please try again later.
           </div>
-        )
-      }
-      <PaginatedProductGrid
-        products={results.products}
-        searchValue={results.searchValue}
-        currentPage={results.currentPage}
-        totalPages={results.totalPages}
-        resultsQuery={searchParams.toString()}
-        shortBy={true}
-        filters={{
-          collections,
-          productTypes,
-          maxPriceData,
-          collectionCounts,
-          productTypeCounts,
-        }}
-      />
-    </div>
+        </div>
+      )
+    }
+    <PaginatedProductGrid
+      products={results.products}
+      searchValue={results.searchValue}
+      currentPage={results.currentPage}
+      totalPages={results.totalPages}
+      resultsQuery={searchParams.toString()}
+      shortBy={true}
+      filters={{
+        collections,
+        productTypes,
+        maxPriceData,
+        collectionCounts,
+        productTypeCounts,
+      }}
+    />
   </MaxWidthContainer>
 </Base>
