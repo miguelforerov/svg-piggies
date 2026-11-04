@@ -38,13 +38,15 @@ const CartModal: React.FC = () => {
   const isOpen = useStore($cartDrawerOpen);
 
   useEffect(() => {
-    loadCart();
+    void loadCart().catch((error) => {
+      console.error("Failed to load cart:", error);
+    });
   }, []);
 
   const formatPrice = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-AU", {
       style: "currency",
-      currency: "USD",
+      currency: "AUD",
     }).format(amount);
   };
 
@@ -142,10 +144,12 @@ const CartModal: React.FC = () => {
                                   variant="link"
                                   size="icon"
                                   onClick={() =>
-                                    updateQuantity(
+                                    void updateQuantity(
                                       item.variantId,
                                       item.quantity - 1,
-                                    )
+                                    ).catch((error) => {
+                                      console.error("Failed to update cart:", error);
+                                    })
                                   }
                                   aria-label={
                                     item.quantity === 1
@@ -166,10 +170,12 @@ const CartModal: React.FC = () => {
                                   variant="link"
                                   size="icon"
                                   onClick={() =>
-                                    updateQuantity(
+                                    void updateQuantity(
                                       item.variantId,
                                       item.quantity + 1,
-                                    )
+                                    ).catch((error) => {
+                                      console.error("Failed to update cart:", error);
+                                    })
                                   }
                                   aria-label="Increase quantity"
                                 >

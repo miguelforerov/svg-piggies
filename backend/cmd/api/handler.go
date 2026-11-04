@@ -26,6 +26,9 @@ func newHandler(
 
 	server := handlers.NewServer(
 		cfg.Environment,
+		dependencies.carts,
+		dependencies.customers,
+		dependencies.orders,
 		dependencies.collections,
 		dependencies.productCollections,
 		dependencies.productImages,
@@ -65,7 +68,10 @@ func newHandler(
 func withCORS(next http.Handler, allowedOrigin string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Stripe-Signature")
+		w.Header().Set(
+			"Access-Control-Allow-Headers",
+			"Content-Type, Stripe-Signature, X-Cart-Token",
+		)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Vary", "Origin")
 

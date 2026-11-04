@@ -23,11 +23,11 @@ export function AddToCart({
 }: AddToCartProps) {
   const [message, setMessage] = useState<string | null>(null)
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setMessage(null)
 
     try {
-      addToCart({
+      await addToCart({
         id: product.id,
         productId: product.id,
         variantId: product.id,

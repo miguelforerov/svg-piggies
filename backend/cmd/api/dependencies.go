@@ -3,10 +3,16 @@ package main
 import (
 	"fmt"
 
+	"github.com/zdenaforero/svg-piggies/backend/internal/carts"
+	cartspostgres "github.com/zdenaforero/svg-piggies/backend/internal/carts/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/collections"
 	collectionspostgres "github.com/zdenaforero/svg-piggies/backend/internal/collections/postgres"
+	"github.com/zdenaforero/svg-piggies/backend/internal/customers"
+	customerspostgres "github.com/zdenaforero/svg-piggies/backend/internal/customers/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/database"
 	"github.com/zdenaforero/svg-piggies/backend/internal/handlers"
+	"github.com/zdenaforero/svg-piggies/backend/internal/orders"
+	orderspostgres "github.com/zdenaforero/svg-piggies/backend/internal/orders/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productcollections"
 	productcollectionspostgres "github.com/zdenaforero/svg-piggies/backend/internal/productcollections/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productimages"
@@ -22,7 +28,10 @@ import (
 )
 
 type dependencies struct {
+	carts                handlers.CartService
 	collections          handlers.CollectionService
+	customers            handlers.CustomerService
+	orders               handlers.OrderService
 	productCollections   handlers.ProductCollectionService
 	productImages        handlers.ProductImageService
 	productProductTypes  handlers.ProductProductTypeService
@@ -32,6 +41,34 @@ type dependencies struct {
 }
 
 func buildDependencies(provider database.Provider) (dependencies, error) {
+	cartRepository, err := cartspostgres.NewRepository(provider)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create carts repository: %w", err)
+	}
+
+	cartService, err := carts.NewService(cartRepository)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create carts service: %w", err)
+	}
+
+	customerRepository, err := customerspostgres.NewRepository(provider)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create customers repository: %w", err)
+	}
+	customerService, err := customers.NewService(customerRepository)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create customers service: %w", err)
+	}
+
+	orderRepository, err := orderspostgres.NewRepository(provider)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create orders repository: %w", err)
+	}
+	orderService, err := orders.NewService(orderRepository)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create orders service: %w", err)
+	}
+
 	repository, err := collectionspostgres.NewRepository(provider)
 	if err != nil {
 		return dependencies{}, fmt.Errorf("create collections repository: %w", err)
@@ -103,7 +140,10 @@ func buildDependencies(provider database.Provider) (dependencies, error) {
 	}
 
 	return dependencies{
+		carts:                cartService,
 		collections:          service,
+		customers:            customerService,
+		orders:               orderService,
 		productCollections:   productCollectionService,
 		productImages:        productImageService,
 		productProductTypes:  productProductTypeService,

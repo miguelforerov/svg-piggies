@@ -20,6 +20,168 @@ paths:
               schema:
                 $ref: "#/components/schemas/Health"
 
+  /api/cart:
+    post:
+      operationId: createCart
+      summary: Create a guest cart
+      tags: [cart]
+      security: []
+      responses:
+        "201":
+          description: Guest cart created. The token is returned only to the client.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedCart"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    get:
+      operationId: getCart
+      summary: Get the current guest cart
+      tags: [cart]
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CartToken"
+      responses:
+        "200":
+          description: Current cart and its items.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      operationId: clearCart
+      summary: Remove every item from the current guest cart
+      tags: [cart]
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CartToken"
+      responses:
+        "204":
+          description: Cart cleared.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/cart/items:
+    post:
+      operationId: addCartItem
+      summary: Add a product to the current guest cart
+      tags: [cart]
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CartToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddCartItemInput"
+      responses:
+        "200":
+          description: Updated cart.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/cart/items/{productId}:
+    parameters:
+      - $ref: "#/components/parameters/ProductId"
+      - $ref: "#/components/parameters/CartToken"
+    put:
+      operationId: updateCartItem
+      summary: Set a product's quantity in the current guest cart
+      tags: [cart]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCartItemInput"
+      responses:
+        "200":
+          description: Updated cart.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      operationId: deleteCartItem
+      summary: Remove a product from the current guest cart
+      tags: [cart]
+      security: []
+      responses:
+        "200":
+          description: Updated cart.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/checkout/orders:
+    post:
+      operationId: createCheckoutOrder
+      summary: Create a pending order from the current guest cart
+      description: >-
+        Prices and order items are copied from the database, never accepted from
+        the browser. The customer is created or matched by email and the cart is
+        converted atomically. Stripe Checkout is attached in the payment step.
+      tags: [checkout]
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/CartToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutCustomerInput"
+      responses:
+        "201":
+          description: Pending order created from the cart.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /api/products/{slug}:
     parameters:
       - name: slug
@@ -139,6 +301,192 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /api/admin/customers:
+    get:
+      operationId: getCustomers
+      summary: List customers
+      tags: [admin-customers]
+      security:
+        - CloudflareAccess: []
+      responses:
+        "200":
+          description: Customers ordered by creation date, newest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      operationId: createCustomer
+      summary: Create a customer
+      tags: [admin-customers]
+      security:
+        - CloudflareAccess: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCustomerInput"
+      responses:
+        "201":
+          description: Customer created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/admin/customers/{customerId}:
+    parameters:
+      - $ref: "#/components/parameters/CustomerId"
+    get:
+      operationId: getCustomer
+      summary: Get a customer
+      tags: [admin-customers]
+      security:
+        - CloudflareAccess: []
+      responses:
+        "200":
+          description: Customer found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    put:
+      operationId: updateCustomer
+      summary: Replace editable customer details
+      tags: [admin-customers]
+      security:
+        - CloudflareAccess: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCustomerInput"
+      responses:
+        "200":
+          description: Customer updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      operationId: deleteCustomer
+      summary: Delete a customer profile while preserving order snapshots
+      tags: [admin-customers]
+      security:
+        - CloudflareAccess: []
+      responses:
+        "204":
+          description: Customer deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/admin/orders:
+    get:
+      operationId: getOrders
+      summary: List orders with their immutable line-item snapshots
+      tags: [admin-orders]
+      security:
+        - CloudflareAccess: []
+      responses:
+        "200":
+          description: Orders ordered by creation date, newest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/admin/orders/{orderId}:
+    parameters:
+      - $ref: "#/components/parameters/OrderId"
+    get:
+      operationId: getOrder
+      summary: Get an order and its items
+      tags: [admin-orders]
+      security:
+        - CloudflareAccess: []
+      responses:
+        "200":
+          description: Order found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    put:
+      operationId: updateOrder
+      summary: Update the fulfilment or cancellation state of an order
+      description: Payment state is intentionally excluded and may only be changed by verified Stripe events.
+      tags: [admin-orders]
+      security:
+        - CloudflareAccess: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderInput"
+      responses:
+        "200":
+          description: Order updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /api/admin/collections/{collectionId}:
     parameters:
       - $ref: "#/components/parameters/CollectionId"
@@ -866,6 +1214,30 @@ components:
       schema:
         type: string
         format: uuid
+    CartToken:
+      name: X-Cart-Token
+      in: header
+      required: true
+      description: Opaque guest-cart token returned when the cart is created.
+      schema:
+        type: string
+        minLength: 20
+    CustomerId:
+      name: customerId
+      in: path
+      required: true
+      description: Customer UUID.
+      schema:
+        type: string
+        format: uuid
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      description: Order UUID.
+      schema:
+        type: string
+        format: uuid
 
   responses:
     BadRequest:
@@ -909,6 +1281,346 @@ components:
         status:
           type: string
           enum: [ok]
+
+    CartStatus:
+      type: string
+      enum: [active]
+
+    CartItem:
+      type: object
+      required:
+        - id
+        - productId
+        - name
+        - slug
+        - price
+        - quantity
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        price:
+          type: string
+          pattern: '^(0|[0-9]{1,10})(\.[0-9]{1,2})?$'
+          example: "19.95"
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 99
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    Cart:
+      type: object
+      required: [id, status, currency, items, createdAt, updatedAt, expiresAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/CartStatus"
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: aud
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItem"
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        expiresAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    CreatedCart:
+      type: object
+      required: [token, cart]
+      properties:
+        token:
+          type: string
+          minLength: 20
+          writeOnly: true
+        cart:
+          $ref: "#/components/schemas/Cart"
+
+    AddCartItemInput:
+      type: object
+      required: [productId]
+      properties:
+        productId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 99
+          default: 1
+
+    UpdateCartItemInput:
+      type: object
+      required: [quantity]
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 99
+
+    CheckoutCustomerInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+
+    Customer:
+      type: object
+      required: [id, email, marketingConsent, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        stripeCustomerId:
+          type: string
+          nullable: true
+          readOnly: true
+        authUserId:
+          type: string
+          nullable: true
+          readOnly: true
+        marketingConsent:
+          type: boolean
+        marketingConsentAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    CreateCustomerInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        marketingConsent:
+          type: boolean
+          default: false
+
+    UpdateCustomerInput:
+      type: object
+      required: [email, marketingConsent]
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        marketingConsent:
+          type: boolean
+
+    OrderStatus:
+      type: string
+      enum: [pending, fulfilled, cancelled]
+
+    PaymentStatus:
+      type: string
+      enum: [unpaid, processing, paid, failed, partially_refunded, refunded]
+
+    OrderItem:
+      type: object
+      required:
+        - id
+        - orderId
+        - productId
+        - productName
+        - quantity
+        - unitPriceAmount
+        - lineTotalAmount
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        productName:
+          type: string
+        variantName:
+          type: string
+          nullable: true
+        sku:
+          type: string
+          nullable: true
+        quantity:
+          type: integer
+          minimum: 1
+        unitPriceAmount:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Unit price in the currency's smallest unit (cents for AUD).
+        lineTotalAmount:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    Order:
+      type: object
+      required:
+        - id
+        - customerEmail
+        - orderStatus
+        - paymentStatus
+        - currency
+        - subtotalAmount
+        - discountAmount
+        - taxAmount
+        - totalAmount
+        - amountRefunded
+        - items
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+          nullable: true
+        customerEmail:
+          type: string
+          format: email
+        orderStatus:
+          $ref: "#/components/schemas/OrderStatus"
+        paymentStatus:
+          $ref: "#/components/schemas/PaymentStatus"
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        subtotalAmount:
+          type: integer
+          format: int64
+        discountAmount:
+          type: integer
+          format: int64
+        taxAmount:
+          type: integer
+          format: int64
+        totalAmount:
+          type: integer
+          format: int64
+        amountRefunded:
+          type: integer
+          format: int64
+        stripeCheckoutSessionId:
+          type: string
+          nullable: true
+          readOnly: true
+        stripePaymentIntentId:
+          type: string
+          nullable: true
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        fulfilledAt:
+          type: string
+          format: date-time
+          nullable: true
+        cancelledAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    UpdateOrderInput:
+      type: object
+      required: [orderStatus]
+      properties:
+        orderStatus:
+          $ref: "#/components/schemas/OrderStatus"
 
     Collection:
       type: object

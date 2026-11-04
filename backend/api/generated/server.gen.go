@@ -17,6 +17,21 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for CartStatus.
+const (
+	CartStatusActive CartStatus = "active"
+)
+
+// Valid indicates whether the value is a known member of the CartStatus enum.
+func (e CartStatus) Valid() bool {
+	switch e {
+	case CartStatusActive:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ErrorCode.
 const (
 	ErrorCodeConflict       ErrorCode = "conflict"
@@ -59,30 +74,125 @@ func (e HealthStatus) Valid() bool {
 	}
 }
 
-// Defines values for ProductStatus.
+// Defines values for OrderStatus.
 const (
-	Active   ProductStatus = "active"
-	Archived ProductStatus = "archived"
-	Draft    ProductStatus = "draft"
+	Cancelled OrderStatus = "cancelled"
+	Fulfilled OrderStatus = "fulfilled"
+	Pending   OrderStatus = "pending"
 )
 
-// Valid indicates whether the value is a known member of the ProductStatus enum.
-func (e ProductStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the OrderStatus enum.
+func (e OrderStatus) Valid() bool {
 	switch e {
-	case Active:
+	case Cancelled:
 		return true
-	case Archived:
+	case Fulfilled:
 		return true
-	case Draft:
+	case Pending:
 		return true
 	default:
 		return false
 	}
 }
 
+// Defines values for PaymentStatus.
+const (
+	Failed            PaymentStatus = "failed"
+	Paid              PaymentStatus = "paid"
+	PartiallyRefunded PaymentStatus = "partially_refunded"
+	Processing        PaymentStatus = "processing"
+	Refunded          PaymentStatus = "refunded"
+	Unpaid            PaymentStatus = "unpaid"
+)
+
+// Valid indicates whether the value is a known member of the PaymentStatus enum.
+func (e PaymentStatus) Valid() bool {
+	switch e {
+	case Failed:
+		return true
+	case Paid:
+		return true
+	case PartiallyRefunded:
+		return true
+	case Processing:
+		return true
+	case Refunded:
+		return true
+	case Unpaid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProductStatus.
+const (
+	ProductStatusActive   ProductStatus = "active"
+	ProductStatusArchived ProductStatus = "archived"
+	ProductStatusDraft    ProductStatus = "draft"
+)
+
+// Valid indicates whether the value is a known member of the ProductStatus enum.
+func (e ProductStatus) Valid() bool {
+	switch e {
+	case ProductStatusActive:
+		return true
+	case ProductStatusArchived:
+		return true
+	case ProductStatusDraft:
+		return true
+	default:
+		return false
+	}
+}
+
+// AddCartItemInput defines model for AddCartItemInput.
+type AddCartItemInput struct {
+	ProductId openapi_types.UUID `json:"productId"`
+	Quantity  *int               `json:"quantity,omitempty"`
+}
+
 // AddProductImagesInput defines model for AddProductImagesInput.
 type AddProductImagesInput struct {
 	Images []NewProductImage `json:"images"`
+}
+
+// Cart defines model for Cart.
+type Cart struct {
+	CreatedAt *time.Time `json:"createdAt,omitempty"`
+
+	// Currency Example: aud
+	Currency  string             `json:"currency"`
+	ExpiresAt *time.Time         `json:"expiresAt,omitempty"`
+	Id        openapi_types.UUID `json:"id"`
+	Items     []CartItem         `json:"items"`
+	Status    CartStatus         `json:"status"`
+	UpdatedAt *time.Time         `json:"updatedAt,omitempty"`
+}
+
+// CartItem defines model for CartItem.
+type CartItem struct {
+	CreatedAt *time.Time         `json:"createdAt,omitempty"`
+	Id        openapi_types.UUID `json:"id"`
+	Name      string             `json:"name"`
+
+	// Price Example: 19.95
+	Price     string             `json:"price"`
+	ProductId openapi_types.UUID `json:"productId"`
+	Quantity  int                `json:"quantity"`
+	Slug      string             `json:"slug"`
+	UpdatedAt *time.Time         `json:"updatedAt,omitempty"`
+}
+
+// CartStatus defines model for CartStatus.
+type CartStatus string
+
+// CheckoutCustomerInput defines model for CheckoutCustomerInput.
+type CheckoutCustomerInput struct {
+	Email     openapi_types.Email `json:"email"`
+	FirstName *string             `json:"firstName,omitempty"`
+	LastName  *string             `json:"lastName,omitempty"`
+	Phone     *string             `json:"phone,omitempty"`
 }
 
 // Collection defines model for Collection.
@@ -98,6 +208,15 @@ type CreateCollectionInput struct {
 	Description *string `json:"description,omitempty"`
 	Name        string  `json:"name"`
 	Slug        string  `json:"slug"`
+}
+
+// CreateCustomerInput defines model for CreateCustomerInput.
+type CreateCustomerInput struct {
+	Email            openapi_types.Email `json:"email"`
+	FirstName        *string             `json:"firstName,omitempty"`
+	LastName         *string             `json:"lastName,omitempty"`
+	MarketingConsent *bool               `json:"marketingConsent,omitempty"`
+	Phone            *string             `json:"phone,omitempty"`
 }
 
 // CreateProductCollectionInput defines model for CreateProductCollectionInput.
@@ -139,6 +258,27 @@ type CreateProductTypeInput struct {
 	Slug        string  `json:"slug"`
 }
 
+// CreatedCart defines model for CreatedCart.
+type CreatedCart struct {
+	Cart  Cart    `json:"cart"`
+	Token *string `json:"token,omitempty"`
+}
+
+// Customer defines model for Customer.
+type Customer struct {
+	AuthUserId         *string             `json:"authUserId,omitempty"`
+	CreatedAt          *time.Time          `json:"createdAt,omitempty"`
+	Email              openapi_types.Email `json:"email"`
+	FirstName          *string             `json:"firstName,omitempty"`
+	Id                 openapi_types.UUID  `json:"id"`
+	LastName           *string             `json:"lastName,omitempty"`
+	MarketingConsent   bool                `json:"marketingConsent"`
+	MarketingConsentAt *time.Time          `json:"marketingConsentAt,omitempty"`
+	Phone              *string             `json:"phone,omitempty"`
+	StripeCustomerId   *string             `json:"stripeCustomerId,omitempty"`
+	UpdatedAt          *time.Time          `json:"updatedAt,omitempty"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	Code    ErrorCode `json:"code"`
@@ -170,6 +310,51 @@ type NewProductImage struct {
 	R2ObjectKey      string  `json:"r2ObjectKey"`
 	WidthPx          *int    `json:"widthPx,omitempty"`
 }
+
+// Order defines model for Order.
+type Order struct {
+	AmountRefunded          int64               `json:"amountRefunded"`
+	CancelledAt             *time.Time          `json:"cancelledAt,omitempty"`
+	CreatedAt               *time.Time          `json:"createdAt,omitempty"`
+	Currency                string              `json:"currency"`
+	CustomerEmail           openapi_types.Email `json:"customerEmail"`
+	CustomerId              *openapi_types.UUID `json:"customerId,omitempty"`
+	DiscountAmount          int64               `json:"discountAmount"`
+	FulfilledAt             *time.Time          `json:"fulfilledAt,omitempty"`
+	Id                      openapi_types.UUID  `json:"id"`
+	Items                   []OrderItem         `json:"items"`
+	OrderStatus             OrderStatus         `json:"orderStatus"`
+	PaidAt                  *time.Time          `json:"paidAt,omitempty"`
+	PaymentStatus           PaymentStatus       `json:"paymentStatus"`
+	StripeCheckoutSessionId *string             `json:"stripeCheckoutSessionId,omitempty"`
+	StripePaymentIntentId   *string             `json:"stripePaymentIntentId,omitempty"`
+	SubtotalAmount          int64               `json:"subtotalAmount"`
+	TaxAmount               int64               `json:"taxAmount"`
+	TotalAmount             int64               `json:"totalAmount"`
+	UpdatedAt               *time.Time          `json:"updatedAt,omitempty"`
+}
+
+// OrderItem defines model for OrderItem.
+type OrderItem struct {
+	CreatedAt       *time.Time         `json:"createdAt,omitempty"`
+	Id              openapi_types.UUID `json:"id"`
+	LineTotalAmount int64              `json:"lineTotalAmount"`
+	OrderId         openapi_types.UUID `json:"orderId"`
+	ProductId       openapi_types.UUID `json:"productId"`
+	ProductName     string             `json:"productName"`
+	Quantity        int                `json:"quantity"`
+	Sku             *string            `json:"sku,omitempty"`
+
+	// UnitPriceAmount Unit price in the currency's smallest unit (cents for AUD).
+	UnitPriceAmount int64   `json:"unitPriceAmount"`
+	VariantName     *string `json:"variantName,omitempty"`
+}
+
+// OrderStatus defines model for OrderStatus.
+type OrderStatus string
+
+// PaymentStatus defines model for PaymentStatus.
+type PaymentStatus string
 
 // PopulatedProductRelationship defines model for PopulatedProductRelationship.
 type PopulatedProductRelationship struct {
@@ -252,11 +437,30 @@ type ReplaceProductRelationshipsInput struct {
 	RelatedProductIds []openapi_types.UUID `json:"relatedProductIds"`
 }
 
+// UpdateCartItemInput defines model for UpdateCartItemInput.
+type UpdateCartItemInput struct {
+	Quantity int `json:"quantity"`
+}
+
 // UpdateCollectionInput defines model for UpdateCollectionInput.
 type UpdateCollectionInput struct {
 	Description *string `json:"description,omitempty"`
 	Name        string  `json:"name"`
 	Slug        string  `json:"slug"`
+}
+
+// UpdateCustomerInput defines model for UpdateCustomerInput.
+type UpdateCustomerInput struct {
+	Email            openapi_types.Email `json:"email"`
+	FirstName        *string             `json:"firstName,omitempty"`
+	LastName         *string             `json:"lastName,omitempty"`
+	MarketingConsent bool                `json:"marketingConsent"`
+	Phone            *string             `json:"phone,omitempty"`
+}
+
+// UpdateOrderInput defines model for UpdateOrderInput.
+type UpdateOrderInput struct {
+	OrderStatus OrderStatus `json:"orderStatus"`
 }
 
 // UpdateProductInput defines model for UpdateProductInput.
@@ -283,8 +487,17 @@ type UpdateProductTypeInput struct {
 	Slug        string  `json:"slug"`
 }
 
+// CartToken defines model for CartToken.
+type CartToken = string
+
 // CollectionId defines model for CollectionId.
 type CollectionId = openapi_types.UUID
+
+// CustomerId defines model for CustomerId.
+type CustomerId = openapi_types.UUID
+
+// OrderId defines model for OrderId.
+type OrderId = openapi_types.UUID
 
 // ProductId defines model for ProductId.
 type ProductId = openapi_types.UUID
@@ -310,11 +523,56 @@ type NotFound = Error
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
 
+// ClearCartParams defines parameters for ClearCart.
+type ClearCartParams struct {
+	// XCartToken Opaque guest-cart token returned when the cart is created.
+	XCartToken CartToken `json:"X-Cart-Token"`
+}
+
+// GetCartParams defines parameters for GetCart.
+type GetCartParams struct {
+	// XCartToken Opaque guest-cart token returned when the cart is created.
+	XCartToken CartToken `json:"X-Cart-Token"`
+}
+
+// AddCartItemParams defines parameters for AddCartItem.
+type AddCartItemParams struct {
+	// XCartToken Opaque guest-cart token returned when the cart is created.
+	XCartToken CartToken `json:"X-Cart-Token"`
+}
+
+// DeleteCartItemParams defines parameters for DeleteCartItem.
+type DeleteCartItemParams struct {
+	// XCartToken Opaque guest-cart token returned when the cart is created.
+	XCartToken CartToken `json:"X-Cart-Token"`
+}
+
+// UpdateCartItemParams defines parameters for UpdateCartItem.
+type UpdateCartItemParams struct {
+	// XCartToken Opaque guest-cart token returned when the cart is created.
+	XCartToken CartToken `json:"X-Cart-Token"`
+}
+
+// CreateCheckoutOrderParams defines parameters for CreateCheckoutOrder.
+type CreateCheckoutOrderParams struct {
+	// XCartToken Opaque guest-cart token returned when the cart is created.
+	XCartToken CartToken `json:"X-Cart-Token"`
+}
+
 // CreateCollectionJSONRequestBody defines body for CreateCollection for application/json ContentType.
 type CreateCollectionJSONRequestBody = CreateCollectionInput
 
 // UpdateCollectionJSONRequestBody defines body for UpdateCollection for application/json ContentType.
 type UpdateCollectionJSONRequestBody = UpdateCollectionInput
+
+// CreateCustomerJSONRequestBody defines body for CreateCustomer for application/json ContentType.
+type CreateCustomerJSONRequestBody = CreateCustomerInput
+
+// UpdateCustomerJSONRequestBody defines body for UpdateCustomer for application/json ContentType.
+type UpdateCustomerJSONRequestBody = UpdateCustomerInput
+
+// UpdateOrderJSONRequestBody defines body for UpdateOrder for application/json ContentType.
+type UpdateOrderJSONRequestBody = UpdateOrderInput
 
 // CreateProductTypeJSONRequestBody defines body for CreateProductType for application/json ContentType.
 type CreateProductTypeJSONRequestBody = CreateProductTypeInput
@@ -349,6 +607,15 @@ type CreateProductRelationshipsJSONRequestBody = CreateProductRelationshipsInput
 // UpdateProductRelationshipJSONRequestBody defines body for UpdateProductRelationship for application/json ContentType.
 type UpdateProductRelationshipJSONRequestBody = UpdateProductRelationshipInput
 
+// AddCartItemJSONRequestBody defines body for AddCartItem for application/json ContentType.
+type AddCartItemJSONRequestBody = AddCartItemInput
+
+// UpdateCartItemJSONRequestBody defines body for UpdateCartItem for application/json ContentType.
+type UpdateCartItemJSONRequestBody = UpdateCartItemInput
+
+// CreateCheckoutOrderJSONRequestBody defines body for CreateCheckoutOrder for application/json ContentType.
+type CreateCheckoutOrderJSONRequestBody = CheckoutCustomerInput
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// GetCollections List collections
@@ -366,6 +633,30 @@ type ServerInterface interface {
 	// UpdateCollection Replace a collection
 	// (PUT /api/admin/collections/{collectionId})
 	UpdateCollection(w http.ResponseWriter, r *http.Request, collectionId CollectionId)
+	// GetCustomers List customers
+	// (GET /api/admin/customers)
+	GetCustomers(w http.ResponseWriter, r *http.Request)
+	// CreateCustomer Create a customer
+	// (POST /api/admin/customers)
+	CreateCustomer(w http.ResponseWriter, r *http.Request)
+	// DeleteCustomer Delete a customer profile while preserving order snapshots
+	// (DELETE /api/admin/customers/{customerId})
+	DeleteCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// GetCustomer Get a customer
+	// (GET /api/admin/customers/{customerId})
+	GetCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// UpdateCustomer Replace editable customer details
+	// (PUT /api/admin/customers/{customerId})
+	UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// GetOrders List orders with their immutable line-item snapshots
+	// (GET /api/admin/orders)
+	GetOrders(w http.ResponseWriter, r *http.Request)
+	// GetOrder Get an order and its items
+	// (GET /api/admin/orders/{orderId})
+	GetOrder(w http.ResponseWriter, r *http.Request, orderId OrderId)
+	// UpdateOrder Update the fulfilment or cancellation state of an order
+	// (PUT /api/admin/orders/{orderId})
+	UpdateOrder(w http.ResponseWriter, r *http.Request, orderId OrderId)
 	// GetProductTypes List product types
 	// (GET /api/admin/product-types)
 	GetProductTypes(w http.ResponseWriter, r *http.Request)
@@ -438,6 +729,27 @@ type ServerInterface interface {
 	// UpdateProductRelationship Replace a product relationship
 	// (PUT /api/admin/products/{productId}/relationships/{relationshipId})
 	UpdateProductRelationship(w http.ResponseWriter, r *http.Request, productId ProductId, relationshipId RelationshipId)
+	// ClearCart Remove every item from the current guest cart
+	// (DELETE /api/cart)
+	ClearCart(w http.ResponseWriter, r *http.Request, params ClearCartParams)
+	// GetCart Get the current guest cart
+	// (GET /api/cart)
+	GetCart(w http.ResponseWriter, r *http.Request, params GetCartParams)
+	// CreateCart Create a guest cart
+	// (POST /api/cart)
+	CreateCart(w http.ResponseWriter, r *http.Request)
+	// AddCartItem Add a product to the current guest cart
+	// (POST /api/cart/items)
+	AddCartItem(w http.ResponseWriter, r *http.Request, params AddCartItemParams)
+	// DeleteCartItem Remove a product from the current guest cart
+	// (DELETE /api/cart/items/{productId})
+	DeleteCartItem(w http.ResponseWriter, r *http.Request, productId ProductId, params DeleteCartItemParams)
+	// UpdateCartItem Set a product's quantity in the current guest cart
+	// (PUT /api/cart/items/{productId})
+	UpdateCartItem(w http.ResponseWriter, r *http.Request, productId ProductId, params UpdateCartItemParams)
+	// CreateCheckoutOrder Create a pending order from the current guest cart
+	// (POST /api/checkout/orders)
+	CreateCheckoutOrder(w http.ResponseWriter, r *http.Request, params CreateCheckoutOrderParams)
 	// GetCollectionBySlug Get a collection by slug
 	// (GET /api/collections/{slug})
 	GetCollectionBySlug(w http.ResponseWriter, r *http.Request, slug string)
@@ -558,6 +870,178 @@ func (siw *ServerInterfaceWrapper) UpdateCollection(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateCollection(w, r, collectionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCustomers operation middleware
+func (siw *ServerInterfaceWrapper) GetCustomers(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCustomers(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateCustomer operation middleware
+func (siw *ServerInterfaceWrapper) CreateCustomer(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCustomer(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteCustomer operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCustomer(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "customerId" -------------
+	var customerId CustomerId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customerId", r.PathValue("customerId"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customerId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteCustomer(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCustomer operation middleware
+func (siw *ServerInterfaceWrapper) GetCustomer(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "customerId" -------------
+	var customerId CustomerId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customerId", r.PathValue("customerId"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customerId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCustomer(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateCustomer operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCustomer(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "customerId" -------------
+	var customerId CustomerId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customerId", r.PathValue("customerId"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customerId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCustomer(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOrders operation middleware
+func (siw *ServerInterfaceWrapper) GetOrders(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOrders(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOrder operation middleware
+func (siw *ServerInterfaceWrapper) GetOrder(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "orderId" -------------
+	var orderId OrderId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderId", r.PathValue("orderId"), &orderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOrder(w, r, orderId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateOrder operation middleware
+func (siw *ServerInterfaceWrapper) UpdateOrder(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "orderId" -------------
+	var orderId OrderId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderId", r.PathValue("orderId"), &orderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateOrder(w, r, orderId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1188,6 +1672,308 @@ func (siw *ServerInterfaceWrapper) UpdateProductRelationship(w http.ResponseWrit
 	handler.ServeHTTP(w, r)
 }
 
+// ClearCart operation middleware
+func (siw *ServerInterfaceWrapper) ClearCart(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ClearCartParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Cart-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Cart-Token")]; found {
+		var XCartToken CartToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Cart-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Cart-Token", valueList[0], &XCartToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Cart-Token", Err: err})
+			return
+		}
+
+		params.XCartToken = XCartToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Cart-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Cart-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ClearCart(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCart operation middleware
+func (siw *ServerInterfaceWrapper) GetCart(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetCartParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Cart-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Cart-Token")]; found {
+		var XCartToken CartToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Cart-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Cart-Token", valueList[0], &XCartToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Cart-Token", Err: err})
+			return
+		}
+
+		params.XCartToken = XCartToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Cart-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Cart-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCart(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateCart operation middleware
+func (siw *ServerInterfaceWrapper) CreateCart(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCart(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddCartItem operation middleware
+func (siw *ServerInterfaceWrapper) AddCartItem(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AddCartItemParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Cart-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Cart-Token")]; found {
+		var XCartToken CartToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Cart-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Cart-Token", valueList[0], &XCartToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Cart-Token", Err: err})
+			return
+		}
+
+		params.XCartToken = XCartToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Cart-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Cart-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddCartItem(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteCartItem operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCartItem(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteCartItemParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Cart-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Cart-Token")]; found {
+		var XCartToken CartToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Cart-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Cart-Token", valueList[0], &XCartToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Cart-Token", Err: err})
+			return
+		}
+
+		params.XCartToken = XCartToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Cart-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Cart-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteCartItem(w, r, productId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateCartItem operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCartItem(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateCartItemParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Cart-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Cart-Token")]; found {
+		var XCartToken CartToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Cart-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Cart-Token", valueList[0], &XCartToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Cart-Token", Err: err})
+			return
+		}
+
+		params.XCartToken = XCartToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Cart-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Cart-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCartItem(w, r, productId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateCheckoutOrder operation middleware
+func (siw *ServerInterfaceWrapper) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateCheckoutOrderParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Cart-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Cart-Token")]; found {
+		var XCartToken CartToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Cart-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Cart-Token", valueList[0], &XCartToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Cart-Token", Err: err})
+			return
+		}
+
+		params.XCartToken = XCartToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Cart-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Cart-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCheckoutOrder(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetCollectionBySlug operation middleware
 func (siw *ServerInterfaceWrapper) GetCollectionBySlug(w http.ResponseWriter, r *http.Request) {
 
@@ -1401,11 +2187,26 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	}
 
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/health", wrapper.GetHealth)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/cart", wrapper.ClearCart)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/cart", wrapper.GetCart)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/cart", wrapper.CreateCart)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/cart/items", wrapper.AddCartItem)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/cart/items/{productId}", wrapper.DeleteCartItem)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/cart/items/{productId}", wrapper.UpdateCartItem)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/checkout/orders", wrapper.CreateCheckoutOrder)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/products/{slug}", wrapper.GetProductBySlug)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/collections/{slug}", wrapper.GetCollectionBySlug)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/product-types/{slug}", wrapper.GetProductTypeBySlug)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/collections", wrapper.GetCollections)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/collections", wrapper.CreateCollection)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/customers", wrapper.GetCustomers)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/customers", wrapper.CreateCustomer)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/admin/customers/{customerId}", wrapper.DeleteCustomer)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/customers/{customerId}", wrapper.GetCustomer)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/admin/customers/{customerId}", wrapper.UpdateCustomer)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/orders", wrapper.GetOrders)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/orders/{orderId}", wrapper.GetOrder)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/admin/orders/{orderId}", wrapper.UpdateOrder)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/admin/collections/{collectionId}", wrapper.DeleteCollection)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/collections/{collectionId}", wrapper.GetCollection)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/admin/collections/{collectionId}", wrapper.UpdateCollection)
@@ -1816,6 +2617,556 @@ type UpdateCollection500JSONResponse struct {
 }
 
 func (response UpdateCollection500JSONResponse) VisitUpdateCollectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCustomersRequestObject struct {
+}
+
+type GetCustomersResponseObject interface {
+	VisitGetCustomersResponse(w http.ResponseWriter) error
+}
+
+type GetCustomers200JSONResponse []Customer
+
+func (response GetCustomers200JSONResponse) VisitGetCustomersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCustomers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCustomers401JSONResponse) VisitGetCustomersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCustomers500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response GetCustomers500JSONResponse) VisitGetCustomersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCustomerRequestObject struct {
+	Body *CreateCustomerJSONRequestBody
+}
+
+type CreateCustomerResponseObject interface {
+	VisitCreateCustomerResponse(w http.ResponseWriter) error
+}
+
+type CreateCustomer201JSONResponse Customer
+
+func (response CreateCustomer201JSONResponse) VisitCreateCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCustomer400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateCustomer400JSONResponse) VisitCreateCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCustomer401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateCustomer401JSONResponse) VisitCreateCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCustomer409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateCustomer409JSONResponse) VisitCreateCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCustomer500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response CreateCustomer500JSONResponse) VisitCreateCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCustomerRequestObject struct {
+	CustomerId CustomerId `json:"customerId"`
+}
+
+type DeleteCustomerResponseObject interface {
+	VisitDeleteCustomerResponse(w http.ResponseWriter) error
+}
+
+type DeleteCustomer204Response struct {
+}
+
+func (response DeleteCustomer204Response) VisitDeleteCustomerResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteCustomer401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteCustomer401JSONResponse) VisitDeleteCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCustomer404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteCustomer404JSONResponse) VisitDeleteCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCustomer500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response DeleteCustomer500JSONResponse) VisitDeleteCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCustomerRequestObject struct {
+	CustomerId CustomerId `json:"customerId"`
+}
+
+type GetCustomerResponseObject interface {
+	VisitGetCustomerResponse(w http.ResponseWriter) error
+}
+
+type GetCustomer200JSONResponse Customer
+
+func (response GetCustomer200JSONResponse) VisitGetCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCustomer401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCustomer401JSONResponse) VisitGetCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCustomer404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetCustomer404JSONResponse) VisitGetCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCustomer500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response GetCustomer500JSONResponse) VisitGetCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCustomerRequestObject struct {
+	CustomerId CustomerId `json:"customerId"`
+	Body       *UpdateCustomerJSONRequestBody
+}
+
+type UpdateCustomerResponseObject interface {
+	VisitUpdateCustomerResponse(w http.ResponseWriter) error
+}
+
+type UpdateCustomer200JSONResponse Customer
+
+func (response UpdateCustomer200JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCustomer400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateCustomer400JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCustomer401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateCustomer401JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCustomer404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateCustomer404JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCustomer409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateCustomer409JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCustomer500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response UpdateCustomer500JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrdersRequestObject struct {
+}
+
+type GetOrdersResponseObject interface {
+	VisitGetOrdersResponse(w http.ResponseWriter) error
+}
+
+type GetOrders200JSONResponse []Order
+
+func (response GetOrders200JSONResponse) VisitGetOrdersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrders401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetOrders401JSONResponse) VisitGetOrdersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrders500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response GetOrders500JSONResponse) VisitGetOrdersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrderRequestObject struct {
+	OrderId OrderId `json:"orderId"`
+}
+
+type GetOrderResponseObject interface {
+	VisitGetOrderResponse(w http.ResponseWriter) error
+}
+
+type GetOrder200JSONResponse Order
+
+func (response GetOrder200JSONResponse) VisitGetOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrder401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetOrder401JSONResponse) VisitGetOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrder404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetOrder404JSONResponse) VisitGetOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrder500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response GetOrder500JSONResponse) VisitGetOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOrderRequestObject struct {
+	OrderId OrderId `json:"orderId"`
+	Body    *UpdateOrderJSONRequestBody
+}
+
+type UpdateOrderResponseObject interface {
+	VisitUpdateOrderResponse(w http.ResponseWriter) error
+}
+
+type UpdateOrder200JSONResponse Order
+
+func (response UpdateOrder200JSONResponse) VisitUpdateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOrder400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateOrder400JSONResponse) VisitUpdateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOrder401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateOrder401JSONResponse) VisitUpdateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOrder404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateOrder404JSONResponse) VisitUpdateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOrder500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response UpdateOrder500JSONResponse) VisitUpdateOrderResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -3771,6 +5122,452 @@ func (response UpdateProductRelationship500JSONResponse) VisitUpdateProductRelat
 	return err
 }
 
+type ClearCartRequestObject struct {
+	Params ClearCartParams
+}
+
+type ClearCartResponseObject interface {
+	VisitClearCartResponse(w http.ResponseWriter) error
+}
+
+type ClearCart204Response struct {
+}
+
+func (response ClearCart204Response) VisitClearCartResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ClearCart400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ClearCart400JSONResponse) VisitClearCartResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClearCart404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ClearCart404JSONResponse) VisitClearCartResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClearCart500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response ClearCart500JSONResponse) VisitClearCartResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCartRequestObject struct {
+	Params GetCartParams
+}
+
+type GetCartResponseObject interface {
+	VisitGetCartResponse(w http.ResponseWriter) error
+}
+
+type GetCart200JSONResponse Cart
+
+func (response GetCart200JSONResponse) VisitGetCartResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCart400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCart400JSONResponse) VisitGetCartResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCart404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetCart404JSONResponse) VisitGetCartResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCart500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response GetCart500JSONResponse) VisitGetCartResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCartRequestObject struct {
+}
+
+type CreateCartResponseObject interface {
+	VisitCreateCartResponse(w http.ResponseWriter) error
+}
+
+type CreateCart201JSONResponse CreatedCart
+
+func (response CreateCart201JSONResponse) VisitCreateCartResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCart500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response CreateCart500JSONResponse) VisitCreateCartResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddCartItemRequestObject struct {
+	Params AddCartItemParams
+	Body   *AddCartItemJSONRequestBody
+}
+
+type AddCartItemResponseObject interface {
+	VisitAddCartItemResponse(w http.ResponseWriter) error
+}
+
+type AddCartItem200JSONResponse Cart
+
+func (response AddCartItem200JSONResponse) VisitAddCartItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddCartItem400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AddCartItem400JSONResponse) VisitAddCartItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddCartItem404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AddCartItem404JSONResponse) VisitAddCartItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddCartItem500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response AddCartItem500JSONResponse) VisitAddCartItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCartItemRequestObject struct {
+	ProductId ProductId `json:"productId"`
+	Params    DeleteCartItemParams
+}
+
+type DeleteCartItemResponseObject interface {
+	VisitDeleteCartItemResponse(w http.ResponseWriter) error
+}
+
+type DeleteCartItem200JSONResponse Cart
+
+func (response DeleteCartItem200JSONResponse) VisitDeleteCartItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCartItem400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DeleteCartItem400JSONResponse) VisitDeleteCartItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCartItem404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteCartItem404JSONResponse) VisitDeleteCartItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCartItem500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response DeleteCartItem500JSONResponse) VisitDeleteCartItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCartItemRequestObject struct {
+	ProductId ProductId `json:"productId"`
+	Params    UpdateCartItemParams
+	Body      *UpdateCartItemJSONRequestBody
+}
+
+type UpdateCartItemResponseObject interface {
+	VisitUpdateCartItemResponse(w http.ResponseWriter) error
+}
+
+type UpdateCartItem200JSONResponse Cart
+
+func (response UpdateCartItem200JSONResponse) VisitUpdateCartItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCartItem400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateCartItem400JSONResponse) VisitUpdateCartItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCartItem404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateCartItem404JSONResponse) VisitUpdateCartItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCartItem500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response UpdateCartItem500JSONResponse) VisitUpdateCartItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCheckoutOrderRequestObject struct {
+	Params CreateCheckoutOrderParams
+	Body   *CreateCheckoutOrderJSONRequestBody
+}
+
+type CreateCheckoutOrderResponseObject interface {
+	VisitCreateCheckoutOrderResponse(w http.ResponseWriter) error
+}
+
+type CreateCheckoutOrder201JSONResponse Order
+
+func (response CreateCheckoutOrder201JSONResponse) VisitCreateCheckoutOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCheckoutOrder400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateCheckoutOrder400JSONResponse) VisitCreateCheckoutOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCheckoutOrder404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateCheckoutOrder404JSONResponse) VisitCreateCheckoutOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCheckoutOrder409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateCheckoutOrder409JSONResponse) VisitCreateCheckoutOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCheckoutOrder500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response CreateCheckoutOrder500JSONResponse) VisitCreateCheckoutOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetCollectionBySlugRequestObject struct {
 	Slug string `json:"slug"`
 }
@@ -3965,6 +5762,30 @@ type StrictServerInterface interface {
 	// UpdateCollection Replace a collection
 	// (PUT /api/admin/collections/{collectionId})
 	UpdateCollection(ctx context.Context, request UpdateCollectionRequestObject) (UpdateCollectionResponseObject, error)
+	// GetCustomers List customers
+	// (GET /api/admin/customers)
+	GetCustomers(ctx context.Context, request GetCustomersRequestObject) (GetCustomersResponseObject, error)
+	// CreateCustomer Create a customer
+	// (POST /api/admin/customers)
+	CreateCustomer(ctx context.Context, request CreateCustomerRequestObject) (CreateCustomerResponseObject, error)
+	// DeleteCustomer Delete a customer profile while preserving order snapshots
+	// (DELETE /api/admin/customers/{customerId})
+	DeleteCustomer(ctx context.Context, request DeleteCustomerRequestObject) (DeleteCustomerResponseObject, error)
+	// GetCustomer Get a customer
+	// (GET /api/admin/customers/{customerId})
+	GetCustomer(ctx context.Context, request GetCustomerRequestObject) (GetCustomerResponseObject, error)
+	// UpdateCustomer Replace editable customer details
+	// (PUT /api/admin/customers/{customerId})
+	UpdateCustomer(ctx context.Context, request UpdateCustomerRequestObject) (UpdateCustomerResponseObject, error)
+	// GetOrders List orders with their immutable line-item snapshots
+	// (GET /api/admin/orders)
+	GetOrders(ctx context.Context, request GetOrdersRequestObject) (GetOrdersResponseObject, error)
+	// GetOrder Get an order and its items
+	// (GET /api/admin/orders/{orderId})
+	GetOrder(ctx context.Context, request GetOrderRequestObject) (GetOrderResponseObject, error)
+	// UpdateOrder Update the fulfilment or cancellation state of an order
+	// (PUT /api/admin/orders/{orderId})
+	UpdateOrder(ctx context.Context, request UpdateOrderRequestObject) (UpdateOrderResponseObject, error)
 	// GetProductTypes List product types
 	// (GET /api/admin/product-types)
 	GetProductTypes(ctx context.Context, request GetProductTypesRequestObject) (GetProductTypesResponseObject, error)
@@ -4037,6 +5858,27 @@ type StrictServerInterface interface {
 	// UpdateProductRelationship Replace a product relationship
 	// (PUT /api/admin/products/{productId}/relationships/{relationshipId})
 	UpdateProductRelationship(ctx context.Context, request UpdateProductRelationshipRequestObject) (UpdateProductRelationshipResponseObject, error)
+	// ClearCart Remove every item from the current guest cart
+	// (DELETE /api/cart)
+	ClearCart(ctx context.Context, request ClearCartRequestObject) (ClearCartResponseObject, error)
+	// GetCart Get the current guest cart
+	// (GET /api/cart)
+	GetCart(ctx context.Context, request GetCartRequestObject) (GetCartResponseObject, error)
+	// CreateCart Create a guest cart
+	// (POST /api/cart)
+	CreateCart(ctx context.Context, request CreateCartRequestObject) (CreateCartResponseObject, error)
+	// AddCartItem Add a product to the current guest cart
+	// (POST /api/cart/items)
+	AddCartItem(ctx context.Context, request AddCartItemRequestObject) (AddCartItemResponseObject, error)
+	// DeleteCartItem Remove a product from the current guest cart
+	// (DELETE /api/cart/items/{productId})
+	DeleteCartItem(ctx context.Context, request DeleteCartItemRequestObject) (DeleteCartItemResponseObject, error)
+	// UpdateCartItem Set a product's quantity in the current guest cart
+	// (PUT /api/cart/items/{productId})
+	UpdateCartItem(ctx context.Context, request UpdateCartItemRequestObject) (UpdateCartItemResponseObject, error)
+	// CreateCheckoutOrder Create a pending order from the current guest cart
+	// (POST /api/checkout/orders)
+	CreateCheckoutOrder(ctx context.Context, request CreateCheckoutOrderRequestObject) (CreateCheckoutOrderResponseObject, error)
 	// GetCollectionBySlug Get a collection by slug
 	// (GET /api/collections/{slug})
 	GetCollectionBySlug(ctx context.Context, request GetCollectionBySlugRequestObject) (GetCollectionBySlugResponseObject, error)
@@ -4223,6 +6065,229 @@ func (sh *strictHandler) UpdateCollection(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateCollectionResponseObject); ok {
 		if err := validResponse.VisitUpdateCollectionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCustomers operation middleware
+func (sh *strictHandler) GetCustomers(w http.ResponseWriter, r *http.Request) {
+	var request GetCustomersRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCustomers(ctx, request.(GetCustomersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCustomers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCustomersResponseObject); ok {
+		if err := validResponse.VisitGetCustomersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCustomer operation middleware
+func (sh *strictHandler) CreateCustomer(w http.ResponseWriter, r *http.Request) {
+	var request CreateCustomerRequestObject
+
+	var body CreateCustomerJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCustomer(ctx, request.(CreateCustomerRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCustomer")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCustomerResponseObject); ok {
+		if err := validResponse.VisitCreateCustomerResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteCustomer operation middleware
+func (sh *strictHandler) DeleteCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerId) {
+	var request DeleteCustomerRequestObject
+
+	request.CustomerId = customerId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteCustomer(ctx, request.(DeleteCustomerRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteCustomer")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteCustomerResponseObject); ok {
+		if err := validResponse.VisitDeleteCustomerResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCustomer operation middleware
+func (sh *strictHandler) GetCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerId) {
+	var request GetCustomerRequestObject
+
+	request.CustomerId = customerId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCustomer(ctx, request.(GetCustomerRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCustomer")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCustomerResponseObject); ok {
+		if err := validResponse.VisitGetCustomerResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCustomer operation middleware
+func (sh *strictHandler) UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerId) {
+	var request UpdateCustomerRequestObject
+
+	request.CustomerId = customerId
+
+	var body UpdateCustomerJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCustomer(ctx, request.(UpdateCustomerRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCustomer")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateCustomerResponseObject); ok {
+		if err := validResponse.VisitUpdateCustomerResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOrders operation middleware
+func (sh *strictHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
+	var request GetOrdersRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOrders(ctx, request.(GetOrdersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOrders")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOrdersResponseObject); ok {
+		if err := validResponse.VisitGetOrdersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOrder operation middleware
+func (sh *strictHandler) GetOrder(w http.ResponseWriter, r *http.Request, orderId OrderId) {
+	var request GetOrderRequestObject
+
+	request.OrderId = orderId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOrder(ctx, request.(GetOrderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOrder")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOrderResponseObject); ok {
+		if err := validResponse.VisitGetOrderResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateOrder operation middleware
+func (sh *strictHandler) UpdateOrder(w http.ResponseWriter, r *http.Request, orderId OrderId) {
+	var request UpdateOrderRequestObject
+
+	request.OrderId = orderId
+
+	var body UpdateOrderJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateOrder(ctx, request.(UpdateOrderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateOrder")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateOrderResponseObject); ok {
+		if err := validResponse.VisitUpdateOrderResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -4921,6 +6986,209 @@ func (sh *strictHandler) UpdateProductRelationship(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateProductRelationshipResponseObject); ok {
 		if err := validResponse.VisitUpdateProductRelationshipResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ClearCart operation middleware
+func (sh *strictHandler) ClearCart(w http.ResponseWriter, r *http.Request, params ClearCartParams) {
+	var request ClearCartRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ClearCart(ctx, request.(ClearCartRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ClearCart")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ClearCartResponseObject); ok {
+		if err := validResponse.VisitClearCartResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCart operation middleware
+func (sh *strictHandler) GetCart(w http.ResponseWriter, r *http.Request, params GetCartParams) {
+	var request GetCartRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCart(ctx, request.(GetCartRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCart")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCartResponseObject); ok {
+		if err := validResponse.VisitGetCartResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCart operation middleware
+func (sh *strictHandler) CreateCart(w http.ResponseWriter, r *http.Request) {
+	var request CreateCartRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCart(ctx, request.(CreateCartRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCart")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCartResponseObject); ok {
+		if err := validResponse.VisitCreateCartResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddCartItem operation middleware
+func (sh *strictHandler) AddCartItem(w http.ResponseWriter, r *http.Request, params AddCartItemParams) {
+	var request AddCartItemRequestObject
+
+	request.Params = params
+
+	var body AddCartItemJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddCartItem(ctx, request.(AddCartItemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddCartItem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddCartItemResponseObject); ok {
+		if err := validResponse.VisitAddCartItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteCartItem operation middleware
+func (sh *strictHandler) DeleteCartItem(w http.ResponseWriter, r *http.Request, productId ProductId, params DeleteCartItemParams) {
+	var request DeleteCartItemRequestObject
+
+	request.ProductId = productId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteCartItem(ctx, request.(DeleteCartItemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteCartItem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteCartItemResponseObject); ok {
+		if err := validResponse.VisitDeleteCartItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCartItem operation middleware
+func (sh *strictHandler) UpdateCartItem(w http.ResponseWriter, r *http.Request, productId ProductId, params UpdateCartItemParams) {
+	var request UpdateCartItemRequestObject
+
+	request.ProductId = productId
+	request.Params = params
+
+	var body UpdateCartItemJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCartItem(ctx, request.(UpdateCartItemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCartItem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateCartItemResponseObject); ok {
+		if err := validResponse.VisitUpdateCartItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCheckoutOrder operation middleware
+func (sh *strictHandler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request, params CreateCheckoutOrderParams) {
+	var request CreateCheckoutOrderRequestObject
+
+	request.Params = params
+
+	var body CreateCheckoutOrderJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCheckoutOrder(ctx, request.(CreateCheckoutOrderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCheckoutOrder")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCheckoutOrderResponseObject); ok {
+		if err := validResponse.VisitCreateCheckoutOrderResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

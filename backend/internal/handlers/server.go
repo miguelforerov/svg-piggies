@@ -4,7 +4,10 @@ import (
 	"context"
 
 	generated "github.com/zdenaforero/svg-piggies/backend/api/generated"
+	"github.com/zdenaforero/svg-piggies/backend/internal/carts"
 	"github.com/zdenaforero/svg-piggies/backend/internal/collections"
+	"github.com/zdenaforero/svg-piggies/backend/internal/customers"
+	"github.com/zdenaforero/svg-piggies/backend/internal/orders"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productcollections"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productimages"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productproducttypes"
@@ -12,6 +15,46 @@ import (
 	"github.com/zdenaforero/svg-piggies/backend/internal/products"
 	"github.com/zdenaforero/svg-piggies/backend/internal/producttypes"
 )
+
+type CartService interface {
+	CreateCart(ctx context.Context) (carts.CreatedCart, error)
+	GetCart(ctx context.Context, token string) (carts.Cart, error)
+	AddItem(ctx context.Context, token string, input carts.AddItemInput) (carts.Cart, error)
+	UpdateItem(
+		ctx context.Context,
+		token string,
+		productID string,
+		quantity int,
+	) (carts.Cart, error)
+	DeleteItem(ctx context.Context, token string, productID string) (carts.Cart, error)
+	ClearCart(ctx context.Context, token string) error
+}
+
+type CustomerService interface {
+	GetCustomers(ctx context.Context) ([]customers.Customer, error)
+	GetCustomer(ctx context.Context, id string) (customers.Customer, error)
+	CreateCustomer(
+		ctx context.Context,
+		input customers.CreateCustomerInput,
+	) (customers.Customer, error)
+	UpdateCustomer(
+		ctx context.Context,
+		id string,
+		input customers.UpdateCustomerInput,
+	) (customers.Customer, error)
+	DeleteCustomer(ctx context.Context, id string) error
+}
+
+type OrderService interface {
+	GetOrders(ctx context.Context) ([]orders.Order, error)
+	GetOrder(ctx context.Context, id string) (orders.Order, error)
+	CreateCheckoutOrder(
+		ctx context.Context,
+		cartToken string,
+		customer orders.CheckoutCustomerInput,
+	) (orders.Order, error)
+	UpdateOrder(ctx context.Context, id string, status orders.Status) (orders.Order, error)
+}
 
 type CollectionService interface {
 	GetCollections(ctx context.Context) ([]collections.Collection, error)
@@ -124,7 +167,10 @@ type ProductRelationshipService interface {
 }
 
 type Server struct {
+	carts                CartService
+	customers            CustomerService
 	environment          string
+	orders               OrderService
 	collections          CollectionService
 	productCollections   ProductCollectionService
 	productImages        ProductImageService
@@ -138,6 +184,9 @@ var _ generated.StrictServerInterface = (*Server)(nil)
 
 func NewServer(
 	environment string,
+	cartService CartService,
+	customerService CustomerService,
+	orderService OrderService,
 	collectionService CollectionService,
 	productCollectionService ProductCollectionService,
 	productImageService ProductImageService,
@@ -147,7 +196,10 @@ func NewServer(
 	productTypeService ProductTypeService,
 ) *Server {
 	return &Server{
+		carts:                cartService,
+		customers:            customerService,
 		environment:          environment,
+		orders:               orderService,
 		collections:          collectionService,
 		productCollections:   productCollectionService,
 		productImages:        productImageService,
