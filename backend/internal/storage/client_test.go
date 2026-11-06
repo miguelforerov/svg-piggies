@@ -84,11 +84,14 @@ func TestSDKPresignsR2PathStyleRequests(t *testing.T) {
 	if parsed.Host != "example.r2.cloudflarestorage.com" || parsed.EscapedPath() != "/public-assets/products/123/image.webp" || parsed.Query().Get("X-Amz-Expires") != "60" {
 		t.Fatalf("unexpected presigned PUT URL: %s", put.URL)
 	}
-	if !strings.Contains(parsed.Query().Get("X-Amz-SignedHeaders"), "content-type") {
-		t.Fatalf("content type was not signed: %s", put.URL)
+	if signed := parsed.Query().Get("X-Amz-SignedHeaders"); !strings.Contains(signed, "content-type") || !strings.Contains(signed, "if-none-match") {
+		t.Fatalf("required PUT headers were not signed: %s", signed)
 	}
 	if got := put.Headers.Get("Content-Type"); got != "image/webp" {
 		t.Fatalf("signed Content-Type = %q, want image/webp", got)
+	}
+	if got := put.Headers.Get("If-None-Match"); got != "*" {
+		t.Fatalf("signed If-None-Match = %q, want *", got)
 	}
 	if strings.Contains(put.URL, validConfig().R2SecretAccessKey) {
 		t.Fatal("presigned URL exposes the secret access key")
@@ -129,12 +132,12 @@ func TestValidateDurationAndKey(t *testing.T) {
 
 func TestPresignPutMediaTypes(t *testing.T) {
 	c := &Client{presignClient: &fakePresigner{}, filesBucket: "private-files", assetsBucket: "public-assets"}
-	for _, mediaType := range []string{"image/png", "image/jpeg", "image/webp", "image/avif"} {
+	for _, mediaType := range []string{"image/png", "image/jpeg", "image/webp"} {
 		if _, err := c.PresignPut(context.Background(), AssetsBucket, "products/123/image", mediaType, time.Minute); err != nil {
 			t.Errorf("asset type %q rejected: %v", mediaType, err)
 		}
 	}
-	for _, mediaType := range []string{"image/svg+xml", "text/html", "application/zip", "invalid\nvalue"} {
+	for _, mediaType := range []string{"image/avif", "image/svg+xml", "text/html", "application/zip", "invalid\nvalue"} {
 		if _, err := c.PresignPut(context.Background(), AssetsBucket, "products/123/image", mediaType, time.Minute); err == nil {
 			t.Errorf("asset type %q accepted", mediaType)
 		}

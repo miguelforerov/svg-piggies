@@ -15,10 +15,22 @@ import (
 
 const maxPresignDuration = 7 * 24 * time.Hour
 
-// Public product assets accept raster formats only. SVG and HTML can contain
-// active content and need a separate review before being served publicly.
-var allowedAssetMediaTypes = map[string]bool{
-	"image/png": true, "image/jpeg": true, "image/webp": true, "image/avif": true,
+// Product assets accept the raster formats currently supported by the upload
+// validator. AVIF is temporarily suspended because decoding it in the Worker
+// can allocate memory before dimensions are checked.
+var assetExtensions = map[string]string{
+	"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp",
+}
+
+// AssetExtension validates the exact media type allowed for public product images.
+func AssetExtension(contentType string) (string, error) {
+	if _, _, err := mime.ParseMediaType(contentType); err != nil {
+		return "", fmt.Errorf("invalid R2 asset content type: %w", err)
+	}
+	if extension := assetExtensions[contentType]; extension != "" {
+		return extension, nil
+	}
+	return "", fmt.Errorf("R2 asset content type %q is not allowed", contentType)
 }
 
 type presigner interface {
@@ -55,16 +67,17 @@ func (c *Client) PresignPut(ctx context.Context, bucket Bucket, key, contentType
 	if err := validateDuration(duration); err != nil {
 		return PresignedRequest{}, err
 	}
-	mediaType, _, err := mime.ParseMediaType(contentType)
-	if err != nil {
+	if bucket == AssetsBucket {
+		if _, err := AssetExtension(contentType); err != nil {
+			return PresignedRequest{}, err
+		}
+	} else if _, _, err := mime.ParseMediaType(contentType); err != nil {
 		return PresignedRequest{}, fmt.Errorf("invalid R2 upload content type: %w", err)
-	}
-	if bucket == AssetsBucket && !allowedAssetMediaTypes[mediaType] {
-		return PresignedRequest{}, fmt.Errorf("R2 asset content type %q is not allowed", mediaType)
 	}
 
 	request, err := c.presignClient.PresignPutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucketName), Key: aws.String(key), ContentType: aws.String(contentType),
+		IfNoneMatch: aws.String("*"),
 	}, func(options *s3.PresignOptions) { options.Expires = duration })
 	if err != nil {
 		return PresignedRequest{}, fmt.Errorf("presign R2 PUT: %w", err)
