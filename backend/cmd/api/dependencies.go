@@ -7,9 +7,9 @@ import (
 	cartspostgres "github.com/zdenaforero/svg-piggies/backend/internal/carts/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/collections"
 	collectionspostgres "github.com/zdenaforero/svg-piggies/backend/internal/collections/postgres"
+	"github.com/zdenaforero/svg-piggies/backend/internal/config"
 	"github.com/zdenaforero/svg-piggies/backend/internal/customers"
 	customerspostgres "github.com/zdenaforero/svg-piggies/backend/internal/customers/postgres"
-	"github.com/zdenaforero/svg-piggies/backend/internal/config"
 	"github.com/zdenaforero/svg-piggies/backend/internal/database"
 	"github.com/zdenaforero/svg-piggies/backend/internal/handlers"
 	"github.com/zdenaforero/svg-piggies/backend/internal/orders"
@@ -42,8 +42,7 @@ type dependencies struct {
 	productTypes         handlers.ProductTypeService
 }
 
-<<<<<<< HEAD
-func buildDependencies(provider database.Provider) (dependencies, error) {
+func buildDependencies(provider database.Provider, cfg config.Config) (dependencies, error) {
 	cartRepository, err := cartspostgres.NewRepository(provider)
 	if err != nil {
 		return dependencies{}, fmt.Errorf("create carts repository: %w", err)
@@ -72,9 +71,6 @@ func buildDependencies(provider database.Provider) (dependencies, error) {
 		return dependencies{}, fmt.Errorf("create orders service: %w", err)
 	}
 
-=======
-func buildDependencies(provider database.Provider, cfg config.Config) (dependencies, error) {
->>>>>>> f0c8281 (feat(images): verify and persist product image uploads)
 	repository, err := collectionspostgres.NewRepository(provider)
 	if err != nil {
 		return dependencies{}, fmt.Errorf("create collections repository: %w", err)

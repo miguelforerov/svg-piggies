@@ -125,21 +125,6 @@ func (e PaymentStatus) Valid() bool {
 	case Refunded:
 		return true
 	case Unpaid:
-// Defines values for RequestProductImageUploadInputContentType.
-const (
-	Imagejpeg RequestProductImageUploadInputContentType = "image/jpeg"
-	Imagepng  RequestProductImageUploadInputContentType = "image/png"
-	Imagewebp RequestProductImageUploadInputContentType = "image/webp"
-)
-
-// Valid indicates whether the value is a known member of the RequestProductImageUploadInputContentType enum.
-func (e RequestProductImageUploadInputContentType) Valid() bool {
-	switch e {
-	case Imagejpeg:
-		return true
-	case Imagepng:
-		return true
-	case Imagewebp:
 		return true
 	default:
 		return false
@@ -167,15 +152,31 @@ func (e ProductStatus) Valid() bool {
 	}
 }
 
+// Defines values for RequestProductImageUploadInputContentType.
+const (
+	Imagejpeg RequestProductImageUploadInputContentType = "image/jpeg"
+	Imagepng  RequestProductImageUploadInputContentType = "image/png"
+	Imagewebp RequestProductImageUploadInputContentType = "image/webp"
+)
+
+// Valid indicates whether the value is a known member of the RequestProductImageUploadInputContentType enum.
+func (e RequestProductImageUploadInputContentType) Valid() bool {
+	switch e {
+	case Imagejpeg:
+		return true
+	case Imagepng:
+		return true
+	case Imagewebp:
+		return true
+	default:
+		return false
+	}
+}
+
 // AddCartItemInput defines model for AddCartItemInput.
 type AddCartItemInput struct {
 	ProductId openapi_types.UUID `json:"productId"`
 	Quantity  *int               `json:"quantity,omitempty"`
-}
-
-// AddProductImagesInput defines model for AddProductImagesInput.
-type AddProductImagesInput struct {
-	Images []NewProductImage `json:"images"`
 }
 
 // Cart defines model for Cart.
@@ -326,20 +327,6 @@ type Health struct {
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
 
-// NewProductImage defines model for NewProductImage.
-type NewProductImage struct {
-	AltText          *string `json:"altText,omitempty"`
-	ContentType      string  `json:"contentType"`
-	DisplayOrder     *int    `json:"displayOrder,omitempty"`
-	FileSizeBytes    int64   `json:"fileSizeBytes"`
-	HeightPx         *int    `json:"heightPx,omitempty"`
-	IsPrimary        *bool   `json:"isPrimary,omitempty"`
-	OriginalFilename string  `json:"originalFilename"`
-	R2Etag           *string `json:"r2Etag,omitempty"`
-	R2ObjectKey      string  `json:"r2ObjectKey"`
-	WidthPx          *int    `json:"widthPx,omitempty"`
-}
-
 // Order defines model for Order.
 type Order struct {
 	AmountRefunded          int64               `json:"amountRefunded"`
@@ -475,11 +462,6 @@ type ReplaceProductRelationshipsInput struct {
 	RelatedProductIds []openapi_types.UUID `json:"relatedProductIds"`
 }
 
-// UpdateCartItemInput defines model for UpdateCartItemInput.
-type UpdateCartItemInput struct {
-	Quantity int `json:"quantity"`
-}
-
 // RequestProductImageUploadInput defines model for RequestProductImageUploadInput.
 type RequestProductImageUploadInput struct {
 	ContentType      RequestProductImageUploadInputContentType `json:"contentType"`
@@ -489,6 +471,11 @@ type RequestProductImageUploadInput struct {
 
 // RequestProductImageUploadInputContentType defines model for RequestProductImageUploadInput.ContentType.
 type RequestProductImageUploadInputContentType string
+
+// UpdateCartItemInput defines model for UpdateCartItemInput.
+type UpdateCartItemInput struct {
+	Quantity int `json:"quantity"`
+}
 
 // UpdateCollectionInput defines model for UpdateCollectionInput.
 type UpdateCollectionInput struct {
