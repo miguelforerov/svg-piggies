@@ -60,21 +60,36 @@ operations in `backend/internal/handlers` and keep business rules in the
 feature service packages. The initial contract includes `GET /api/health` and the
 collection CRUD routes rooted at `/api/admin/collections`.
 
-Admin authentication is controlled by `AUTH_MODE`. Local development uses
-`AUTH_MODE=development`, which bypasses authentication only when `APP_ENV` is
-`development` or `test`. Deployed staging and production environments must use:
+Admin authentication is controlled by `AUTH_MODE`. The native local server can
+use `AUTH_MODE=development` with `APP_ENV=development` or `test`. A Worker refuses
+to start unless `APP_ENV=production`, `AUTH_MODE=cloudflare_access`, and an
+administrator allowlist are configured. Deployed environments must use:
 
 ```dotenv
 AUTH_MODE="cloudflare_access"
 CLOUDFLARE_ACCESS_TEAM_DOMAIN="https://your-team.cloudflareaccess.com"
 CLOUDFLARE_ACCESS_AUD="your-access-application-aud"
+ADMIN_EMAILS="admin@example.invalid,second-admin@example.invalid"
 ```
 
 Cloudflare Access must be configured at the edge to protect both `/admin/*`
 and `/api/admin/*`. The backend also validates the Access JWT from
 `Cf-Access-Jwt-Assertion`, including its signature, issuer, audience, and
 expiration. It refuses to start if development authentication is selected for
-a non-local environment.
+a non-local environment. The backend reads the `email` claim only after JWT
+verification, normalizes it, and permits admin routes only when that email is
+in the comma-separated `ADMIN_EMAILS` list. A missing or empty list blocks
+startup; an authenticated user outside the list receives 403.
+
+The base Wrangler configuration disables `workers_dev`. `npm run worker:deploy`
+runs `worker:check` before Wrangler; it checks the production environment,
+Access settings, Hyperdrive ID, bucket names, and required secret names. The
+check cannot verify secret values, and a direct `wrangler deploy` bypasses the
+script. There is currently no CI deployment workflow in this repository; any
+future production deployment job must run `npm run worker:check` as a required
+gate. The Worker also rejects development authentication at startup. The local
+native server remains available through `npm run backend:dev`; Worker previews
+require the production authentication configuration.
 
 The native Go server reads `DATABASE_URL` from `.env`, validates that its
 database name matches `DATABASE_NAME`, and keeps a small `pgx` connection pool.
@@ -89,9 +104,14 @@ npm run worker:dev
 `backend/wrangler.jsonc` declares the API Worker's runtime contract:
 
 - `HYPERDRIVE` for PostgreSQL connectivity;
-- `PRODUCT_FILES` for private R2 downloads and `PRODUCT_ASSETS` for public product images;
+- `PRODUCT_FILES` for private R2 downloads and `PRODUCT_ASSETS` for product images;
 - committed non-secret application variables; and
-- required Stripe secrets loaded locally from `backend/.dev.vars`.
+- required secrets loaded locally from `backend/.dev.vars`.
+
+Production secret names are `ADMIN_EMAILS`, `STRIPE_SECRET_KEY`,
+`STRIPE_WEBHOOK_SECRET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and
+`R2_ENDPOINT`. Configure their values outside the repository; the deployment
+checker verifies only that their names are declared.
 
 ### R2 storage prerequisites
 

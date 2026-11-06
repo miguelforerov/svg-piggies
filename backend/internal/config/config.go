@@ -27,6 +27,7 @@ type Config struct {
 	AuthMode                   auth.Mode
 	CloudflareAccessTeamDomain string
 	CloudflareAccessAudience   string
+	AdminEmails                []string
 	DatabaseURL                string
 	DatabaseName               string
 	CORSAllowedOrigin          string
@@ -72,6 +73,7 @@ func Load(lookup LookupFunc) (Config, error) {
 			lookup("CLOUDFLARE_ACCESS_TEAM_DOMAIN"),
 		), "/"),
 		CloudflareAccessAudience: strings.TrimSpace(lookup("CLOUDFLARE_ACCESS_AUD")),
+		AdminEmails:              parseAdminEmails(lookup("ADMIN_EMAILS")),
 		DatabaseURL:              lookup("DATABASE_URL"),
 		DatabaseName:             valueOrDefault(lookup("DATABASE_NAME"), DatabaseNameForEnvironment(environment)),
 		CORSAllowedOrigin:        valueOrDefault(lookup("CORS_ALLOWED_ORIGIN"), "http://localhost:4321"),
@@ -101,6 +103,14 @@ func (c Config) ValidateAuth() error {
 			)
 		}
 	case auth.ModeCloudflareAccess:
+		if len(c.AdminEmails) == 0 {
+			return errors.New("ADMIN_EMAILS must contain at least one administrator")
+		}
+		for _, email := range c.AdminEmails {
+			if _, err := auth.NormalizeEmail(email); err != nil {
+				return fmt.Errorf("ADMIN_EMAILS: %w", err)
+			}
+		}
 		if c.CloudflareAccessTeamDomain == "" {
 			return errors.New("CLOUDFLARE_ACCESS_TEAM_DOMAIN is required when AUTH_MODE=cloudflare_access")
 		}
@@ -117,6 +127,27 @@ func (c Config) ValidateAuth() error {
 		}
 	default:
 		return errors.New("unsupported AUTH_MODE")
+	}
+	return nil
+}
+
+func parseAdminEmails(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	return strings.Split(value, ",")
+}
+
+func (c Config) ValidateWorker() error {
+	if c.Environment != "production" || c.AuthMode != auth.ModeCloudflareAccess {
+		return errors.New("Workers require APP_ENV=production and AUTH_MODE=cloudflare_access")
+	}
+	if err := c.ValidateAuth(); err != nil {
+		return err
+	}
+	if strings.Contains(c.CloudflareAccessTeamDomain, "replace-me") ||
+		strings.Contains(c.CloudflareAccessAudience, "replace-with") {
+		return errors.New("Worker Cloudflare Access configuration contains placeholders")
 	}
 	return nil
 }

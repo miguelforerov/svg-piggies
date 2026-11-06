@@ -19,7 +19,7 @@ func newHandler(
 	if err := cfg.ValidateAuth(); err != nil {
 		return nil, err
 	}
-	adminAuth, err := auth.NewAdminMiddleware(cfg.AuthMode, verifier)
+	adminAuth, err := auth.NewAdminMiddleware(cfg.AuthMode, verifier, cfg.AdminEmails)
 	if err != nil {
 		return nil, err
 	}

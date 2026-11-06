@@ -3,7 +3,7 @@
   "name": "svg-piggies-api",
   "main": "./build/worker.mjs",
   "compatibility_date": "2026-08-25",
-  "workers_dev": true,
+  "workers_dev": false,
   "build": {
     "command": "npm run worker:build"
   },
@@ -63,6 +63,7 @@
       },
       "secrets": {
         "required": [
+          "ADMIN_EMAILS",
           "STRIPE_SECRET_KEY",
           "STRIPE_WEBHOOK_SECRET",
           "R2_ACCESS_KEY_ID",

@@ -14,6 +14,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	if err := cfg.ValidateWorker(); err != nil {
+		panic(err)
+	}
 	authVerifier, err := newAuthVerifier(cfg)
 	if err != nil {
 		panic(err)

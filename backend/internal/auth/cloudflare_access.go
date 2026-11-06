@@ -50,10 +50,19 @@ func newCloudflareAccessVerifier(
 	}
 }
 
-func (v *CloudflareAccessVerifier) Verify(ctx context.Context, rawToken string) error {
+func (v *CloudflareAccessVerifier) Verify(ctx context.Context, rawToken string) (string, error) {
 	if v.client != nil {
 		ctx = oidc.ClientContext(ctx, v.client)
 	}
-	_, err := v.verifier.Verify(ctx, rawToken)
-	return err
+	token, err := v.verifier.Verify(ctx, rawToken)
+	if err != nil {
+		return "", err
+	}
+	var claims struct {
+		Email string `json:"email"`
+	}
+	if err := token.Claims(&claims); err != nil {
+		return "", err
+	}
+	return NormalizeEmail(claims.Email)
 }

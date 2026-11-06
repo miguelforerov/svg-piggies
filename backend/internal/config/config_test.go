@@ -76,6 +76,8 @@ func TestLoadCloudflareAccessAuth(t *testing.T) {
 			return "https://svg-piggies.cloudflareaccess.com/"
 		case "CLOUDFLARE_ACCESS_AUD":
 			return "access-audience"
+		case "ADMIN_EMAILS":
+			return "admin@example.com"
 		default:
 			return ""
 		}
@@ -85,6 +87,32 @@ func TestLoadCloudflareAccessAuth(t *testing.T) {
 	}
 	if got.CloudflareAccessTeamDomain != "https://svg-piggies.cloudflareaccess.com" {
 		t.Errorf("CloudflareAccessTeamDomain = %q", got.CloudflareAccessTeamDomain)
+	}
+}
+
+func TestValidateWorkerFailsClosed(t *testing.T) {
+	base := Config{Environment: "production", AuthMode: auth.ModeCloudflareAccess,
+		CloudflareAccessTeamDomain: "https://shop.cloudflareaccess.com",
+		CloudflareAccessAudience:   "audience", AdminEmails: []string{"admin@example.com"}}
+	if err := base.ValidateWorker(); err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name string
+		edit func(*Config)
+	}{
+		{"development Worker", func(c *Config) { c.Environment, c.AuthMode = "development", auth.ModeDevelopment }},
+		{"production with development auth", func(c *Config) { c.AuthMode = auth.ModeDevelopment }},
+		{"empty admins", func(c *Config) { c.AdminEmails = nil }},
+		{"placeholder Access", func(c *Config) { c.CloudflareAccessAudience = "replace-with-audience" }},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := base
+			test.edit(&cfg)
+			if err := cfg.ValidateWorker(); err == nil {
+				t.Fatal("insecure Worker configuration accepted")
+			}
+		})
 	}
 }
 

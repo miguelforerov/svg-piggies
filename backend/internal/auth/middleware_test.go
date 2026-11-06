@@ -26,7 +26,7 @@ const (
 func TestDevelopmentModeAllowsAdminRequest(t *testing.T) {
 	t.Parallel()
 
-	middleware, err := NewAdminMiddleware(ModeDevelopment, nil)
+	middleware, err := NewAdminMiddleware(ModeDevelopment, nil, nil)
 	if err != nil {
 		t.Fatalf("NewAdminMiddleware() error = %v", err)
 	}
@@ -75,6 +75,7 @@ func TestCloudflareAccessModeAcceptsValidJWT(t *testing.T) {
 		Issuer:   testIssuer,
 		Audience: []string{testAudience},
 		Expires:  time.Now().Add(time.Hour).Unix(),
+		Email:    " AdMiN@Example.Com ",
 	})
 
 	request := httptest.NewRequest(http.MethodGet, "/api/admin/collections", nil)
@@ -173,7 +174,7 @@ func newCloudflareTestHandlerWithKey(t *testing.T, publicKey *rsa.PublicKey) htt
 		&oidc.StaticKeySet{PublicKeys: []crypto.PublicKey{publicKey}},
 		nil,
 	)
-	middleware, err := NewAdminMiddleware(ModeCloudflareAccess, verifier)
+	middleware, err := NewAdminMiddleware(ModeCloudflareAccess, verifier, []string{"admin@example.com"})
 	if err != nil {
 		t.Fatalf("NewAdminMiddleware() error = %v", err)
 	}
@@ -201,6 +202,7 @@ type tokenClaims struct {
 	Expires  int64    `json:"exp"`
 	IssuedAt int64    `json:"iat"`
 	Subject  string   `json:"sub"`
+	Email    string   `json:"email"`
 }
 
 func signToken(t *testing.T, key *rsa.PrivateKey, claims tokenClaims) string {
@@ -236,8 +238,8 @@ func TestUnauthorizedResponseDoesNotLeakVerifierErrors(t *testing.T) {
 	t.Parallel()
 
 	middleware, err := NewAdminMiddleware(ModeCloudflareAccess, verifierFunc(
-		func(context.Context, string) error { return fmt.Errorf("sensitive verifier detail") },
-	))
+		func(context.Context, string) (string, error) { return "", fmt.Errorf("sensitive verifier detail") },
+	), []string{"admin@example.com"})
 	if err != nil {
 		t.Fatalf("NewAdminMiddleware() error = %v", err)
 	}
@@ -251,8 +253,44 @@ func TestUnauthorizedResponseDoesNotLeakVerifierErrors(t *testing.T) {
 	}
 }
 
-type verifierFunc func(context.Context, string) error
+type verifierFunc func(context.Context, string) (string, error)
 
-func (f verifierFunc) Verify(ctx context.Context, token string) error {
+func (f verifierFunc) Verify(ctx context.Context, token string) (string, error) {
 	return f(ctx, token)
+}
+
+func TestCloudflareAccessRequiresListedAdmin(t *testing.T) {
+	key := newRSAKey(t)
+	handler := newCloudflareTestHandlerWithKey(t, &key.PublicKey)
+	for _, test := range []struct {
+		name, email string
+		want        int
+	}{
+		{"non administrator", "customer@example.com", http.StatusForbidden},
+		{"missing identity", "", http.StatusUnauthorized},
+		{"invalid identity", "not-an-email", http.StatusUnauthorized},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			token := signToken(t, key, tokenClaims{
+				Issuer: testIssuer, Audience: []string{testAudience},
+				Expires: time.Now().Add(time.Hour).Unix(), Email: test.email,
+			})
+			request := httptest.NewRequest(http.MethodPost, "/api/admin/products/id/images/uploads", nil)
+			request.Header.Set(AccessJWTHeader, token)
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, request)
+			if response.Code != test.want {
+				t.Fatalf("status = %d, want %d", response.Code, test.want)
+			}
+		})
+	}
+}
+
+func TestCloudflareAccessRejectsEmptyAdminList(t *testing.T) {
+	_, err := NewAdminMiddleware(ModeCloudflareAccess, verifierFunc(
+		func(context.Context, string) (string, error) { return "admin@example.com", nil },
+	), nil)
+	if err == nil {
+		t.Fatal("empty ADMIN_EMAILS was accepted")
+	}
 }
