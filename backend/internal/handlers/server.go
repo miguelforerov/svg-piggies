@@ -116,11 +116,9 @@ type ProductCollectionService interface {
 	DeleteProductCollection(ctx context.Context, productID string, collectionID string) error
 }
 
-type ProductImageService interface {
-	AddProductImages(
-		ctx context.Context,
-		input productimages.AddProductImagesInput,
-	) ([]productimages.ProductImage, error)
+type ProductImageUploadService interface {
+	RequestUpload(context.Context, productimages.RequestUploadInput) (productimages.UploadAuthorization, error)
+	ConfirmUpload(context.Context, productimages.ConfirmUploadInput) (productimages.ProductImage, error)
 }
 
 type ProductProductTypeService interface {
@@ -173,7 +171,7 @@ type Server struct {
 	orders               OrderService
 	collections          CollectionService
 	productCollections   ProductCollectionService
-	productImages        ProductImageService
+	productImageUploads  ProductImageUploadService
 	productProductTypes  ProductProductTypeService
 	productRelationships ProductRelationshipService
 	products             ProductService
@@ -189,7 +187,7 @@ func NewServer(
 	orderService OrderService,
 	collectionService CollectionService,
 	productCollectionService ProductCollectionService,
-	productImageService ProductImageService,
+	productImageUploadService ProductImageUploadService,
 	productProductTypeService ProductProductTypeService,
 	productRelationshipService ProductRelationshipService,
 	productService ProductService,
@@ -202,7 +200,7 @@ func NewServer(
 		orders:               orderService,
 		collections:          collectionService,
 		productCollections:   productCollectionService,
-		productImages:        productImageService,
+		productImageUploads:  productImageUploadService,
 		productProductTypes:  productProductTypeService,
 		productRelationships: productRelationshipService,
 		products:             productService,

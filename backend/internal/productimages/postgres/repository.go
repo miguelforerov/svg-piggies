@@ -127,6 +127,7 @@ func insertProductImageQuery(
 			"display_order",
 			"is_primary",
 			"r2_etag",
+			"confirmation_fingerprint",
 		),
 		im.Values(psql.Arg(
 			productID,
@@ -140,6 +141,7 @@ func insertProductImageQuery(
 			image.DisplayOrder,
 			image.IsPrimary,
 			image.R2ETag,
+			image.ConfirmationFingerprint,
 		)),
 		im.Returning(
 			psql.Cast(psql.Quote("id"), "text"),
@@ -154,6 +156,7 @@ func insertProductImageQuery(
 			psql.Quote("display_order"),
 			psql.Quote("is_primary"),
 			psql.Quote("r2_etag"),
+			psql.Quote("confirmation_fingerprint"),
 			psql.Quote("created_at"),
 			psql.Quote("updated_at"),
 		),

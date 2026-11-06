@@ -10,66 +10,98 @@ import (
 	"github.com/zdenaforero/svg-piggies/backend/internal/productimages"
 )
 
-func (s *Server) AddProductImages(
+func (s *Server) RequestProductImageUpload(
 	ctx context.Context,
-	request generated.AddProductImagesRequestObject,
-) (generated.AddProductImagesResponseObject, error) {
+	request generated.RequestProductImageUploadRequestObject,
+) (generated.RequestProductImageUploadResponseObject, error) {
 	if request.Body == nil {
-		return generated.AddProductImages400JSONResponse{
+		return generated.RequestProductImageUpload400JSONResponse{
 			BadRequestJSONResponse: generated.BadRequestJSONResponse(invalidRequestError(
 				errors.New("request body is required"),
 			)),
 		}, nil
 	}
-
-	images := make([]productimages.NewProductImage, 0, len(request.Body.Images))
-	for _, image := range request.Body.Images {
-		images = append(images, productimages.NewProductImage{
-			R2ObjectKey:      image.R2ObjectKey,
-			OriginalFilename: image.OriginalFilename,
-			ContentType:      image.ContentType,
-			FileSizeBytes:    image.FileSizeBytes,
-			WidthPX:          image.WidthPx,
-			HeightPX:         image.HeightPx,
-			AltText:          image.AltText,
-			DisplayOrder:     optionalInt(image.DisplayOrder),
-			IsPrimary:        optionalBool(image.IsPrimary),
-			R2ETag:           image.R2Etag,
-		})
-	}
-
-	result, err := s.productImages.AddProductImages(ctx, productimages.AddProductImagesInput{
-		ProductID: request.ProductId.String(),
-		Images:    images,
+	authorization, err := s.productImageUploads.RequestUpload(ctx, productimages.RequestUploadInput{
+		ProductID: request.ProductId.String(), OriginalFilename: request.Body.OriginalFilename,
+		ContentType: string(request.Body.ContentType), FileSizeBytes: request.Body.FileSizeBytes,
 	})
 	if err != nil {
 		switch {
-		case errors.Is(err, productimages.ErrInvalidInput):
-			return generated.AddProductImages400JSONResponse{
+		case errors.Is(err, productimages.ErrInvalidUpload):
+			return generated.RequestProductImageUpload400JSONResponse{
 				BadRequestJSONResponse: generated.BadRequestJSONResponse(invalidRequestError(err)),
 			}, nil
 		case errors.Is(err, productimages.ErrReferenceNotFound):
-			return generated.AddProductImages404JSONResponse{
+			return generated.RequestProductImageUpload404JSONResponse{
 				NotFoundJSONResponse: generated.NotFoundJSONResponse(productImageProductNotFoundError()),
 			}, nil
-		case errors.Is(err, productimages.ErrConflict):
-			return generated.AddProductImages409JSONResponse{
+		case errors.Is(err, productimages.ErrStorageFailure):
+			return generated.RequestProductImageUpload502JSONResponse{
+				BadGatewayJSONResponse: generated.BadGatewayJSONResponse(storageUnavailableError()),
+			}, nil
+		case errors.Is(err, productimages.ErrUploadUnavailable):
+			return generated.RequestProductImageUpload503JSONResponse{
+				ServiceUnavailableJSONResponse: generated.ServiceUnavailableJSONResponse(uploadUnavailableError()),
+			}, nil
+		default:
+			return nil, err
+		}
+	}
+	return generated.RequestProductImageUpload201JSONResponse{
+		UploadToken: authorization.UploadToken, ObjectKey: authorization.ObjectKey,
+		UploadUrl: authorization.UploadURL, Headers: authorization.Headers,
+		ExpiresAt: authorization.ExpiresAt,
+	}, nil
+}
+
+func (s *Server) ConfirmProductImageUpload(
+	ctx context.Context,
+	request generated.ConfirmProductImageUploadRequestObject,
+) (generated.ConfirmProductImageUploadResponseObject, error) {
+	if request.Body == nil {
+		return generated.ConfirmProductImageUpload400JSONResponse{
+			BadRequestJSONResponse: generated.BadRequestJSONResponse(invalidRequestError(errors.New("request body is required"))),
+		}, nil
+	}
+	result, err := s.productImageUploads.ConfirmUpload(ctx, productimages.ConfirmUploadInput{
+		ProductID: request.ProductId.String(), UploadToken: request.Body.UploadToken,
+		AltText: request.Body.AltText, DisplayOrder: optionalInt(request.Body.DisplayOrder),
+		IsPrimary: optionalBool(request.Body.IsPrimary),
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, productimages.ErrInvalidUpload), errors.Is(err, productimages.ErrInvalidInput):
+			return generated.ConfirmProductImageUpload400JSONResponse{
+				BadRequestJSONResponse: generated.BadRequestJSONResponse(invalidRequestError(err)),
+			}, nil
+		case errors.Is(err, productimages.ErrReferenceNotFound), errors.Is(err, productimages.ErrObjectNotFound):
+			return generated.ConfirmProductImageUpload404JSONResponse{
+				NotFoundJSONResponse: generated.NotFoundJSONResponse(imageUploadNotFoundError()),
+			}, nil
+		case errors.Is(err, productimages.ErrExpiredUpload):
+			return generated.ConfirmProductImageUpload410JSONResponse{
+				GoneJSONResponse: generated.GoneJSONResponse(generated.Error{
+					Code: generated.ErrorCodeExpiredUpload, Message: "image upload authorization has expired",
+				}),
+			}, nil
+		case errors.Is(err, productimages.ErrObjectMismatch), errors.Is(err, productimages.ErrInvalidImage), errors.Is(err, productimages.ErrConflict):
+			return generated.ConfirmProductImageUpload409JSONResponse{
 				ConflictJSONResponse: generated.ConflictJSONResponse(productImageConflictError()),
+			}, nil
+		case errors.Is(err, productimages.ErrStorageFailure):
+			return generated.ConfirmProductImageUpload502JSONResponse{
+				BadGatewayJSONResponse: generated.BadGatewayJSONResponse(storageUnavailableError()),
 			}, nil
 		default:
 			return nil, err
 		}
 	}
 
-	response := make(generated.AddProductImages201JSONResponse, 0, len(result))
-	for _, image := range result {
-		apiImage, err := toAPIProductImage(image)
-		if err != nil {
-			return nil, err
-		}
-		response = append(response, apiImage)
+	apiImage, err := toAPIProductImage(result)
+	if err != nil {
+		return nil, err
 	}
-	return response, nil
+	return generated.ConfirmProductImageUpload201JSONResponse(apiImage), nil
 }
 
 func toAPIProductImage(image productimages.ProductImage) (generated.ProductImage, error) {
@@ -110,6 +142,18 @@ func productImageProductNotFoundError() generated.Error {
 func productImageConflictError() generated.Error {
 	return generated.Error{
 		Code:    generated.ErrorCodeConflict,
-		Message: "an image with this R2 object key already exists",
+		Message: "image upload could not be confirmed",
 	}
+}
+
+func storageUnavailableError() generated.Error {
+	return generated.Error{Code: generated.ErrorCodeInternalError, Message: "image storage is unavailable"}
+}
+
+func uploadUnavailableError() generated.Error {
+	return generated.Error{Code: generated.ErrorCodeInternalError, Message: "image uploads are temporarily unavailable"}
+}
+
+func imageUploadNotFoundError() generated.Error {
+	return generated.Error{Code: generated.ErrorCodeNotFound, Message: "product or uploaded image not found"}
 }

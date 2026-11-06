@@ -136,6 +136,62 @@ trusted server-side data. A presigned PUT URL is reusable until it expires;
 verify uploaded metadata, including size, with HEAD afterward. The client has
 not yet been exercised against real R2 or with HEAD/DELETE in a Worker runtime.
 
+The admin image flow starts with `POST /api/admin/products/{productId}/images/uploads`
+and finishes with `POST /api/admin/products/{productId}/images`. The first
+response contains a short-lived signed upload token, a PUT URL, and the exact
+headers to send (`Content-Type` and `If-None-Match: *`). Include both headers in
+the assets bucket CORS `AllowedHeaders`. R2 evaluates `If-None-Match: *`
+atomically, so a reused URL cannot overwrite an uploaded object. The token
+authenticates the server-generated key, product, expected MIME and size, and
+expires after ten minutes; it is not a substitute for admin authorization.
+It is signed with a key derived from the R2 secret, so rotating that secret
+invalidates outstanding upload tokens.
+Before issuing the PUT URL, the backend checks that PostgreSQL can select the
+`confirmation_fingerprint` column defined in migration 0002. A failed check
+returns 503 and does not presign. Successful checks are cached per backend
+instance; failures are retried on the next request. New databases receive the
+column from 0002. Databases that already applied the older 0002 must add the
+nullable column and its check constraint manually before enabling uploads;
+editing an applied migration file does not update their schema. This cache
+assumes production migrations are not rolled back while instances are running.
+
+The second request sends the token and optional alt text, display order, and
+primary flag. The backend checks R2 metadata with HEAD, then reads at most
+10 MiB from `PRODUCT_ASSETS` and fully decodes the declared PNG, JPEG, or WebP
+format before inserting the image row. AVIF is temporarily suspended because
+its decoder can allocate frame or tile buffers before the application checks
+their dimensions. PNG, JPEG, and WebP images over 8 million pixels are rejected.
+WebP uses `golang.org/x/image/webp`. The decoded dimensions are saved in
+PostgreSQL. Validations are serialized per backend instance to limit
+simultaneous decoder allocations. Real Worker CPU and memory behavior still
+needs validation.
+
+The 10 MiB limit is checked against the declared size before presigning and
+against actual R2 metadata after PUT. The current presigned PUT does not enforce
+the limit during transfer, so oversized objects can remain in R2 unregistered
+and consume storage. R2 does not currently support presigned HTML-form POST
+policies. If the database insert fails or confirmation never arrives, the
+object also remains unregistered for safe retry. A future cleanup job should
+list only keys matching `products/<product UUID>/images/<upload UUID>.<format>`
+in `PRODUCT_ASSETS`, select candidates whose R2 `LastModified` is older than a
+grace period well beyond the 10-minute token life (for example 24 hours), and
+check each exact key against `product_images.r2_object_key` immediately before
+deletion. Begin with a dry run and audit counts; recheck object metadata just
+before deleting to avoid acting on a changed object. Never use a bucket-wide
+lifecycle rule for these keys because registered images share the same prefix.
+The cleanup design must account for database outages, in-flight confirmations,
+clock differences, and any other writer with access to the bucket before it is
+enabled. No automatic deletion is implemented.
+
+The upload token expires after ten minutes. An expired token cannot create an
+image, but a signed token can retrieve a previously confirmed image on retry.
+The first confirmation's alt text, order, and primary choice are recorded as
+an immutable fingerprint; a later confirmation with different choices receives
+409, even if another image has since become primary.
+Rows inserted before the fingerprint column was added have a null fingerprint.
+Their repeated confirmations return 409; a recovery policy for those rows
+remains to be decided.
+
 In the Worker, the same repositories acquire a connection through the
 `HYPERDRIVE` binding for each database operation. Hyperdrive performs the
 connection pooling, so the Worker does not create another long-lived pool.

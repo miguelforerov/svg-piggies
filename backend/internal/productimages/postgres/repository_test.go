@@ -27,6 +27,20 @@ func TestLockProductQuery(t *testing.T) {
 	}
 }
 
+func TestGetByObjectKeyQuery(t *testing.T) {
+	query, args, err := bob.Build(context.Background(), getByObjectKeyQuery("products/product-id/images/upload.webp"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	query = normalizeSQL(query)
+	if !strings.Contains(query, `FROM product_images WHERE ("r2_object_key" = $1)`) {
+		t.Fatalf("query = %q", query)
+	}
+	if !reflect.DeepEqual(args, []any{"products/product-id/images/upload.webp"}) {
+		t.Fatalf("args = %#v", args)
+	}
+}
+
 func TestClearPrimaryImageQuery(t *testing.T) {
 	t.Parallel()
 
@@ -77,14 +91,14 @@ func TestInsertProductImageQuery(t *testing.T) {
 	for _, fragment := range []string{
 		`INSERT INTO product_images`,
 		`"r2_object_key"`,
-		`VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+		`VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
 		`RETURNING (CAST("id" AS text)), (CAST("product_id" AS text))`,
 	} {
 		if !strings.Contains(query, fragment) {
 			t.Fatalf("query %q does not contain %q", query, fragment)
 		}
 	}
-	if len(args) != 11 || args[0] != "product-id" || args[1] != image.R2ObjectKey {
+	if len(args) != 12 || args[0] != "product-id" || args[1] != image.R2ObjectKey {
 		t.Fatalf("args = %#v", args)
 	}
 }
@@ -113,6 +127,7 @@ func TestProductImageFieldsMatchBobResultColumns(t *testing.T) {
 		"display_order",
 		"is_primary",
 		"r2_etag",
+		"confirmation_fingerprint",
 		"created_at",
 		"updated_at",
 	}

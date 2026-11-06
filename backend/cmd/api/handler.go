@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 
 	generated "github.com/zdenaforero/svg-piggies/backend/api/generated"
 	"github.com/zdenaforero/svg-piggies/backend/internal/auth"
@@ -31,7 +32,7 @@ func newHandler(
 		dependencies.orders,
 		dependencies.collections,
 		dependencies.productCollections,
-		dependencies.productImages,
+		dependencies.productImageUploads,
 		dependencies.productProductTypes,
 		dependencies.productRelationships,
 		dependencies.products,
@@ -67,6 +68,9 @@ func newHandler(
 
 func withCORS(next http.Handler, allowedOrigin string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/admin/") {
+			w.Header().Set("Cache-Control", "no-store")
+		}
 		w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
 		w.Header().Set(
 			"Access-Control-Allow-Headers",

@@ -9,6 +9,7 @@ import (
 	collectionspostgres "github.com/zdenaforero/svg-piggies/backend/internal/collections/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/customers"
 	customerspostgres "github.com/zdenaforero/svg-piggies/backend/internal/customers/postgres"
+	"github.com/zdenaforero/svg-piggies/backend/internal/config"
 	"github.com/zdenaforero/svg-piggies/backend/internal/database"
 	"github.com/zdenaforero/svg-piggies/backend/internal/handlers"
 	"github.com/zdenaforero/svg-piggies/backend/internal/orders"
@@ -25,6 +26,7 @@ import (
 	productspostgres "github.com/zdenaforero/svg-piggies/backend/internal/products/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/producttypes"
 	producttypespostgres "github.com/zdenaforero/svg-piggies/backend/internal/producttypes/postgres"
+	"github.com/zdenaforero/svg-piggies/backend/internal/storage"
 )
 
 type dependencies struct {
@@ -33,13 +35,14 @@ type dependencies struct {
 	customers            handlers.CustomerService
 	orders               handlers.OrderService
 	productCollections   handlers.ProductCollectionService
-	productImages        handlers.ProductImageService
+	productImageUploads  handlers.ProductImageUploadService
 	productProductTypes  handlers.ProductProductTypeService
 	productRelationships handlers.ProductRelationshipService
 	products             handlers.ProductService
 	productTypes         handlers.ProductTypeService
 }
 
+<<<<<<< HEAD
 func buildDependencies(provider database.Provider) (dependencies, error) {
 	cartRepository, err := cartspostgres.NewRepository(provider)
 	if err != nil {
@@ -69,6 +72,9 @@ func buildDependencies(provider database.Provider) (dependencies, error) {
 		return dependencies{}, fmt.Errorf("create orders service: %w", err)
 	}
 
+=======
+func buildDependencies(provider database.Provider, cfg config.Config) (dependencies, error) {
+>>>>>>> f0c8281 (feat(images): verify and persist product image uploads)
 	repository, err := collectionspostgres.NewRepository(provider)
 	if err != nil {
 		return dependencies{}, fmt.Errorf("create collections repository: %w", err)
@@ -128,6 +134,14 @@ func buildDependencies(provider database.Provider) (dependencies, error) {
 	if err != nil {
 		return dependencies{}, fmt.Errorf("create products service: %w", err)
 	}
+	storageClient, err := storage.NewClient(cfg)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create R2 storage client: %w", err)
+	}
+	imageUploadService, err := productimages.NewUploadService(productService, productImageService, productImageRepository, storageClient, cfg.R2SecretAccessKey)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create product image upload service: %w", err)
+	}
 
 	productTypeRepository, err := producttypespostgres.NewRepository(provider)
 	if err != nil {
@@ -145,7 +159,7 @@ func buildDependencies(provider database.Provider) (dependencies, error) {
 		customers:            customerService,
 		orders:               orderService,
 		productCollections:   productCollectionService,
-		productImages:        productImageService,
+		productImageUploads:  imageUploadService,
 		productProductTypes:  productProductTypeService,
 		productRelationships: productRelationshipService,
 		products:             productService,

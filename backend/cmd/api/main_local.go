@@ -35,7 +35,7 @@ func main() {
 	}
 	defer databaseProvider.Close()
 
-	dependencies, err := buildDependencies(databaseProvider)
+	dependencies, err := buildDependencies(databaseProvider, cfg)
 	if err != nil {
 		log.Fatal(err)
 	}

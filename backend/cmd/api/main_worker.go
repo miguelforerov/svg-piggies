@@ -23,7 +23,7 @@ func main() {
 	}
 
 	databaseProvider := database.NewHyperdriveProvider(config.HyperdriveBinding, cfg.DatabaseName)
-	dependencies, err := buildDependencies(databaseProvider)
+	dependencies, err := buildDependencies(databaseProvider, cfg)
 	if err != nil {
 		panic(err)
 	}

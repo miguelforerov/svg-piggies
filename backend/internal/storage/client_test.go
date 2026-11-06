@@ -182,10 +182,32 @@ func expiration(options []func(*s3.PresignOptions)) time.Duration {
 
 type fakeObjectClient struct {
 	headInput     *s3.HeadObjectInput
+	getInput      *s3.GetObjectInput
 	deleteInput   *s3.DeleteObjectInput
 	headContext   context.Context
+	getContext    context.Context
 	deleteContext context.Context
+	getBody       string
+	getLength     *int64
 	err           error
+}
+
+func (f *fakeObjectClient) GetObject(ctx context.Context, input *s3.GetObjectInput, _ ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+	f.getInput, f.getContext = input, ctx
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if f.err != nil {
+		return nil, f.err
+	}
+	body, length := "image bytes", aws.Int64(11)
+	if f.getBody != "" {
+		body = f.getBody
+	}
+	if f.getLength != nil {
+		length = f.getLength
+	}
+	return &s3.GetObjectOutput{Body: io.NopCloser(strings.NewReader(body)), ContentLength: length}, nil
 }
 
 func (f *fakeObjectClient) HeadObject(ctx context.Context, input *s3.HeadObjectInput, _ ...func(*s3.Options)) (*s3.HeadObjectOutput, error) {
@@ -244,6 +266,10 @@ func TestOperationsSelectBucketsAndBuildInputs(t *testing.T) {
 	if aws.ToString(o.headInput.Bucket) != "public-assets" || metadata.ContentLength != 42 || metadata.ContentType != "image/webp" || metadata.ETag != "etag" {
 		t.Fatalf("unexpected HEAD: %+v, %+v", o.headInput, metadata)
 	}
+	data, err := c.ReadObject(ctx, AssetsBucket, "products/123/image.webp", "etag", 11)
+	if err != nil || string(data) != "image bytes" || aws.ToString(o.getInput.IfMatch) != "etag" || aws.ToString(o.getInput.Bucket) != "public-assets" {
+		t.Fatalf("unexpected GET: data=%q, input=%+v, err=%v", data, o.getInput, err)
+	}
 	if err := c.DeleteObject(ctx, FilesBucket, "orders/123/download.zip"); err != nil {
 		t.Fatal(err)
 	}
@@ -278,6 +304,9 @@ func TestOperationsRejectInvalidInputsAndWrapErrors(t *testing.T) {
 	if _, err := c.HeadObject(ctx, FilesBucket, "key"); !errors.Is(err, o.err) {
 		t.Fatalf("HEAD error = %v", err)
 	}
+	if _, err := c.ReadObject(ctx, AssetsBucket, "key", "", 10); !errors.Is(err, o.err) {
+		t.Fatalf("GET error = %v", err)
+	}
 	if err := c.DeleteObject(ctx, FilesBucket, "key"); !errors.Is(err, o.err) {
 		t.Fatalf("DELETE error = %v", err)
 	}
@@ -293,6 +322,9 @@ func TestHeadAndDeletePropagateCancellation(t *testing.T) {
 	}
 	if o.headContext != ctx {
 		t.Fatal("HEAD did not pass caller context")
+	}
+	if _, err := c.ReadObject(ctx, AssetsBucket, "key", "", 10); !errors.Is(err, context.Canceled) || o.getContext != ctx {
+		t.Fatalf("GET cancellation = %v", err)
 	}
 	if err := c.DeleteObject(ctx, FilesBucket, "orders/123/download.zip"); !errors.Is(err, context.Canceled) {
 		t.Fatalf("DELETE cancellation = %v", err)
@@ -310,13 +342,18 @@ func (c *recordingHTTPClient) Do(request *http.Request) (*http.Response, error) 
 	c.requests = append(c.requests, request)
 	status := http.StatusOK
 	headers := http.Header{"Content-Length": {"42"}, "Content-Type": {"image/webp"}}
+	body := ""
+	if request.Method == http.MethodGet {
+		headers.Set("Content-Length", "11")
+		body = "image bytes"
+	}
 	if request.Method == http.MethodDelete {
 		status = http.StatusNoContent
 		headers = make(http.Header)
 	}
 	return &http.Response{
 		StatusCode: status, Status: http.StatusText(status), Header: headers,
-		Body: io.NopCloser(strings.NewReader("")), Request: request,
+		Body: io.NopCloser(strings.NewReader(body)), Request: request,
 	}, nil
 }
 
@@ -333,16 +370,34 @@ func TestSDKUsesInjectedHTTPClientForObjectOperations(t *testing.T) {
 	if metadata.ContentLength != 42 || metadata.ContentType != "image/webp" {
 		t.Fatalf("unexpected HEAD metadata: %+v", metadata)
 	}
+	data, err := c.ReadObject(context.Background(), AssetsBucket, "products/123/image.webp", "etag", 11)
+	if err != nil || string(data) != "image bytes" {
+		t.Fatalf("GET result = %q, %v", data, err)
+	}
 	if err := c.DeleteObject(context.Background(), AssetsBucket, "products/123/image.webp"); err != nil {
 		t.Fatal(err)
 	}
-	if len(httpClient.requests) != 2 {
-		t.Fatalf("HTTP requests = %d, want 2", len(httpClient.requests))
+	if len(httpClient.requests) != 3 {
+		t.Fatalf("HTTP requests = %d, want 3", len(httpClient.requests))
 	}
 	if req := httpClient.requests[0]; req.Method != http.MethodHead || req.URL.EscapedPath() != "/private-files/orders/123/download.zip" || req.Header.Get("Authorization") == "" {
 		t.Fatalf("unexpected HEAD request: %s %s", req.Method, req.URL)
 	}
-	if req := httpClient.requests[1]; req.Method != http.MethodDelete || req.URL.EscapedPath() != "/public-assets/products/123/image.webp" || req.Header.Get("Authorization") == "" {
+	if req := httpClient.requests[1]; req.Method != http.MethodGet || req.Header.Get("If-Match") != "etag" || req.Header.Get("Authorization") == "" {
+		t.Fatalf("unexpected GET request: %s %s", req.Method, req.URL)
+	}
+	if req := httpClient.requests[2]; req.Method != http.MethodDelete || req.URL.EscapedPath() != "/public-assets/products/123/image.webp" || req.Header.Get("Authorization") == "" {
 		t.Fatalf("unexpected DELETE request: %s %s", req.Method, req.URL)
+	}
+}
+
+func TestReadObjectEnforcesLimit(t *testing.T) {
+	c := &Client{s3Client: &fakeObjectClient{}, assetsBucket: "assets"}
+	if _, err := c.ReadObject(context.Background(), AssetsBucket, "products/a.webp", "", 10); err == nil {
+		t.Fatal("oversized GET was accepted")
+	}
+	c.s3Client = &fakeObjectClient{getBody: "image bytes", getLength: aws.Int64(1)}
+	if _, err := c.ReadObject(context.Background(), AssetsBucket, "products/a.webp", "", 10); err == nil {
+		t.Fatal("oversized GET with false Content-Length was accepted")
 	}
 }

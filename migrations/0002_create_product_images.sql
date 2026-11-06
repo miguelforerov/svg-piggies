@@ -13,6 +13,7 @@ CREATE TABLE product_images (
     display_order integer NOT NULL DEFAULT 0 CHECK (display_order >= 0),
     is_primary boolean NOT NULL DEFAULT false,
     r2_etag text,
+    confirmation_fingerprint text CHECK (confirmation_fingerprint ~ '^[0-9a-f]{64}$'),
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );

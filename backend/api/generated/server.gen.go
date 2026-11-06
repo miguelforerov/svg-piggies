@@ -35,6 +35,8 @@ func (e CartStatus) Valid() bool {
 // Defines values for ErrorCode.
 const (
 	ErrorCodeConflict       ErrorCode = "conflict"
+	ErrorCodeExpiredUpload  ErrorCode = "expired_upload"
+	ErrorCodeForbidden      ErrorCode = "forbidden"
 	ErrorCodeInternalError  ErrorCode = "internal_error"
 	ErrorCodeInvalidRequest ErrorCode = "invalid_request"
 	ErrorCodeNotFound       ErrorCode = "not_found"
@@ -45,6 +47,10 @@ const (
 func (e ErrorCode) Valid() bool {
 	switch e {
 	case ErrorCodeConflict:
+		return true
+	case ErrorCodeExpiredUpload:
+		return true
+	case ErrorCodeForbidden:
 		return true
 	case ErrorCodeInternalError:
 		return true
@@ -119,6 +125,21 @@ func (e PaymentStatus) Valid() bool {
 	case Refunded:
 		return true
 	case Unpaid:
+// Defines values for RequestProductImageUploadInputContentType.
+const (
+	Imagejpeg RequestProductImageUploadInputContentType = "image/jpeg"
+	Imagepng  RequestProductImageUploadInputContentType = "image/png"
+	Imagewebp RequestProductImageUploadInputContentType = "image/webp"
+)
+
+// Valid indicates whether the value is a known member of the RequestProductImageUploadInputContentType enum.
+func (e RequestProductImageUploadInputContentType) Valid() bool {
+	switch e {
+	case Imagejpeg:
+		return true
+	case Imagepng:
+		return true
+	case Imagewebp:
 		return true
 	default:
 		return false
@@ -201,6 +222,14 @@ type Collection struct {
 	Id          openapi_types.UUID `json:"id"`
 	Name        string             `json:"name"`
 	Slug        string             `json:"slug"`
+}
+
+// ConfirmProductImageUploadInput defines model for ConfirmProductImageUploadInput.
+type ConfirmProductImageUploadInput struct {
+	AltText      *string `json:"altText,omitempty"`
+	DisplayOrder *int    `json:"displayOrder,omitempty"`
+	IsPrimary    *bool   `json:"isPrimary,omitempty"`
+	UploadToken  string  `json:"uploadToken"`
 }
 
 // CreateCollectionInput defines model for CreateCollectionInput.
@@ -401,6 +430,15 @@ type ProductImage struct {
 	WidthPx          *int               `json:"widthPx,omitempty"`
 }
 
+// ProductImageUploadAuthorization defines model for ProductImageUploadAuthorization.
+type ProductImageUploadAuthorization struct {
+	ExpiresAt   time.Time           `json:"expiresAt"`
+	Headers     map[string][]string `json:"headers"`
+	ObjectKey   string              `json:"objectKey"`
+	UploadToken string              `json:"uploadToken"`
+	UploadUrl   string              `json:"uploadUrl"`
+}
+
 // ProductProductType defines model for ProductProductType.
 type ProductProductType struct {
 	ProductId     openapi_types.UUID `json:"productId"`
@@ -441,6 +479,16 @@ type ReplaceProductRelationshipsInput struct {
 type UpdateCartItemInput struct {
 	Quantity int `json:"quantity"`
 }
+
+// RequestProductImageUploadInput defines model for RequestProductImageUploadInput.
+type RequestProductImageUploadInput struct {
+	ContentType      RequestProductImageUploadInputContentType `json:"contentType"`
+	FileSizeBytes    int64                                     `json:"fileSizeBytes"`
+	OriginalFilename string                                    `json:"originalFilename"`
+}
+
+// RequestProductImageUploadInputContentType defines model for RequestProductImageUploadInput.ContentType.
+type RequestProductImageUploadInputContentType string
 
 // UpdateCollectionInput defines model for UpdateCollectionInput.
 type UpdateCollectionInput struct {
@@ -508,17 +556,29 @@ type ProductTypeId = openapi_types.UUID
 // RelationshipId defines model for RelationshipId.
 type RelationshipId = openapi_types.UUID
 
+// BadGateway defines model for BadGateway.
+type BadGateway = Error
+
 // BadRequest defines model for BadRequest.
 type BadRequest = Error
 
 // Conflict defines model for Conflict.
 type Conflict = Error
 
+// Forbidden defines model for Forbidden.
+type Forbidden = Error
+
+// Gone defines model for Gone.
+type Gone = Error
+
 // InternalServerError defines model for InternalServerError.
 type InternalServerError = Error
 
 // NotFound defines model for NotFound.
 type NotFound = Error
+
+// ServiceUnavailable defines model for ServiceUnavailable.
+type ServiceUnavailable = Error
 
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
@@ -589,8 +649,11 @@ type UpdateProductJSONRequestBody = UpdateProductInput
 // CreateProductCollectionJSONRequestBody defines body for CreateProductCollection for application/json ContentType.
 type CreateProductCollectionJSONRequestBody = CreateProductCollectionInput
 
-// AddProductImagesJSONRequestBody defines body for AddProductImages for application/json ContentType.
-type AddProductImagesJSONRequestBody = AddProductImagesInput
+// ConfirmProductImageUploadJSONRequestBody defines body for ConfirmProductImageUpload for application/json ContentType.
+type ConfirmProductImageUploadJSONRequestBody = ConfirmProductImageUploadInput
+
+// RequestProductImageUploadJSONRequestBody defines body for RequestProductImageUpload for application/json ContentType.
+type RequestProductImageUploadJSONRequestBody = RequestProductImageUploadInput
 
 // CreateProductProductTypeJSONRequestBody defines body for CreateProductProductType for application/json ContentType.
 type CreateProductProductTypeJSONRequestBody = CreateProductProductTypeInput
@@ -696,9 +759,12 @@ type ServerInterface interface {
 	// DeleteProductCollection Remove a product from a collection
 	// (DELETE /api/admin/products/{productId}/collections/{collectionId})
 	DeleteProductCollection(w http.ResponseWriter, r *http.Request, productId ProductId, collectionId CollectionId)
-	// AddProductImages Register one or more R2 images for a product
+	// ConfirmProductImageUpload Confirm a product image upload and register verified metadata
 	// (POST /api/admin/products/{productId}/images)
-	AddProductImages(w http.ResponseWriter, r *http.Request, productId ProductId)
+	ConfirmProductImageUpload(w http.ResponseWriter, r *http.Request, productId ProductId)
+	// RequestProductImageUpload Request a direct R2 upload for a product image
+	// (POST /api/admin/products/{productId}/images/uploads)
+	RequestProductImageUpload(w http.ResponseWriter, r *http.Request, productId ProductId)
 	// GetProductProductTypes List a product's product type assignments
 	// (GET /api/admin/products/{productId}/product-types)
 	GetProductProductTypes(w http.ResponseWriter, r *http.Request, productId ProductId)
@@ -1350,8 +1416,8 @@ func (siw *ServerInterfaceWrapper) DeleteProductCollection(w http.ResponseWriter
 	handler.ServeHTTP(w, r)
 }
 
-// AddProductImages operation middleware
-func (siw *ServerInterfaceWrapper) AddProductImages(w http.ResponseWriter, r *http.Request) {
+// ConfirmProductImageUpload operation middleware
+func (siw *ServerInterfaceWrapper) ConfirmProductImageUpload(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	_ = err
@@ -1366,7 +1432,33 @@ func (siw *ServerInterfaceWrapper) AddProductImages(w http.ResponseWriter, r *ht
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.AddProductImages(w, r, productId)
+		siw.Handler.ConfirmProductImageUpload(w, r, productId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RequestProductImageUpload operation middleware
+func (siw *ServerInterfaceWrapper) RequestProductImageUpload(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestProductImageUpload(w, r, productId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2218,7 +2310,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/products/{productId}/relationships", wrapper.GetProductRelationships)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/relationships", wrapper.CreateProductRelationship)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/admin/products/{productId}/relationships", wrapper.ReplaceProductRelationships)
-	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/images", wrapper.AddProductImages)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/images", wrapper.ConfirmProductImageUpload)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/images/uploads", wrapper.RequestProductImageUpload)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/relationships/bulk", wrapper.CreateProductRelationships)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/admin/products/{productId}/relationships/{relationshipId}", wrapper.DeleteProductRelationship)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/products/{productId}/relationships/{relationshipId}", wrapper.GetProductRelationship)
@@ -2238,13 +2331,21 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	return m
 }
 
+type BadGatewayJSONResponse Error
+
 type BadRequestJSONResponse Error
 
 type ConflictJSONResponse Error
 
+type ForbiddenJSONResponse Error
+
+type GoneJSONResponse Error
+
 type InternalServerErrorJSONResponse Error
 
 type NotFoundJSONResponse Error
+
+type ServiceUnavailableJSONResponse Error
 
 type UnauthorizedJSONResponse Error
 
@@ -2279,6 +2380,20 @@ func (response GetCollections401JSONResponse) VisitGetCollectionsResponse(w http
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCollections403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCollections403JSONResponse) VisitGetCollectionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -2345,6 +2460,20 @@ func (response CreateCollection401JSONResponse) VisitCreateCollectionResponse(w 
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCollection403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateCollection403JSONResponse) VisitCreateCollectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -2419,6 +2548,20 @@ func (response DeleteCollection401JSONResponse) VisitDeleteCollectionResponse(w 
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCollection403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteCollection403JSONResponse) VisitDeleteCollectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -2503,6 +2646,20 @@ func (response GetCollection401JSONResponse) VisitGetCollectionResponse(w http.R
 	return err
 }
 
+type GetCollection403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCollection403JSONResponse) VisitGetCollectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetCollection404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response GetCollection404JSONResponse) VisitGetCollectionResponse(w http.ResponseWriter) error {
@@ -2580,6 +2737,20 @@ func (response UpdateCollection401JSONResponse) VisitUpdateCollectionResponse(w 
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCollection403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateCollection403JSONResponse) VisitUpdateCollectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -3213,6 +3384,20 @@ func (response GetProductTypes401JSONResponse) VisitGetProductTypesResponse(w ht
 	return err
 }
 
+type GetProductTypes403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetProductTypes403JSONResponse) VisitGetProductTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetProductTypes500JSONResponse struct {
 	InternalServerErrorJSONResponse
 }
@@ -3275,6 +3460,20 @@ func (response CreateProductType401JSONResponse) VisitCreateProductTypeResponse(
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductType403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateProductType403JSONResponse) VisitCreateProductTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -3349,6 +3548,20 @@ func (response DeleteProductType401JSONResponse) VisitDeleteProductTypeResponse(
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProductType403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteProductType403JSONResponse) VisitDeleteProductTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -3429,6 +3642,20 @@ func (response GetProductType401JSONResponse) VisitGetProductTypeResponse(w http
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductType403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetProductType403JSONResponse) VisitGetProductTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -3514,6 +3741,20 @@ func (response UpdateProductType401JSONResponse) VisitUpdateProductTypeResponse(
 	return err
 }
 
+type UpdateProductType403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateProductType403JSONResponse) VisitUpdateProductTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type UpdateProductType404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response UpdateProductType404JSONResponse) VisitUpdateProductTypeResponse(w http.ResponseWriter) error {
@@ -3593,6 +3834,20 @@ func (response GetProducts401JSONResponse) VisitGetProductsResponse(w http.Respo
 	return err
 }
 
+type GetProducts403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetProducts403JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetProducts500JSONResponse struct {
 	InternalServerErrorJSONResponse
 }
@@ -3655,6 +3910,20 @@ func (response CreateProduct401JSONResponse) VisitCreateProductResponse(w http.R
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateProduct403JSONResponse) VisitCreateProductResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -3729,6 +3998,20 @@ func (response DeleteProduct401JSONResponse) VisitDeleteProductResponse(w http.R
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteProduct403JSONResponse) VisitDeleteProductResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -3813,6 +4096,20 @@ func (response GetProduct401JSONResponse) VisitGetProductResponse(w http.Respons
 	return err
 }
 
+type GetProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetProduct403JSONResponse) VisitGetProductResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetProduct404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response GetProduct404JSONResponse) VisitGetProductResponse(w http.ResponseWriter) error {
@@ -3890,6 +4187,20 @@ func (response UpdateProduct401JSONResponse) VisitUpdateProductResponse(w http.R
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateProduct403JSONResponse) VisitUpdateProductResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -3988,6 +4299,20 @@ func (response GetProductCollections401JSONResponse) VisitGetProductCollectionsR
 	return err
 }
 
+type GetProductCollections403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetProductCollections403JSONResponse) VisitGetProductCollectionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetProductCollections404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response GetProductCollections404JSONResponse) VisitGetProductCollectionsResponse(w http.ResponseWriter) error {
@@ -4065,6 +4390,20 @@ func (response CreateProductCollection401JSONResponse) VisitCreateProductCollect
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductCollection403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateProductCollection403JSONResponse) VisitCreateProductCollectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4158,6 +4497,20 @@ func (response DeleteProductCollection401JSONResponse) VisitDeleteProductCollect
 	return err
 }
 
+type DeleteProductCollection403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteProductCollection403JSONResponse) VisitDeleteProductCollectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type DeleteProductCollection404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response DeleteProductCollection404JSONResponse) VisitDeleteProductCollectionResponse(w http.ResponseWriter) error {
@@ -4188,18 +4541,18 @@ func (response DeleteProductCollection500JSONResponse) VisitDeleteProductCollect
 	return err
 }
 
-type AddProductImagesRequestObject struct {
+type ConfirmProductImageUploadRequestObject struct {
 	ProductId ProductId `json:"productId"`
-	Body      *AddProductImagesJSONRequestBody
+	Body      *ConfirmProductImageUploadJSONRequestBody
 }
 
-type AddProductImagesResponseObject interface {
-	VisitAddProductImagesResponse(w http.ResponseWriter) error
+type ConfirmProductImageUploadResponseObject interface {
+	VisitConfirmProductImageUploadResponse(w http.ResponseWriter) error
 }
 
-type AddProductImages201JSONResponse []ProductImage
+type ConfirmProductImageUpload201JSONResponse ProductImage
 
-func (response AddProductImages201JSONResponse) VisitAddProductImagesResponse(w http.ResponseWriter) error {
+func (response ConfirmProductImageUpload201JSONResponse) VisitConfirmProductImageUploadResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -4211,9 +4564,9 @@ func (response AddProductImages201JSONResponse) VisitAddProductImagesResponse(w 
 	return err
 }
 
-type AddProductImages400JSONResponse struct{ BadRequestJSONResponse }
+type ConfirmProductImageUpload400JSONResponse struct{ BadRequestJSONResponse }
 
-func (response AddProductImages400JSONResponse) VisitAddProductImagesResponse(w http.ResponseWriter) error {
+func (response ConfirmProductImageUpload400JSONResponse) VisitConfirmProductImageUploadResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -4225,9 +4578,9 @@ func (response AddProductImages400JSONResponse) VisitAddProductImagesResponse(w 
 	return err
 }
 
-type AddProductImages401JSONResponse struct{ UnauthorizedJSONResponse }
+type ConfirmProductImageUpload401JSONResponse struct{ UnauthorizedJSONResponse }
 
-func (response AddProductImages401JSONResponse) VisitAddProductImagesResponse(w http.ResponseWriter) error {
+func (response ConfirmProductImageUpload401JSONResponse) VisitConfirmProductImageUploadResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -4239,9 +4592,23 @@ func (response AddProductImages401JSONResponse) VisitAddProductImagesResponse(w 
 	return err
 }
 
-type AddProductImages404JSONResponse struct{ NotFoundJSONResponse }
+type ConfirmProductImageUpload403JSONResponse struct{ ForbiddenJSONResponse }
 
-func (response AddProductImages404JSONResponse) VisitAddProductImagesResponse(w http.ResponseWriter) error {
+func (response ConfirmProductImageUpload403JSONResponse) VisitConfirmProductImageUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmProductImageUpload404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ConfirmProductImageUpload404JSONResponse) VisitConfirmProductImageUploadResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -4253,9 +4620,9 @@ func (response AddProductImages404JSONResponse) VisitAddProductImagesResponse(w 
 	return err
 }
 
-type AddProductImages409JSONResponse struct{ ConflictJSONResponse }
+type ConfirmProductImageUpload409JSONResponse struct{ ConflictJSONResponse }
 
-func (response AddProductImages409JSONResponse) VisitAddProductImagesResponse(w http.ResponseWriter) error {
+func (response ConfirmProductImageUpload409JSONResponse) VisitConfirmProductImageUploadResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -4267,11 +4634,25 @@ func (response AddProductImages409JSONResponse) VisitAddProductImagesResponse(w 
 	return err
 }
 
-type AddProductImages500JSONResponse struct {
+type ConfirmProductImageUpload410JSONResponse struct{ GoneJSONResponse }
+
+func (response ConfirmProductImageUpload410JSONResponse) VisitConfirmProductImageUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmProductImageUpload500JSONResponse struct {
 	InternalServerErrorJSONResponse
 }
 
-func (response AddProductImages500JSONResponse) VisitAddProductImagesResponse(w http.ResponseWriter) error {
+func (response ConfirmProductImageUpload500JSONResponse) VisitConfirmProductImageUploadResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -4279,6 +4660,143 @@ func (response AddProductImages500JSONResponse) VisitAddProductImagesResponse(w 
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmProductImageUpload502JSONResponse struct{ BadGatewayJSONResponse }
+
+func (response ConfirmProductImageUpload502JSONResponse) VisitConfirmProductImageUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(502)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestProductImageUploadRequestObject struct {
+	ProductId ProductId `json:"productId"`
+	Body      *RequestProductImageUploadJSONRequestBody
+}
+
+type RequestProductImageUploadResponseObject interface {
+	VisitRequestProductImageUploadResponse(w http.ResponseWriter) error
+}
+
+type RequestProductImageUpload201JSONResponse ProductImageUploadAuthorization
+
+func (response RequestProductImageUpload201JSONResponse) VisitRequestProductImageUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestProductImageUpload400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RequestProductImageUpload400JSONResponse) VisitRequestProductImageUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestProductImageUpload401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RequestProductImageUpload401JSONResponse) VisitRequestProductImageUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestProductImageUpload403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RequestProductImageUpload403JSONResponse) VisitRequestProductImageUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestProductImageUpload404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RequestProductImageUpload404JSONResponse) VisitRequestProductImageUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestProductImageUpload500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response RequestProductImageUpload500JSONResponse) VisitRequestProductImageUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestProductImageUpload502JSONResponse struct{ BadGatewayJSONResponse }
+
+func (response RequestProductImageUpload502JSONResponse) VisitRequestProductImageUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(502)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestProductImageUpload503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RequestProductImageUpload503JSONResponse) VisitRequestProductImageUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4329,6 +4847,20 @@ func (response GetProductProductTypes401JSONResponse) VisitGetProductProductType
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductProductTypes403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetProductProductTypes403JSONResponse) VisitGetProductProductTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4410,6 +4942,20 @@ func (response CreateProductProductType401JSONResponse) VisitCreateProductProduc
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductProductType403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateProductProductType403JSONResponse) VisitCreateProductProductTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4503,6 +5049,20 @@ func (response DeleteProductProductType401JSONResponse) VisitDeleteProductProduc
 	return err
 }
 
+type DeleteProductProductType403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteProductProductType403JSONResponse) VisitDeleteProductProductTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type DeleteProductProductType404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response DeleteProductProductType404JSONResponse) VisitDeleteProductProductTypeResponse(w http.ResponseWriter) error {
@@ -4579,6 +5139,20 @@ func (response GetProductRelationships401JSONResponse) VisitGetProductRelationsh
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductRelationships403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetProductRelationships403JSONResponse) VisitGetProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4660,6 +5234,20 @@ func (response CreateProductRelationship401JSONResponse) VisitCreateProductRelat
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProductRelationship403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateProductRelationship403JSONResponse) VisitCreateProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4759,6 +5347,20 @@ func (response ReplaceProductRelationships401JSONResponse) VisitReplaceProductRe
 	return err
 }
 
+type ReplaceProductRelationships403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReplaceProductRelationships403JSONResponse) VisitReplaceProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ReplaceProductRelationships404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response ReplaceProductRelationships404JSONResponse) VisitReplaceProductRelationshipsResponse(w http.ResponseWriter) error {
@@ -4840,6 +5442,20 @@ func (response CreateProductRelationships401JSONResponse) VisitCreateProductRela
 	return err
 }
 
+type CreateProductRelationships403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateProductRelationships403JSONResponse) VisitCreateProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CreateProductRelationships404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response CreateProductRelationships404JSONResponse) VisitCreateProductRelationshipsResponse(w http.ResponseWriter) error {
@@ -4911,6 +5527,20 @@ func (response DeleteProductRelationship401JSONResponse) VisitDeleteProductRelat
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProductRelationship403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteProductRelationship403JSONResponse) VisitDeleteProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4996,6 +5626,20 @@ func (response GetProductRelationship401JSONResponse) VisitGetProductRelationshi
 	return err
 }
 
+type GetProductRelationship403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetProductRelationship403JSONResponse) VisitGetProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetProductRelationship404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response GetProductRelationship404JSONResponse) VisitGetProductRelationshipResponse(w http.ResponseWriter) error {
@@ -5074,6 +5718,20 @@ func (response UpdateProductRelationship401JSONResponse) VisitUpdateProductRelat
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProductRelationship403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateProductRelationship403JSONResponse) VisitUpdateProductRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -5825,9 +6483,12 @@ type StrictServerInterface interface {
 	// DeleteProductCollection Remove a product from a collection
 	// (DELETE /api/admin/products/{productId}/collections/{collectionId})
 	DeleteProductCollection(ctx context.Context, request DeleteProductCollectionRequestObject) (DeleteProductCollectionResponseObject, error)
-	// AddProductImages Register one or more R2 images for a product
+	// ConfirmProductImageUpload Confirm a product image upload and register verified metadata
 	// (POST /api/admin/products/{productId}/images)
-	AddProductImages(ctx context.Context, request AddProductImagesRequestObject) (AddProductImagesResponseObject, error)
+	ConfirmProductImageUpload(ctx context.Context, request ConfirmProductImageUploadRequestObject) (ConfirmProductImageUploadResponseObject, error)
+	// RequestProductImageUpload Request a direct R2 upload for a product image
+	// (POST /api/admin/products/{productId}/images/uploads)
+	RequestProductImageUpload(ctx context.Context, request RequestProductImageUploadRequestObject) (RequestProductImageUploadResponseObject, error)
 	// GetProductProductTypes List a product's product type assignments
 	// (GET /api/admin/products/{productId}/product-types)
 	GetProductProductTypes(ctx context.Context, request GetProductProductTypesRequestObject) (GetProductProductTypesResponseObject, error)
@@ -6661,13 +7322,13 @@ func (sh *strictHandler) DeleteProductCollection(w http.ResponseWriter, r *http.
 	}
 }
 
-// AddProductImages operation middleware
-func (sh *strictHandler) AddProductImages(w http.ResponseWriter, r *http.Request, productId ProductId) {
-	var request AddProductImagesRequestObject
+// ConfirmProductImageUpload operation middleware
+func (sh *strictHandler) ConfirmProductImageUpload(w http.ResponseWriter, r *http.Request, productId ProductId) {
+	var request ConfirmProductImageUploadRequestObject
 
 	request.ProductId = productId
 
-	var body AddProductImagesJSONRequestBody
+	var body ConfirmProductImageUploadJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -6675,18 +7336,51 @@ func (sh *strictHandler) AddProductImages(w http.ResponseWriter, r *http.Request
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.AddProductImages(ctx, request.(AddProductImagesRequestObject))
+		return sh.ssi.ConfirmProductImageUpload(ctx, request.(ConfirmProductImageUploadRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "AddProductImages")
+		handler = middleware(handler, "ConfirmProductImageUpload")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(AddProductImagesResponseObject); ok {
-		if err := validResponse.VisitAddProductImagesResponse(w); err != nil {
+	} else if validResponse, ok := response.(ConfirmProductImageUploadResponseObject); ok {
+		if err := validResponse.VisitConfirmProductImageUploadResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RequestProductImageUpload operation middleware
+func (sh *strictHandler) RequestProductImageUpload(w http.ResponseWriter, r *http.Request, productId ProductId) {
+	var request RequestProductImageUploadRequestObject
+
+	request.ProductId = productId
+
+	var body RequestProductImageUploadJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RequestProductImageUpload(ctx, request.(RequestProductImageUploadRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestProductImageUpload")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestProductImageUploadResponseObject); ok {
+		if err := validResponse.VisitRequestProductImageUploadResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

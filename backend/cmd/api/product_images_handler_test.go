@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,154 +19,213 @@ import (
 
 const testProductImageID = "b6140bec-35f1-4e68-b54c-d4c8070bb987"
 
-func TestAddProductImagesRoute(t *testing.T) {
-	timestamp := time.Date(2026, time.September, 3, 10, 0, 0, 0, time.UTC)
-	service := &productImageServiceStub{
-		add: func(
-			_ context.Context,
-			input productimages.AddProductImagesInput,
-		) ([]productimages.ProductImage, error) {
-			if input.ProductID != testProductID || len(input.Images) != 1 {
-				t.Fatalf("AddProductImages() input = %#v", input)
-			}
-			image := input.Images[0]
-			if image.R2ObjectKey != "products/party-pig.webp" ||
-				image.OriginalFilename != "party-pig.webp" ||
-				image.ContentType != "image/webp" ||
-				image.FileSizeBytes != 4096 ||
-				image.DisplayOrder != 2 || !image.IsPrimary {
-				t.Fatalf("AddProductImages() image = %#v", image)
-			}
-			return []productimages.ProductImage{{
-				ID:               testProductImageID,
-				ProductID:        input.ProductID,
-				R2ObjectKey:      image.R2ObjectKey,
-				OriginalFilename: image.OriginalFilename,
-				ContentType:      image.ContentType,
-				FileSizeBytes:    image.FileSizeBytes,
-				DisplayOrder:     image.DisplayOrder,
-				IsPrimary:        image.IsPrimary,
-				CreatedAt:        timestamp,
-				UpdatedAt:        timestamp,
-			}}, nil
-		},
-	}
-	handler := newProductImageTestHandler(service)
-	request := httptest.NewRequest(
-		http.MethodPost,
-		"/api/admin/products/"+testProductID+"/images",
-		bytes.NewBufferString(`{"images":[{"r2ObjectKey":"products/party-pig.webp",`+
-			`"originalFilename":"party-pig.webp","contentType":"image/webp",`+
-			`"fileSizeBytes":4096,"displayOrder":2,"isPrimary":true}]}`),
-	)
-	request.Header.Set("Content-Type", "application/json")
-	response := httptest.NewRecorder()
-
-	handler.ServeHTTP(response, request)
-
-	if response.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want %d; body = %s", response.Code, http.StatusCreated, response.Body)
-	}
-	var body []struct {
-		ID           string `json:"id"`
-		ProductID    string `json:"productId"`
-		R2ObjectKey  string `json:"r2ObjectKey"`
-		DisplayOrder int    `json:"displayOrder"`
-		IsPrimary    bool   `json:"isPrimary"`
-	}
-	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
-	if len(body) != 1 || body[0].ID != testProductImageID ||
-		body[0].ProductID != testProductID || body[0].R2ObjectKey != "products/party-pig.webp" ||
-		body[0].DisplayOrder != 2 || !body[0].IsPrimary {
-		t.Fatalf("response = %#v", body)
-	}
+type imageUploadServiceStub struct {
+	request func(context.Context, productimages.RequestUploadInput) (productimages.UploadAuthorization, error)
+	confirm func(context.Context, productimages.ConfirmUploadInput) (productimages.ProductImage, error)
 }
 
-func TestAddProductImagesRouteMapsErrors(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name       string
-		serviceErr error
-		wantStatus int
-		wantCode   string
-	}{
-		{name: "invalid", serviceErr: productimages.ErrInvalidInput, wantStatus: 400, wantCode: "invalid_request"},
-		{name: "missing product", serviceErr: productimages.ErrReferenceNotFound, wantStatus: 404, wantCode: "not_found"},
-		{name: "duplicate key", serviceErr: productimages.ErrConflict, wantStatus: 409, wantCode: "conflict"},
+func (s *imageUploadServiceStub) RequestUpload(ctx context.Context, input productimages.RequestUploadInput) (productimages.UploadAuthorization, error) {
+	if s.request == nil {
+		return productimages.UploadAuthorization{}, errors.New("unexpected request")
 	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			handler := newProductImageTestHandler(&productImageServiceStub{
-				add: func(
-					context.Context,
-					productimages.AddProductImagesInput,
-				) ([]productimages.ProductImage, error) {
-					return nil, test.serviceErr
-				},
-			})
-			request := httptest.NewRequest(
-				http.MethodPost,
-				"/api/admin/products/"+testProductID+"/images",
-				bytes.NewBufferString(`{"images":[{"r2ObjectKey":"key","originalFilename":"image.webp",`+
-					`"contentType":"image/webp","fileSizeBytes":1}]}`),
-			)
-			request.Header.Set("Content-Type", "application/json")
-			response := httptest.NewRecorder()
-
-			handler.ServeHTTP(response, request)
-
-			if response.Code != test.wantStatus {
-				t.Fatalf("status = %d, want %d; body = %s", response.Code, test.wantStatus, response.Body)
-			}
-			assertErrorCode(t, response, test.wantCode)
-		})
+	return s.request(ctx, input)
+}
+func (s *imageUploadServiceStub) ConfirmUpload(ctx context.Context, input productimages.ConfirmUploadInput) (productimages.ProductImage, error) {
+	if s.confirm == nil {
+		return productimages.ProductImage{}, errors.New("unexpected confirmation")
 	}
+	return s.confirm(ctx, input)
 }
 
-func TestAddProductImagesRouteRejectsMissingBody(t *testing.T) {
-	t.Parallel()
-
-	handler := newProductImageTestHandler(&productImageServiceStub{})
-	request := httptest.NewRequest(
-		http.MethodPost,
-		"/api/admin/products/"+testProductID+"/images",
-		nil,
-	)
-	response := httptest.NewRecorder()
-
-	handler.ServeHTTP(response, request)
-
-	if response.Code != http.StatusBadRequest {
-		t.Fatalf("status = %d, want %d", response.Code, http.StatusBadRequest)
+func newImageUploadTestHandler(t *testing.T, service *imageUploadServiceStub, mode auth.Mode) http.Handler {
+	t.Helper()
+	cfg := config.Config{Environment: "test", AuthMode: mode, CORSAllowedOrigin: "http://localhost:4321"}
+	var verifier auth.TokenVerifier
+	if mode == auth.ModeCloudflareAccess {
+		cfg.Environment = "production"
+		cfg.CloudflareAccessTeamDomain = "https://example.cloudflareaccess.com"
+		cfg.CloudflareAccessAudience = "test-audience"
+		cfg.AdminEmails = []string{"admin@example.com"}
+		verifier = allowImageUploadVerifier{}
 	}
-}
-
-func newProductImageTestHandler(service *productImageServiceStub) http.Handler {
-	handler, err := newHandler(config.Config{
-		Environment:       "test",
-		AuthMode:          auth.ModeDevelopment,
-		CORSAllowedOrigin: "http://localhost:4321",
-	}, dependencies{productImages: service}, nil)
+	handler, err := newHandler(cfg, dependencies{productImageUploads: service}, verifier)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return handler
 }
 
-type productImageServiceStub struct {
-	add func(context.Context, productimages.AddProductImagesInput) ([]productimages.ProductImage, error)
+type allowImageUploadVerifier struct{}
+
+func (allowImageUploadVerifier) Verify(context.Context, string) (string, error) {
+	return "admin@example.com", nil
 }
 
-func (s *productImageServiceStub) AddProductImages(
-	ctx context.Context,
-	input productimages.AddProductImagesInput,
-) ([]productimages.ProductImage, error) {
-	if s.add == nil {
-		return nil, errors.New("unexpected AddProductImages call")
+func imageUploadRequest(path, body string) *http.Request {
+	r := httptest.NewRequest(http.MethodPost, path, bytes.NewBufferString(body))
+	r.Header.Set("Content-Type", "application/json")
+	return r
+}
+
+func TestImageUploadRoutes(t *testing.T) {
+	expires := time.Date(2026, time.November, 4, 12, 10, 0, 0, time.UTC)
+	service := &imageUploadServiceStub{
+		request: func(_ context.Context, input productimages.RequestUploadInput) (productimages.UploadAuthorization, error) {
+			if input.ProductID != testProductID || input.OriginalFilename != "party.webp" || input.ContentType != "image/webp" || input.FileSizeBytes != 4096 {
+				t.Fatalf("request input = %+v", input)
+			}
+			return productimages.UploadAuthorization{UploadToken: "signed-token", ObjectKey: "products/server-key.webp", UploadURL: "https://example.test/upload", Headers: http.Header{"Content-Type": {"image/webp"}, "If-None-Match": {"*"}}, ExpiresAt: expires}, nil
+		},
+		confirm: func(_ context.Context, input productimages.ConfirmUploadInput) (productimages.ProductImage, error) {
+			if input.ProductID != testProductID || input.UploadToken != "signed-token" || input.DisplayOrder != 2 || !input.IsPrimary {
+				t.Fatalf("confirm input = %+v", input)
+			}
+			return productimages.ProductImage{ID: testProductImageID, ProductID: input.ProductID, R2ObjectKey: "products/server-key.webp", OriginalFilename: "party.webp", ContentType: "image/webp", FileSizeBytes: 4096, DisplayOrder: 2, IsPrimary: true, CreatedAt: expires, UpdatedAt: expires}, nil
+		},
 	}
-	return s.add(ctx, input)
+	handler := newImageUploadTestHandler(t, service, auth.ModeDevelopment)
+	start := httptest.NewRecorder()
+	handler.ServeHTTP(start, imageUploadRequest("/api/admin/products/"+testProductID+"/images/uploads", `{"originalFilename":"party.webp","contentType":"image/webp","fileSizeBytes":4096}`))
+	if start.Code != http.StatusCreated {
+		t.Fatalf("start status = %d: %s", start.Code, start.Body)
+	}
+	if start.Header().Get("Cache-Control") != "no-store" {
+		t.Fatal("upload authorization must not be cached")
+	}
+	var authorization struct {
+		UploadToken string      `json:"uploadToken"`
+		ObjectKey   string      `json:"objectKey"`
+		Headers     http.Header `json:"headers"`
+	}
+	if err := json.Unmarshal(start.Body.Bytes(), &authorization); err != nil {
+		t.Fatal(err)
+	}
+	if authorization.UploadToken != "signed-token" || authorization.ObjectKey != "products/server-key.webp" || authorization.Headers.Get("If-None-Match") != "*" {
+		t.Fatalf("authorization = %+v", authorization)
+	}
+
+	confirm := httptest.NewRecorder()
+	handler.ServeHTTP(confirm, imageUploadRequest("/api/admin/products/"+testProductID+"/images", `{"uploadToken":"signed-token","displayOrder":2,"isPrimary":true}`))
+	if confirm.Code != http.StatusCreated {
+		t.Fatalf("confirm status = %d: %s", confirm.Code, confirm.Body)
+	}
+	var image struct {
+		ID            string `json:"id"`
+		FileSizeBytes int64  `json:"fileSizeBytes"`
+	}
+	if err := json.Unmarshal(confirm.Body.Bytes(), &image); err != nil {
+		t.Fatal(err)
+	}
+	if image.ID != testProductImageID || image.FileSizeBytes != 4096 {
+		t.Fatalf("image = %+v", image)
+	}
+}
+
+func TestImageUploadRoutesRequireAdmin(t *testing.T) {
+	handler := newImageUploadTestHandler(t, &imageUploadServiceStub{}, auth.ModeCloudflareAccess)
+	for _, path := range []string{"/api/admin/products/" + testProductID + "/images/uploads", "/api/admin/products/" + testProductID + "/images"} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, imageUploadRequest(path, `{}`))
+		if response.Code != http.StatusUnauthorized {
+			t.Fatalf("%s status = %d", path, response.Code)
+		}
+	}
+}
+
+type imageIdentityVerifier struct{ email string }
+
+func (v imageIdentityVerifier) Verify(context.Context, string) (string, error) { return v.email, nil }
+
+func TestImageUploadRoutesRejectAuthenticatedNonAdmin(t *testing.T) {
+	cfg := config.Config{
+		Environment: "production", AuthMode: auth.ModeCloudflareAccess,
+		CloudflareAccessTeamDomain: "https://example.cloudflareaccess.com",
+		CloudflareAccessAudience:   "test-audience",
+		AdminEmails:                []string{"admin@example.com"},
+	}
+	handler, err := newHandler(cfg, dependencies{productImageUploads: &imageUploadServiceStub{}}, imageIdentityVerifier{email: "customer@example.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/api/admin/products/" + testProductID + "/images/uploads", "/api/admin/products/" + testProductID + "/images"} {
+		request := imageUploadRequest(path, `{}`)
+		request.Header.Set(auth.AccessJWTHeader, "verified-token")
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusForbidden {
+			t.Fatalf("%s status = %d, want 403", path, response.Code)
+		}
+	}
+}
+
+func TestImageUploadRouteErrors(t *testing.T) {
+	tests := []struct {
+		name   string
+		err    error
+		status int
+	}{
+		{"invalid", productimages.ErrInvalidUpload, 400},
+		{"missing product", productimages.ErrReferenceNotFound, 404},
+		{"storage", productimages.ErrStorageFailure, 502},
+		{"schema unavailable", fmt.Errorf("%w: column confirmation_fingerprint does not exist", productimages.ErrUploadUnavailable), 503},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := newImageUploadTestHandler(t, &imageUploadServiceStub{request: func(context.Context, productimages.RequestUploadInput) (productimages.UploadAuthorization, error) {
+				return productimages.UploadAuthorization{}, tt.err
+			}}, auth.ModeDevelopment)
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, imageUploadRequest("/api/admin/products/"+testProductID+"/images/uploads", `{"originalFilename":"a.webp","contentType":"image/webp","fileSizeBytes":1}`))
+			if response.Code != tt.status {
+				t.Fatalf("status = %d: %s", response.Code, response.Body)
+			}
+			if strings.Contains(response.Body.String(), "confirmation_fingerprint") {
+				t.Fatalf("database detail leaked: %s", response.Body)
+			}
+		})
+	}
+	for _, tt := range []struct {
+		name    string
+		err     error
+		status  int
+		code    string
+		message string
+	}{
+		{"invalid token", productimages.ErrInvalidUpload, http.StatusBadRequest, "invalid_request", "invalid image upload"},
+		{"invalid input", productimages.ErrInvalidInput, http.StatusBadRequest, "invalid_request", "invalid product image input"},
+		{"missing product", productimages.ErrReferenceNotFound, http.StatusNotFound, "not_found", "product or uploaded image not found"},
+		{"missing object", productimages.ErrObjectNotFound, http.StatusNotFound, "not_found", "product or uploaded image not found"},
+		{"object mismatch", productimages.ErrObjectMismatch, http.StatusConflict, "conflict", "image upload could not be confirmed"},
+		{"invalid image", productimages.ErrInvalidImage, http.StatusConflict, "conflict", "image upload could not be confirmed"},
+		{"real conflict", productimages.ErrConflict, http.StatusConflict, "conflict", "image upload could not be confirmed"},
+		{"expired", fmt.Errorf("%w: internal token detail", productimages.ErrExpiredUpload), http.StatusGone, "expired_upload", "image upload authorization has expired"},
+		{"storage", fmt.Errorf("%w: internal storage detail", productimages.ErrStorageFailure), http.StatusBadGateway, "internal_error", "image storage is unavailable"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := newImageUploadTestHandler(t, &imageUploadServiceStub{confirm: func(context.Context, productimages.ConfirmUploadInput) (productimages.ProductImage, error) {
+				return productimages.ProductImage{}, tt.err
+			}}, auth.ModeDevelopment)
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, imageUploadRequest("/api/admin/products/"+testProductID+"/images", `{"uploadToken":"token"}`))
+			if response.Code != tt.status {
+				t.Fatalf("status = %d, want %d: %s", response.Code, tt.status, response.Body)
+			}
+			if response.Header().Get("Content-Type") != "application/json" {
+				t.Fatalf("content type = %q", response.Header().Get("Content-Type"))
+			}
+			var body struct {
+				Code    string `json:"code"`
+				Message string `json:"message"`
+			}
+			if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+				t.Fatal(err)
+			}
+			if body.Code != tt.code || body.Message != tt.message {
+				t.Fatalf("body = %+v, want code %q and message %q", body, tt.code, tt.message)
+			}
+			if strings.Contains(response.Body.String(), "internal token detail") || strings.Contains(response.Body.String(), "internal storage detail") {
+				t.Fatalf("internal detail leaked: %s", response.Body)
+			}
+		})
+	}
 }
