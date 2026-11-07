@@ -179,6 +179,24 @@ type AddCartItemInput struct {
 	Quantity  *int               `json:"quantity,omitempty"`
 }
 
+// AdminProductImage defines model for AdminProductImage.
+type AdminProductImage struct {
+	AltText          *string            `json:"altText,omitempty"`
+	ContentType      string             `json:"contentType"`
+	CreatedAt        *time.Time         `json:"createdAt,omitempty"`
+	DisplayOrder     int                `json:"displayOrder"`
+	FileSizeBytes    int64              `json:"fileSizeBytes"`
+	HeightPx         *int               `json:"heightPx,omitempty"`
+	Id               openapi_types.UUID `json:"id"`
+	ImageUrl         string             `json:"imageUrl"`
+	IsPrimary        bool               `json:"isPrimary"`
+	OriginalFilename string             `json:"originalFilename"`
+	ProductId        openapi_types.UUID `json:"productId"`
+	R2Etag           *string            `json:"r2Etag,omitempty"`
+	UpdatedAt        *time.Time         `json:"updatedAt,omitempty"`
+	WidthPx          *int               `json:"widthPx,omitempty"`
+}
+
 // Cart defines model for Cart.
 type Cart struct {
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
@@ -746,6 +764,9 @@ type ServerInterface interface {
 	// DeleteProductCollection Remove a product from a collection
 	// (DELETE /api/admin/products/{productId}/collections/{collectionId})
 	DeleteProductCollection(w http.ResponseWriter, r *http.Request, productId ProductId, collectionId CollectionId)
+	// GetProductImages List a product's images with temporary R2 URLs
+	// (GET /api/admin/products/{productId}/images)
+	GetProductImages(w http.ResponseWriter, r *http.Request, productId ProductId)
 	// ConfirmProductImageUpload Confirm a product image upload and register verified metadata
 	// (POST /api/admin/products/{productId}/images)
 	ConfirmProductImageUpload(w http.ResponseWriter, r *http.Request, productId ProductId)
@@ -1394,6 +1415,32 @@ func (siw *ServerInterfaceWrapper) DeleteProductCollection(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeleteProductCollection(w, r, productId, collectionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProductImages operation middleware
+func (siw *ServerInterfaceWrapper) GetProductImages(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProductImages(w, r, productId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2297,6 +2344,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/products/{productId}/relationships", wrapper.GetProductRelationships)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/relationships", wrapper.CreateProductRelationship)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/admin/products/{productId}/relationships", wrapper.ReplaceProductRelationships)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/products/{productId}/images", wrapper.GetProductImages)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/images", wrapper.ConfirmProductImageUpload)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/images/uploads", wrapper.RequestProductImageUpload)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/relationships/bulk", wrapper.CreateProductRelationships)
@@ -4528,6 +4576,114 @@ func (response DeleteProductCollection500JSONResponse) VisitDeleteProductCollect
 	return err
 }
 
+type GetProductImagesRequestObject struct {
+	ProductId ProductId `json:"productId"`
+}
+
+type GetProductImagesResponseObject interface {
+	VisitGetProductImagesResponse(w http.ResponseWriter) error
+}
+
+type GetProductImages200JSONResponse []AdminProductImage
+
+func (response GetProductImages200JSONResponse) VisitGetProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductImages400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetProductImages400JSONResponse) VisitGetProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductImages401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetProductImages401JSONResponse) VisitGetProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductImages403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetProductImages403JSONResponse) VisitGetProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductImages404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetProductImages404JSONResponse) VisitGetProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductImages500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response GetProductImages500JSONResponse) VisitGetProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProductImages502JSONResponse struct{ BadGatewayJSONResponse }
+
+func (response GetProductImages502JSONResponse) VisitGetProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(502)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ConfirmProductImageUploadRequestObject struct {
 	ProductId ProductId `json:"productId"`
 	Body      *ConfirmProductImageUploadJSONRequestBody
@@ -6470,6 +6626,9 @@ type StrictServerInterface interface {
 	// DeleteProductCollection Remove a product from a collection
 	// (DELETE /api/admin/products/{productId}/collections/{collectionId})
 	DeleteProductCollection(ctx context.Context, request DeleteProductCollectionRequestObject) (DeleteProductCollectionResponseObject, error)
+	// GetProductImages List a product's images with temporary R2 URLs
+	// (GET /api/admin/products/{productId}/images)
+	GetProductImages(ctx context.Context, request GetProductImagesRequestObject) (GetProductImagesResponseObject, error)
 	// ConfirmProductImageUpload Confirm a product image upload and register verified metadata
 	// (POST /api/admin/products/{productId}/images)
 	ConfirmProductImageUpload(ctx context.Context, request ConfirmProductImageUploadRequestObject) (ConfirmProductImageUploadResponseObject, error)
@@ -7302,6 +7461,32 @@ func (sh *strictHandler) DeleteProductCollection(w http.ResponseWriter, r *http.
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DeleteProductCollectionResponseObject); ok {
 		if err := validResponse.VisitDeleteProductCollectionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProductImages operation middleware
+func (sh *strictHandler) GetProductImages(w http.ResponseWriter, r *http.Request, productId ProductId) {
+	var request GetProductImagesRequestObject
+
+	request.ProductId = productId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProductImages(ctx, request.(GetProductImagesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProductImages")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProductImagesResponseObject); ok {
+		if err := validResponse.VisitGetProductImagesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

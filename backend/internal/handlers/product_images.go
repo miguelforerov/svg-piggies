@@ -10,6 +10,58 @@ import (
 	"github.com/zdenaforero/svg-piggies/backend/internal/productimages"
 )
 
+func (s *Server) GetProductImages(
+	ctx context.Context,
+	request generated.GetProductImagesRequestObject,
+) (generated.GetProductImagesResponseObject, error) {
+	images, err := s.productImageReads.GetProductImages(ctx, request.ProductId.String())
+	if err != nil {
+		switch {
+		case errors.Is(err, productimages.ErrInvalidInput):
+			return generated.GetProductImages400JSONResponse{
+				BadRequestJSONResponse: generated.BadRequestJSONResponse(invalidRequestError(err)),
+			}, nil
+		case errors.Is(err, productimages.ErrReferenceNotFound):
+			return generated.GetProductImages404JSONResponse{
+				NotFoundJSONResponse: generated.NotFoundJSONResponse(productImageProductNotFoundError()),
+			}, nil
+		case errors.Is(err, productimages.ErrStorageFailure):
+			return generated.GetProductImages502JSONResponse{
+				BadGatewayJSONResponse: generated.BadGatewayJSONResponse(storageUnavailableError()),
+			}, nil
+		default:
+			return nil, err
+		}
+	}
+	response := make(generated.GetProductImages200JSONResponse, 0, len(images))
+	for _, image := range images {
+		apiImage, err := toAPIAdminProductImage(image)
+		if err != nil {
+			return nil, err
+		}
+		response = append(response, apiImage)
+	}
+	return response, nil
+}
+
+func toAPIAdminProductImage(image productimages.ProductImageWithURL) (generated.AdminProductImage, error) {
+	id, err := uuid.Parse(image.ID)
+	if err != nil {
+		return generated.AdminProductImage{}, fmt.Errorf("parse product image id: %w", err)
+	}
+	productID, err := uuid.Parse(image.ProductID)
+	if err != nil {
+		return generated.AdminProductImage{}, fmt.Errorf("parse product id: %w", err)
+	}
+	return generated.AdminProductImage{
+		Id: id, ProductId: productID, OriginalFilename: image.OriginalFilename,
+		ContentType: image.ContentType, FileSizeBytes: image.FileSizeBytes,
+		WidthPx: image.WidthPX, HeightPx: image.HeightPX, AltText: image.AltText,
+		DisplayOrder: image.DisplayOrder, IsPrimary: image.IsPrimary, R2Etag: image.R2ETag,
+		ImageUrl: image.ImageURL, CreatedAt: &image.CreatedAt, UpdatedAt: &image.UpdatedAt,
+	}, nil
+}
+
 func (s *Server) RequestProductImageUpload(
 	ctx context.Context,
 	request generated.RequestProductImageUploadRequestObject,

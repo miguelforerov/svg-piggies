@@ -789,6 +789,33 @@ paths:
   /api/admin/products/{productId}/images:
     parameters:
       - $ref: "#/components/parameters/ProductId"
+    get:
+      operationId: getProductImages
+      summary: List a product's images with temporary R2 URLs
+      tags: [admin-product-images]
+      security:
+        - CloudflareAccess: []
+      responses:
+        "200":
+          description: Product images with temporary URLs, ordered for display.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminProductImage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
     post:
       operationId: confirmProductImageUpload
       summary: Confirm a product image upload and register verified metadata
@@ -1857,6 +1884,65 @@ components:
           example: "19.95"
         status:
           $ref: "#/components/schemas/ProductStatus"
+
+    AdminProductImage:
+      type: object
+      required:
+        - id
+        - productId
+        - originalFilename
+        - contentType
+        - fileSizeBytes
+        - displayOrder
+        - isPrimary
+        - imageUrl
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        originalFilename:
+          type: string
+        contentType:
+          type: string
+        fileSizeBytes:
+          type: integer
+          format: int64
+          minimum: 0
+        widthPx:
+          type: integer
+          minimum: 1
+          nullable: true
+        heightPx:
+          type: integer
+          minimum: 1
+          nullable: true
+        altText:
+          type: string
+          nullable: true
+        displayOrder:
+          type: integer
+          minimum: 0
+        isPrimary:
+          type: boolean
+        r2Etag:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          format: uri
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
 
     ProductImage:
       type: object

@@ -36,6 +36,7 @@ type dependencies struct {
 	orders               handlers.OrderService
 	productCollections   handlers.ProductCollectionService
 	productImageUploads  handlers.ProductImageUploadService
+	productImageReads    handlers.ProductImageReadService
 	productProductTypes  handlers.ProductProductTypeService
 	productRelationships handlers.ProductRelationshipService
 	products             handlers.ProductService
@@ -138,6 +139,10 @@ func buildDependencies(provider database.Provider, cfg config.Config) (dependenc
 	if err != nil {
 		return dependencies{}, fmt.Errorf("create product image upload service: %w", err)
 	}
+	imageReadService, err := productimages.NewReadService(productService, productImageRepository, storageClient)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create product image read service: %w", err)
+	}
 
 	productTypeRepository, err := producttypespostgres.NewRepository(provider)
 	if err != nil {
@@ -156,6 +161,7 @@ func buildDependencies(provider database.Provider, cfg config.Config) (dependenc
 		orders:               orderService,
 		productCollections:   productCollectionService,
 		productImageUploads:  imageUploadService,
+		productImageReads:    imageReadService,
 		productProductTypes:  productProductTypeService,
 		productRelationships: productRelationshipService,
 		products:             productService,

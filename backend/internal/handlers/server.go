@@ -121,6 +121,10 @@ type ProductImageUploadService interface {
 	ConfirmUpload(context.Context, productimages.ConfirmUploadInput) (productimages.ProductImage, error)
 }
 
+type ProductImageReadService interface {
+	GetProductImages(context.Context, string) ([]productimages.ProductImageWithURL, error)
+}
+
 type ProductProductTypeService interface {
 	GetProductProductTypes(
 		ctx context.Context,
@@ -172,6 +176,7 @@ type Server struct {
 	collections          CollectionService
 	productCollections   ProductCollectionService
 	productImageUploads  ProductImageUploadService
+	productImageReads    ProductImageReadService
 	productProductTypes  ProductProductTypeService
 	productRelationships ProductRelationshipService
 	products             ProductService
@@ -188,6 +193,7 @@ func NewServer(
 	collectionService CollectionService,
 	productCollectionService ProductCollectionService,
 	productImageUploadService ProductImageUploadService,
+	productImageReadService ProductImageReadService,
 	productProductTypeService ProductProductTypeService,
 	productRelationshipService ProductRelationshipService,
 	productService ProductService,
@@ -201,6 +207,7 @@ func NewServer(
 		collections:          collectionService,
 		productCollections:   productCollectionService,
 		productImageUploads:  productImageUploadService,
+		productImageReads:    productImageReadService,
 		productProductTypes:  productProductTypeService,
 		productRelationships: productRelationshipService,
 		products:             productService,

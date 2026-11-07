@@ -41,6 +41,21 @@ func TestGetByObjectKeyQuery(t *testing.T) {
 	}
 }
 
+func TestGetByProductIDQuery(t *testing.T) {
+	query, args, err := bob.Build(context.Background(), getByProductIDQuery("product-id"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	query = normalizeSQL(query)
+	if !strings.Contains(query, `FROM product_images WHERE ("product_id" = $1)`) ||
+		!strings.Contains(query, `ORDER BY "is_primary" DESC, "display_order", "created_at"`) {
+		t.Fatalf("query = %q", query)
+	}
+	if !reflect.DeepEqual(args, []any{"product-id"}) {
+		t.Fatalf("args = %#v", args)
+	}
+}
+
 func TestClearPrimaryImageQuery(t *testing.T) {
 	t.Parallel()
 
