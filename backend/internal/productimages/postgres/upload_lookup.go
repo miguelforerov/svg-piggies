@@ -70,9 +70,9 @@ func getByProductIDQuery(productID string) bob.Query {
 		productImageColumns(),
 		sm.From("product_images"),
 		sm.Where(psql.Quote("product_id").EQ(psql.Arg(productID))),
-		sm.OrderBy(psql.Quote("is_primary")).Desc(),
 		sm.OrderBy(psql.Quote("display_order")),
 		sm.OrderBy(psql.Quote("created_at")),
+		sm.OrderBy(psql.Quote("id")),
 	)
 }
 

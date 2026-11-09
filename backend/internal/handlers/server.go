@@ -125,6 +125,22 @@ type ProductImageReadService interface {
 	GetProductImages(context.Context, string) ([]productimages.ProductImageWithURL, error)
 }
 
+type ProductImageDeleteService interface {
+	DeleteProductImage(context.Context, string, string) error
+}
+
+type ProductImagePrimaryService interface {
+	SetPrimaryImage(context.Context, string, string) error
+}
+
+type ProductImageAltTextService interface {
+	UpdateAltText(context.Context, productimages.AltTextUpdate) error
+}
+
+type ProductImageOrderService interface {
+	ReorderImages(context.Context, string, []string) error
+}
+
 type ProductProductTypeService interface {
 	GetProductProductTypes(
 		ctx context.Context,
@@ -177,6 +193,10 @@ type Server struct {
 	productCollections   ProductCollectionService
 	productImageUploads  ProductImageUploadService
 	productImageReads    ProductImageReadService
+	productImageDeletes  ProductImageDeleteService
+	productImagePrimary  ProductImagePrimaryService
+	productImageAltText  ProductImageAltTextService
+	productImageOrder    ProductImageOrderService
 	productProductTypes  ProductProductTypeService
 	productRelationships ProductRelationshipService
 	products             ProductService
@@ -194,6 +214,10 @@ func NewServer(
 	productCollectionService ProductCollectionService,
 	productImageUploadService ProductImageUploadService,
 	productImageReadService ProductImageReadService,
+	productImageDeleteService ProductImageDeleteService,
+	productImagePrimaryService ProductImagePrimaryService,
+	productImageAltTextService ProductImageAltTextService,
+	productImageOrderService ProductImageOrderService,
 	productProductTypeService ProductProductTypeService,
 	productRelationshipService ProductRelationshipService,
 	productService ProductService,
@@ -208,6 +232,10 @@ func NewServer(
 		productCollections:   productCollectionService,
 		productImageUploads:  productImageUploadService,
 		productImageReads:    productImageReadService,
+		productImageDeletes:  productImageDeleteService,
+		productImagePrimary:  productImagePrimaryService,
+		productImageAltText:  productImageAltTextService,
+		productImageOrder:    productImageOrderService,
 		productProductTypes:  productProductTypeService,
 		productRelationships: productRelationshipService,
 		products:             productService,

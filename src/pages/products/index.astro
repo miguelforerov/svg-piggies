@@ -41,9 +41,7 @@ const highestPrice = Math.max(0, ...activeProducts.map((product) => product.pric
 const maxPriceData = { amount: String(Math.ceil(highestPrice)), currencyCode: "USD" };
 
 /*
- * TODO(storefront-catalog): replace the admin reads with a purpose-built public
- * catalog endpoint that returns products and hydrated relations in one request.
- * Also add the currently unsupported Shopify-era concepts to our own domain
+ * Add the currently unsupported Shopify-era concepts to our own domain
  * only when their behavior is defined: sale/compare-at price,
  * variants, inventory/availability, vendor/brand, tags and cursor pagination.
  * The "latest" and "trending" sort options likewise need timestamps and a

@@ -1,0 +1,14 @@
+{
+  "rules": [
+    {
+      "id": "local-admin-product-image-upload",
+      "allowed": {
+        "origins": ["http://localhost:4321"],
+        "methods": ["PUT"],
+        "headers": ["Content-Type", "If-None-Match"]
+      },
+      "exposeHeaders": ["ETag"],
+      "maxAgeSeconds": 3600
+    }
+  ]
+}

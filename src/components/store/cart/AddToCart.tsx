@@ -34,7 +34,7 @@ export function AddToCart({
         name: product.title,
         price: product.price,
         quantity: 1,
-        image: product.images[0]?.url ?? "/images/product-placeholder.jpg",
+        image: (product.images.find((item) => item.isPrimary) ?? product.images[0])?.url ?? "/images/product-placeholder.jpg",
         slug: product.slug,
       })
       $cartDrawerOpen.set(true)

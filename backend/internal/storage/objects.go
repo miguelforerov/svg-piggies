@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/smithy-go"
 )
 
 type objectClient interface {
@@ -99,6 +100,10 @@ func (c *Client) DeleteObject(ctx context.Context, bucket Bucket, key string) er
 		Bucket: aws.String(bucketName), Key: aws.String(key),
 	})
 	if err != nil {
+		var apiError smithy.APIError
+		if errors.As(err, &apiError) && apiError.ErrorCode() == "NoSuchKey" {
+			return nil
+		}
 		return fmt.Errorf("delete R2 object: %w", err)
 	}
 	return nil

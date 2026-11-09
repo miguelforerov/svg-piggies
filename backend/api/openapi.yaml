@@ -6,6 +6,22 @@ info:
 servers:
   - url: /
 paths:
+  /api/catalog:
+    get:
+      operationId: getPublicCatalog
+      summary: List active products with their public taxonomy
+      tags: [products]
+      security: []
+      responses:
+        "200":
+          description: Active catalog.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicCatalog"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /api/health:
     get:
       operationId: getHealth
@@ -203,6 +219,34 @@ paths:
                 $ref: "#/components/schemas/Product"
         "404":
           $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/products/{slug}/images:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getPublicProductImages
+      summary: List images of an active product with temporary URLs
+      tags: [products]
+      security: []
+      responses:
+        "200":
+          description: Product images ordered for display.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicProductImage"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "502":
+          $ref: "#/components/responses/BadGateway"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -889,6 +933,120 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
+  /api/admin/products/{productId}/images/order:
+    parameters:
+      - $ref: "#/components/parameters/ProductId"
+    put:
+      operationId: reorderProductImages
+      summary: Replace the complete display order of a product's images
+      tags: [admin-product-images]
+      security:
+        - CloudflareAccess: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderProductImagesInput"
+      responses:
+        "204":
+          description: Image display order saved.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/admin/products/{productId}/images/{imageId}:
+    parameters:
+      - $ref: "#/components/parameters/ProductId"
+      - name: imageId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      operationId: deleteProductImage
+      summary: Delete a product image and its private R2 object
+      tags: [admin-product-images]
+      security:
+        - CloudflareAccess: []
+      responses:
+        "204":
+          description: Product image deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+    patch:
+      operationId: updateProductImageAltText
+      summary: Update the alternative text of a product image
+      tags: [admin-product-images]
+      security:
+        - CloudflareAccess: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductImageAltTextInput"
+      responses:
+        "204":
+          description: Alternative text updated, or unchanged when omitted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/admin/products/{productId}/images/{imageId}/primary:
+    parameters:
+      - $ref: "#/components/parameters/ProductId"
+      - name: imageId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: setPrimaryProductImage
+      summary: Set an existing product image as primary
+      tags: [admin-product-images]
+      security:
+        - CloudflareAccess: []
+      responses:
+        "204":
+          description: Primary product image updated.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /api/admin/products/{productId}/relationships/bulk:
     parameters:
       - $ref: "#/components/parameters/ProductId"
@@ -1419,6 +1577,40 @@ components:
             $ref: "#/components/schemas/Error"
 
   schemas:
+    PublicCatalog:
+      type: object
+      required: [products, collections, productTypes]
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicCatalogProduct"
+        collections:
+          type: array
+          items:
+            $ref: "#/components/schemas/Collection"
+        productTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductType"
+
+    PublicCatalogProduct:
+      type: object
+      required: [product, collectionIds, productTypeIds]
+      properties:
+        product:
+          $ref: "#/components/schemas/Product"
+        collectionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        productTypeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
     Health:
       type: object
       required: [environment, status]
@@ -1943,6 +2135,53 @@ components:
           type: string
           format: date-time
           readOnly: true
+
+    UpdateProductImageAltTextInput:
+      type: object
+      additionalProperties: false
+      properties:
+        altText:
+          type: string
+          nullable: true
+          description: Omission keeps the current value; null stores SQL NULL; an empty string stores an explicit empty alt. Nonempty text is trimmed and limited to 500 Unicode code points.
+          x-go-type: json.RawMessage
+          x-go-type-skip-optional-pointer: true
+
+    ReorderProductImagesInput:
+      type: object
+      additionalProperties: false
+      required: [imageIds]
+      properties:
+        imageIds:
+          type: array
+          description: Complete list of this product's image IDs, in the desired order. An empty list is valid only when the product has no images.
+          items:
+            type: string
+            format: uuid
+
+    PublicProductImage:
+      type: object
+      required: [id, imageUrl, displayOrder, isPrimary]
+      properties:
+        id:
+          type: string
+          format: uuid
+        imageUrl:
+          type: string
+          format: uri
+        altText:
+          type: string
+          nullable: true
+        widthPx:
+          type: integer
+          nullable: true
+        heightPx:
+          type: integer
+          nullable: true
+        displayOrder:
+          type: integer
+        isPrimary:
+          type: boolean
 
     ProductImage:
       type: object

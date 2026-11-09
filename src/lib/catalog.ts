@@ -1,6 +1,7 @@
 import type { Collection } from "@/types/collection";
 import type { ProductType } from "@/types/product-type";
 import type { Product, ProductStatus } from "@/types/product";
+import { normalizePublicImages, type PublicImageRecord } from "@/lib/product-image-mapping";
 
 interface ApiProduct {
   id: string;
@@ -23,14 +24,10 @@ export class CatalogApiError extends Error {
   }
 }
 
-interface ProductCollectionAssignment {
-  productId: string;
-  collectionId: string;
-}
-
-interface ProductTypeAssignment {
-  productId: string;
-  productTypeId: string;
+interface PublicCatalogResponse {
+  products: Array<{ product: ApiProduct; collectionIds: string[]; productTypeIds: string[] }>;
+  collections: Collection[];
+  productTypes: ProductType[];
 }
 
 export interface CatalogProduct extends Product {
@@ -59,19 +56,17 @@ function apiUrl(path: string): string {
 async function getJson<T>(path: string, requestHeaders?: Headers): Promise<T> {
   const headers = new Headers({ Accept: "application/json" });
 
-  // Admin endpoints are authentication-free in local development. If the
-  // storefront itself is behind Cloudflare Access, forward its credentials.
+  // Forward storefront credentials when the site itself is behind Access.
   for (const name of ["Cf-Access-Jwt-Assertion", "Cookie"]) {
     const value = requestHeaders?.get(name);
     if (value) headers.set(name, value);
   }
 
-  const response = await fetch(apiUrl(path), { headers });
+  const response = await fetch(apiUrl(path), { headers, cache: "no-store" });
 
   if (!response.ok) {
-    const message = await response.text();
     throw new CatalogApiError(
-      `Catalog API ${path} returned ${response.status}${message ? `: ${message}` : ""}`,
+      `Catalog API request failed with status ${response.status}`,
       response.status,
     );
   }
@@ -88,11 +83,20 @@ function normalizeProduct(product: ApiProduct): Product {
   return {
     ...product,
     price,
-    // TODO(product-images): hydrate this array when the API exposes image reads.
     images: [],
     // Product files are private purchase assets and must stay out of this response.
     files: [],
   };
+}
+
+async function getPublicImages(slug: string, requestHeaders?: Headers): Promise<Product["images"]> {
+  try {
+    const records = await getJson<PublicImageRecord[]>(`/api/products/${encodeURIComponent(slug)}/images`, requestHeaders);
+    return normalizePublicImages(records);
+  } catch (error) {
+    if (error instanceof CatalogApiError && error.status === 502) return [];
+    throw error;
+  }
 }
 
 export async function getProductBySlug(
@@ -105,7 +109,8 @@ export async function getProductBySlug(
       requestHeaders,
     );
 
-    return product.status === "active" ? normalizeProduct(product) : null;
+    if (product.status !== "active") return null;
+    return { ...normalizeProduct(product), images: await getPublicImages(product.slug, requestHeaders) };
   } catch (error) {
     if (error instanceof CatalogApiError && error.status === 404) return null;
     throw error;
@@ -113,39 +118,24 @@ export async function getProductBySlug(
 }
 
 export async function getCatalog(requestHeaders?: Headers): Promise<CatalogData> {
-  const [apiProducts, collections, productTypes] = await Promise.all([
-    getJson<ApiProduct[]>("/api/admin/products", requestHeaders),
-    getJson<Collection[]>("/api/admin/collections", requestHeaders),
-    getJson<ProductType[]>("/api/admin/product-types", requestHeaders),
-  ]);
-
-  const activeProducts = apiProducts.filter((product) => product.status === "active");
+  const { products: catalogEntries, collections, productTypes } =
+    await getJson<PublicCatalogResponse>("/api/catalog", requestHeaders);
   const collectionById = new Map(collections.map((item) => [item.id, item]));
   const productTypeById = new Map(productTypes.map((item) => [item.id, item]));
 
   const products = await Promise.all(
-    activeProducts.map(async (product): Promise<CatalogProduct> => {
-      const [collectionAssignments, productTypeAssignments] = await Promise.all([
-        getJson<ProductCollectionAssignment[]>(
-          `/api/admin/products/${product.id}/collections`,
-          requestHeaders,
-        ),
-        getJson<ProductTypeAssignment[]>(
-          `/api/admin/products/${product.id}/product-types`,
-          requestHeaders,
-        ),
-      ]);
-
+    catalogEntries.map(async ({ product, collectionIds, productTypeIds }): Promise<CatalogProduct> => {
       const normalizedProduct = normalizeProduct(product);
+      normalizedProduct.images = await getPublicImages(product.slug, requestHeaders);
 
       return {
         ...normalizedProduct,
-        collections: collectionAssignments.flatMap((assignment) => {
-          const collection = collectionById.get(assignment.collectionId);
+        collections: collectionIds.flatMap((id) => {
+          const collection = collectionById.get(id);
           return collection ? [collection] : [];
         }),
-        productTypes: productTypeAssignments.flatMap((assignment) => {
-          const productType = productTypeById.get(assignment.productTypeId);
+        productTypes: productTypeIds.flatMap((id) => {
+          const productType = productTypeById.get(id);
           return productType ? [productType] : [];
         }),
       };

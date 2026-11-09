@@ -11,7 +11,7 @@ const RelatedProductCard = ({
   searchValue?: string | null;
 }) => {
 
-  const image = product.images[0];
+  const image = product.images.find((item) => item.isPrimary) ?? product.images[0];
 
   return (
     <div className="w-[10rem] h-[16.5rem]">
@@ -20,7 +20,7 @@ const RelatedProductCard = ({
         className="relative flex w-full h-full flex-col items-center gap-2 hover:bg-muted rounded-lg duration-300"
       >
         <div className="group relative flex w-full flex-col items-center gap-1 h-full">
-          <PhotoCard image={image} title={product.title} />
+          <PhotoCard image={image} title={product.title} slug={product.slug} />
           <a
             className="after:absolute after:inset-0 text-xs text-center font-medium line-clamp-2 hover:text-primary duration-300"
             href={`/products/${product.slug}`}

@@ -475,6 +475,37 @@ type ProductWithRelationships struct {
 	Relationships []PopulatedProductRelationship `json:"relationships"`
 }
 
+// PublicCatalog defines model for PublicCatalog.
+type PublicCatalog struct {
+	Collections  []Collection           `json:"collections"`
+	ProductTypes []ProductType          `json:"productTypes"`
+	Products     []PublicCatalogProduct `json:"products"`
+}
+
+// PublicCatalogProduct defines model for PublicCatalogProduct.
+type PublicCatalogProduct struct {
+	CollectionIds  []openapi_types.UUID `json:"collectionIds"`
+	Product        Product              `json:"product"`
+	ProductTypeIds []openapi_types.UUID `json:"productTypeIds"`
+}
+
+// PublicProductImage defines model for PublicProductImage.
+type PublicProductImage struct {
+	AltText      *string            `json:"altText,omitempty"`
+	DisplayOrder int                `json:"displayOrder"`
+	HeightPx     *int               `json:"heightPx,omitempty"`
+	Id           openapi_types.UUID `json:"id"`
+	ImageUrl     string             `json:"imageUrl"`
+	IsPrimary    bool               `json:"isPrimary"`
+	WidthPx      *int               `json:"widthPx,omitempty"`
+}
+
+// ReorderProductImagesInput defines model for ReorderProductImagesInput.
+type ReorderProductImagesInput struct {
+	// ImageIds Complete list of this product's image IDs, in the desired order. An empty list is valid only when the product has no images.
+	ImageIds []openapi_types.UUID `json:"imageIds"`
+}
+
 // ReplaceProductRelationshipsInput defines model for ReplaceProductRelationshipsInput.
 type ReplaceProductRelationshipsInput struct {
 	RelatedProductIds []openapi_types.UUID `json:"relatedProductIds"`
@@ -514,6 +545,12 @@ type UpdateCustomerInput struct {
 // UpdateOrderInput defines model for UpdateOrderInput.
 type UpdateOrderInput struct {
 	OrderStatus OrderStatus `json:"orderStatus"`
+}
+
+// UpdateProductImageAltTextInput defines model for UpdateProductImageAltTextInput.
+type UpdateProductImageAltTextInput struct {
+	// AltText Omission keeps the current value; null stores SQL NULL; an empty string stores an explicit empty alt. Nonempty text is trimmed and limited to 500 Unicode code points.
+	AltText json.RawMessage `json:"altText,omitempty"`
 }
 
 // UpdateProductInput defines model for UpdateProductInput.
@@ -657,8 +694,14 @@ type CreateProductCollectionJSONRequestBody = CreateProductCollectionInput
 // ConfirmProductImageUploadJSONRequestBody defines body for ConfirmProductImageUpload for application/json ContentType.
 type ConfirmProductImageUploadJSONRequestBody = ConfirmProductImageUploadInput
 
+// ReorderProductImagesJSONRequestBody defines body for ReorderProductImages for application/json ContentType.
+type ReorderProductImagesJSONRequestBody = ReorderProductImagesInput
+
 // RequestProductImageUploadJSONRequestBody defines body for RequestProductImageUpload for application/json ContentType.
 type RequestProductImageUploadJSONRequestBody = RequestProductImageUploadInput
+
+// UpdateProductImageAltTextJSONRequestBody defines body for UpdateProductImageAltText for application/json ContentType.
+type UpdateProductImageAltTextJSONRequestBody = UpdateProductImageAltTextInput
 
 // CreateProductProductTypeJSONRequestBody defines body for CreateProductProductType for application/json ContentType.
 type CreateProductProductTypeJSONRequestBody = CreateProductProductTypeInput
@@ -770,9 +813,21 @@ type ServerInterface interface {
 	// ConfirmProductImageUpload Confirm a product image upload and register verified metadata
 	// (POST /api/admin/products/{productId}/images)
 	ConfirmProductImageUpload(w http.ResponseWriter, r *http.Request, productId ProductId)
+	// ReorderProductImages Replace the complete display order of a product's images
+	// (PUT /api/admin/products/{productId}/images/order)
+	ReorderProductImages(w http.ResponseWriter, r *http.Request, productId ProductId)
 	// RequestProductImageUpload Request a direct R2 upload for a product image
 	// (POST /api/admin/products/{productId}/images/uploads)
 	RequestProductImageUpload(w http.ResponseWriter, r *http.Request, productId ProductId)
+	// DeleteProductImage Delete a product image and its private R2 object
+	// (DELETE /api/admin/products/{productId}/images/{imageId})
+	DeleteProductImage(w http.ResponseWriter, r *http.Request, productId ProductId, imageId openapi_types.UUID)
+	// UpdateProductImageAltText Update the alternative text of a product image
+	// (PATCH /api/admin/products/{productId}/images/{imageId})
+	UpdateProductImageAltText(w http.ResponseWriter, r *http.Request, productId ProductId, imageId openapi_types.UUID)
+	// SetPrimaryProductImage Set an existing product image as primary
+	// (PUT /api/admin/products/{productId}/images/{imageId}/primary)
+	SetPrimaryProductImage(w http.ResponseWriter, r *http.Request, productId ProductId, imageId openapi_types.UUID)
 	// GetProductProductTypes List a product's product type assignments
 	// (GET /api/admin/products/{productId}/product-types)
 	GetProductProductTypes(w http.ResponseWriter, r *http.Request, productId ProductId)
@@ -821,6 +876,9 @@ type ServerInterface interface {
 	// UpdateCartItem Set a product's quantity in the current guest cart
 	// (PUT /api/cart/items/{productId})
 	UpdateCartItem(w http.ResponseWriter, r *http.Request, productId ProductId, params UpdateCartItemParams)
+	// GetPublicCatalog List active products with their public taxonomy
+	// (GET /api/catalog)
+	GetPublicCatalog(w http.ResponseWriter, r *http.Request)
 	// CreateCheckoutOrder Create a pending order from the current guest cart
 	// (POST /api/checkout/orders)
 	CreateCheckoutOrder(w http.ResponseWriter, r *http.Request, params CreateCheckoutOrderParams)
@@ -836,6 +894,9 @@ type ServerInterface interface {
 	// GetProductBySlug Get a product by slug
 	// (GET /api/products/{slug})
 	GetProductBySlug(w http.ResponseWriter, r *http.Request, slug string)
+	// GetPublicProductImages List images of an active product with temporary URLs
+	// (GET /api/products/{slug}/images)
+	GetPublicProductImages(w http.ResponseWriter, r *http.Request, slug string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -1476,6 +1537,32 @@ func (siw *ServerInterfaceWrapper) ConfirmProductImageUpload(w http.ResponseWrit
 	handler.ServeHTTP(w, r)
 }
 
+// ReorderProductImages operation middleware
+func (siw *ServerInterfaceWrapper) ReorderProductImages(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReorderProductImages(w, r, productId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // RequestProductImageUpload operation middleware
 func (siw *ServerInterfaceWrapper) RequestProductImageUpload(w http.ResponseWriter, r *http.Request) {
 
@@ -1493,6 +1580,111 @@ func (siw *ServerInterfaceWrapper) RequestProductImageUpload(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RequestProductImageUpload(w, r, productId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteProductImage operation middleware
+func (siw *ServerInterfaceWrapper) DeleteProductImage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "imageId" -------------
+	var imageId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "imageId", r.PathValue("imageId"), &imageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "imageId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteProductImage(w, r, productId, imageId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProductImageAltText operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProductImageAltText(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "imageId" -------------
+	var imageId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "imageId", r.PathValue("imageId"), &imageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "imageId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProductImageAltText(w, r, productId, imageId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetPrimaryProductImage operation middleware
+func (siw *ServerInterfaceWrapper) SetPrimaryProductImage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "productId" -------------
+	var productId ProductId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", r.PathValue("productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "imageId" -------------
+	var imageId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "imageId", r.PathValue("imageId"), &imageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "imageId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetPrimaryProductImage(w, r, productId, imageId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2055,6 +2247,20 @@ func (siw *ServerInterfaceWrapper) UpdateCartItem(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// GetPublicCatalog operation middleware
+func (siw *ServerInterfaceWrapper) GetPublicCatalog(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPublicCatalog(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CreateCheckoutOrder operation middleware
 func (siw *ServerInterfaceWrapper) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request) {
 
@@ -2192,6 +2398,32 @@ func (siw *ServerInterfaceWrapper) GetProductBySlug(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// GetPublicProductImages operation middleware
+func (siw *ServerInterfaceWrapper) GetPublicProductImages(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", r.PathValue("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPublicProductImages(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -2312,6 +2544,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/catalog", wrapper.GetPublicCatalog)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/health", wrapper.GetHealth)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/cart", wrapper.ClearCart)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/cart", wrapper.GetCart)
@@ -2321,6 +2554,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/cart/items/{productId}", wrapper.UpdateCartItem)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/checkout/orders", wrapper.CreateCheckoutOrder)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/products/{slug}", wrapper.GetProductBySlug)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/products/{slug}/images", wrapper.GetPublicProductImages)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/collections/{slug}", wrapper.GetCollectionBySlug)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/product-types/{slug}", wrapper.GetProductTypeBySlug)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/collections", wrapper.GetCollections)
@@ -2347,6 +2581,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/products/{productId}/images", wrapper.GetProductImages)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/images", wrapper.ConfirmProductImageUpload)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/images/uploads", wrapper.RequestProductImageUpload)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/admin/products/{productId}/images/order", wrapper.ReorderProductImages)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/admin/products/{productId}/images/{imageId}", wrapper.DeleteProductImage)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/admin/products/{productId}/images/{imageId}", wrapper.UpdateProductImageAltText)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/admin/products/{productId}/images/{imageId}/primary", wrapper.SetPrimaryProductImage)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/admin/products/{productId}/relationships/bulk", wrapper.CreateProductRelationships)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/admin/products/{productId}/relationships/{relationshipId}", wrapper.DeleteProductRelationship)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/products/{productId}/relationships/{relationshipId}", wrapper.GetProductRelationship)
@@ -4821,6 +5059,95 @@ func (response ConfirmProductImageUpload502JSONResponse) VisitConfirmProductImag
 	return err
 }
 
+type ReorderProductImagesRequestObject struct {
+	ProductId ProductId `json:"productId"`
+	Body      *ReorderProductImagesJSONRequestBody
+}
+
+type ReorderProductImagesResponseObject interface {
+	VisitReorderProductImagesResponse(w http.ResponseWriter) error
+}
+
+type ReorderProductImages204Response struct {
+}
+
+func (response ReorderProductImages204Response) VisitReorderProductImagesResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ReorderProductImages400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReorderProductImages400JSONResponse) VisitReorderProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReorderProductImages401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReorderProductImages401JSONResponse) VisitReorderProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReorderProductImages403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReorderProductImages403JSONResponse) VisitReorderProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReorderProductImages404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReorderProductImages404JSONResponse) VisitReorderProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReorderProductImages500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response ReorderProductImages500JSONResponse) VisitReorderProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type RequestProductImageUploadRequestObject struct {
 	ProductId ProductId `json:"productId"`
 	Body      *RequestProductImageUploadJSONRequestBody
@@ -4940,6 +5267,288 @@ func (response RequestProductImageUpload503JSONResponse) VisitRequestProductImag
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProductImageRequestObject struct {
+	ProductId ProductId          `json:"productId"`
+	ImageId   openapi_types.UUID `json:"imageId"`
+}
+
+type DeleteProductImageResponseObject interface {
+	VisitDeleteProductImageResponse(w http.ResponseWriter) error
+}
+
+type DeleteProductImage204Response struct {
+}
+
+func (response DeleteProductImage204Response) VisitDeleteProductImageResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteProductImage400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DeleteProductImage400JSONResponse) VisitDeleteProductImageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProductImage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteProductImage401JSONResponse) VisitDeleteProductImageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProductImage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteProductImage403JSONResponse) VisitDeleteProductImageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProductImage404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteProductImage404JSONResponse) VisitDeleteProductImageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProductImage500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response DeleteProductImage500JSONResponse) VisitDeleteProductImageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProductImage502JSONResponse struct{ BadGatewayJSONResponse }
+
+func (response DeleteProductImage502JSONResponse) VisitDeleteProductImageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(502)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProductImageAltTextRequestObject struct {
+	ProductId ProductId          `json:"productId"`
+	ImageId   openapi_types.UUID `json:"imageId"`
+	Body      *UpdateProductImageAltTextJSONRequestBody
+}
+
+type UpdateProductImageAltTextResponseObject interface {
+	VisitUpdateProductImageAltTextResponse(w http.ResponseWriter) error
+}
+
+type UpdateProductImageAltText204Response struct {
+}
+
+func (response UpdateProductImageAltText204Response) VisitUpdateProductImageAltTextResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type UpdateProductImageAltText400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateProductImageAltText400JSONResponse) VisitUpdateProductImageAltTextResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProductImageAltText401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateProductImageAltText401JSONResponse) VisitUpdateProductImageAltTextResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProductImageAltText403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateProductImageAltText403JSONResponse) VisitUpdateProductImageAltTextResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProductImageAltText404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateProductImageAltText404JSONResponse) VisitUpdateProductImageAltTextResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProductImageAltText500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response UpdateProductImageAltText500JSONResponse) VisitUpdateProductImageAltTextResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetPrimaryProductImageRequestObject struct {
+	ProductId ProductId          `json:"productId"`
+	ImageId   openapi_types.UUID `json:"imageId"`
+}
+
+type SetPrimaryProductImageResponseObject interface {
+	VisitSetPrimaryProductImageResponse(w http.ResponseWriter) error
+}
+
+type SetPrimaryProductImage204Response struct {
+}
+
+func (response SetPrimaryProductImage204Response) VisitSetPrimaryProductImageResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type SetPrimaryProductImage400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SetPrimaryProductImage400JSONResponse) VisitSetPrimaryProductImageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetPrimaryProductImage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SetPrimaryProductImage401JSONResponse) VisitSetPrimaryProductImageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetPrimaryProductImage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SetPrimaryProductImage403JSONResponse) VisitSetPrimaryProductImageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetPrimaryProductImage404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response SetPrimaryProductImage404JSONResponse) VisitSetPrimaryProductImageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetPrimaryProductImage500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response SetPrimaryProductImage500JSONResponse) VisitSetPrimaryProductImageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -6288,6 +6897,43 @@ func (response UpdateCartItem500JSONResponse) VisitUpdateCartItemResponse(w http
 	return err
 }
 
+type GetPublicCatalogRequestObject struct {
+}
+
+type GetPublicCatalogResponseObject interface {
+	VisitGetPublicCatalogResponse(w http.ResponseWriter) error
+}
+
+type GetPublicCatalog200JSONResponse PublicCatalog
+
+func (response GetPublicCatalog200JSONResponse) VisitGetPublicCatalogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPublicCatalog500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response GetPublicCatalog500JSONResponse) VisitGetPublicCatalogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CreateCheckoutOrderRequestObject struct {
 	Params CreateCheckoutOrderParams
 	Body   *CreateCheckoutOrderJSONRequestBody
@@ -6546,6 +7192,72 @@ func (response GetProductBySlug500JSONResponse) VisitGetProductBySlugResponse(w 
 	return err
 }
 
+type GetPublicProductImagesRequestObject struct {
+	Slug string `json:"slug"`
+}
+
+type GetPublicProductImagesResponseObject interface {
+	VisitGetPublicProductImagesResponse(w http.ResponseWriter) error
+}
+
+type GetPublicProductImages200JSONResponse []PublicProductImage
+
+func (response GetPublicProductImages200JSONResponse) VisitGetPublicProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPublicProductImages404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetPublicProductImages404JSONResponse) VisitGetPublicProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPublicProductImages500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response GetPublicProductImages500JSONResponse) VisitGetPublicProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPublicProductImages502JSONResponse struct{ BadGatewayJSONResponse }
+
+func (response GetPublicProductImages502JSONResponse) VisitGetPublicProductImagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(502)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// GetCollections List collections
@@ -6632,9 +7344,21 @@ type StrictServerInterface interface {
 	// ConfirmProductImageUpload Confirm a product image upload and register verified metadata
 	// (POST /api/admin/products/{productId}/images)
 	ConfirmProductImageUpload(ctx context.Context, request ConfirmProductImageUploadRequestObject) (ConfirmProductImageUploadResponseObject, error)
+	// ReorderProductImages Replace the complete display order of a product's images
+	// (PUT /api/admin/products/{productId}/images/order)
+	ReorderProductImages(ctx context.Context, request ReorderProductImagesRequestObject) (ReorderProductImagesResponseObject, error)
 	// RequestProductImageUpload Request a direct R2 upload for a product image
 	// (POST /api/admin/products/{productId}/images/uploads)
 	RequestProductImageUpload(ctx context.Context, request RequestProductImageUploadRequestObject) (RequestProductImageUploadResponseObject, error)
+	// DeleteProductImage Delete a product image and its private R2 object
+	// (DELETE /api/admin/products/{productId}/images/{imageId})
+	DeleteProductImage(ctx context.Context, request DeleteProductImageRequestObject) (DeleteProductImageResponseObject, error)
+	// UpdateProductImageAltText Update the alternative text of a product image
+	// (PATCH /api/admin/products/{productId}/images/{imageId})
+	UpdateProductImageAltText(ctx context.Context, request UpdateProductImageAltTextRequestObject) (UpdateProductImageAltTextResponseObject, error)
+	// SetPrimaryProductImage Set an existing product image as primary
+	// (PUT /api/admin/products/{productId}/images/{imageId}/primary)
+	SetPrimaryProductImage(ctx context.Context, request SetPrimaryProductImageRequestObject) (SetPrimaryProductImageResponseObject, error)
 	// GetProductProductTypes List a product's product type assignments
 	// (GET /api/admin/products/{productId}/product-types)
 	GetProductProductTypes(ctx context.Context, request GetProductProductTypesRequestObject) (GetProductProductTypesResponseObject, error)
@@ -6683,6 +7407,9 @@ type StrictServerInterface interface {
 	// UpdateCartItem Set a product's quantity in the current guest cart
 	// (PUT /api/cart/items/{productId})
 	UpdateCartItem(ctx context.Context, request UpdateCartItemRequestObject) (UpdateCartItemResponseObject, error)
+	// GetPublicCatalog List active products with their public taxonomy
+	// (GET /api/catalog)
+	GetPublicCatalog(ctx context.Context, request GetPublicCatalogRequestObject) (GetPublicCatalogResponseObject, error)
 	// CreateCheckoutOrder Create a pending order from the current guest cart
 	// (POST /api/checkout/orders)
 	CreateCheckoutOrder(ctx context.Context, request CreateCheckoutOrderRequestObject) (CreateCheckoutOrderResponseObject, error)
@@ -6698,6 +7425,9 @@ type StrictServerInterface interface {
 	// GetProductBySlug Get a product by slug
 	// (GET /api/products/{slug})
 	GetProductBySlug(ctx context.Context, request GetProductBySlugRequestObject) (GetProductBySlugResponseObject, error)
+	// GetPublicProductImages List images of an active product with temporary URLs
+	// (GET /api/products/{slug}/images)
+	GetPublicProductImages(ctx context.Context, request GetPublicProductImagesRequestObject) (GetPublicProductImagesResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -7527,6 +8257,39 @@ func (sh *strictHandler) ConfirmProductImageUpload(w http.ResponseWriter, r *htt
 	}
 }
 
+// ReorderProductImages operation middleware
+func (sh *strictHandler) ReorderProductImages(w http.ResponseWriter, r *http.Request, productId ProductId) {
+	var request ReorderProductImagesRequestObject
+
+	request.ProductId = productId
+
+	var body ReorderProductImagesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReorderProductImages(ctx, request.(ReorderProductImagesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReorderProductImages")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReorderProductImagesResponseObject); ok {
+		if err := validResponse.VisitReorderProductImagesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // RequestProductImageUpload operation middleware
 func (sh *strictHandler) RequestProductImageUpload(w http.ResponseWriter, r *http.Request, productId ProductId) {
 	var request RequestProductImageUploadRequestObject
@@ -7553,6 +8316,94 @@ func (sh *strictHandler) RequestProductImageUpload(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RequestProductImageUploadResponseObject); ok {
 		if err := validResponse.VisitRequestProductImageUploadResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteProductImage operation middleware
+func (sh *strictHandler) DeleteProductImage(w http.ResponseWriter, r *http.Request, productId ProductId, imageId openapi_types.UUID) {
+	var request DeleteProductImageRequestObject
+
+	request.ProductId = productId
+	request.ImageId = imageId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteProductImage(ctx, request.(DeleteProductImageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteProductImage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteProductImageResponseObject); ok {
+		if err := validResponse.VisitDeleteProductImageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProductImageAltText operation middleware
+func (sh *strictHandler) UpdateProductImageAltText(w http.ResponseWriter, r *http.Request, productId ProductId, imageId openapi_types.UUID) {
+	var request UpdateProductImageAltTextRequestObject
+
+	request.ProductId = productId
+	request.ImageId = imageId
+
+	var body UpdateProductImageAltTextJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateProductImageAltText(ctx, request.(UpdateProductImageAltTextRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProductImageAltText")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProductImageAltTextResponseObject); ok {
+		if err := validResponse.VisitUpdateProductImageAltTextResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetPrimaryProductImage operation middleware
+func (sh *strictHandler) SetPrimaryProductImage(w http.ResponseWriter, r *http.Request, productId ProductId, imageId openapi_types.UUID) {
+	var request SetPrimaryProductImageRequestObject
+
+	request.ProductId = productId
+	request.ImageId = imageId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetPrimaryProductImage(ctx, request.(SetPrimaryProductImageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetPrimaryProductImage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetPrimaryProductImageResponseObject); ok {
+		if err := validResponse.VisitSetPrimaryProductImageResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -8029,6 +8880,30 @@ func (sh *strictHandler) UpdateCartItem(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
+// GetPublicCatalog operation middleware
+func (sh *strictHandler) GetPublicCatalog(w http.ResponseWriter, r *http.Request) {
+	var request GetPublicCatalogRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPublicCatalog(ctx, request.(GetPublicCatalogRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPublicCatalog")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPublicCatalogResponseObject); ok {
+		if err := validResponse.VisitGetPublicCatalogResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // CreateCheckoutOrder operation middleware
 func (sh *strictHandler) CreateCheckoutOrder(w http.ResponseWriter, r *http.Request, params CreateCheckoutOrderParams) {
 	var request CreateCheckoutOrderRequestObject
@@ -8157,6 +9032,32 @@ func (sh *strictHandler) GetProductBySlug(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetProductBySlugResponseObject); ok {
 		if err := validResponse.VisitGetProductBySlugResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPublicProductImages operation middleware
+func (sh *strictHandler) GetPublicProductImages(w http.ResponseWriter, r *http.Request, slug string) {
+	var request GetPublicProductImagesRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPublicProductImages(ctx, request.(GetPublicProductImagesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPublicProductImages")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPublicProductImagesResponseObject); ok {
+		if err := validResponse.VisitGetPublicProductImagesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

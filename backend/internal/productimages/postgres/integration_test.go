@@ -225,6 +225,252 @@ func (f *fixture) count(t *testing.T, key string) int {
 	return count
 }
 
+func TestPostgresIntegrationReorderImages(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	service, _ := productimages.NewService(f.image)
+	order, _ := productimages.NewOrderService(f.image)
+	// An empty complete list is valid for an empty gallery.
+	if err := order.ReorderImages(ctx, f.productID, []string{}); err != nil {
+		t.Fatal(err)
+	}
+	alt := "pig"
+	created, err := service.AddProductImages(ctx, productimages.AddProductImagesInput{ProductID: f.productID, Images: []productimages.NewProductImage{
+		{R2ObjectKey: "integration/order-a-" + uuid.NewString(), OriginalFilename: "a.webp", ContentType: "image/webp", FileSizeBytes: 1, AltText: &alt, IsPrimary: true},
+		{R2ObjectKey: "integration/order-b-" + uuid.NewString(), OriginalFilename: "b.webp", ContentType: "image/webp", FileSizeBytes: 1, DisplayOrder: 1},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, second := created[0].ID, created[1].ID
+	for _, tc := range []struct {
+		name string
+		ids  []string
+	}{
+		{"incomplete", []string{first}}, {"duplicate", []string{first, first}},
+		{"unknown", []string{first, uuid.NewString()}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := order.ReorderImages(ctx, f.productID, tc.ids); !errors.Is(err, productimages.ErrInvalidInput) {
+				t.Fatalf("err=%v", err)
+			}
+		})
+	}
+	other := newFixture(t)
+	if err := order.ReorderImages(ctx, other.productID, []string{first}); !errors.Is(err, productimages.ErrInvalidInput) {
+		t.Fatalf("other product err=%v", err)
+	}
+	if err := order.ReorderImages(ctx, uuid.NewString(), []string{first, second}); !errors.Is(err, productimages.ErrReferenceNotFound) {
+		t.Fatalf("missing product err=%v", err)
+	}
+	if err := order.ReorderImages(ctx, f.productID, []string{second, first}); err != nil {
+		t.Fatal(err)
+	}
+	images, err := f.image.GetByProductID(ctx, f.productID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(images) != 2 || images[0].ID != second || images[0].DisplayOrder != 0 || images[1].ID != first || images[1].DisplayOrder != 1 {
+		t.Fatalf("order=%+v", images)
+	}
+	if images[0].IsPrimary || !images[1].IsPrimary || images[1].AltText == nil || *images[1].AltText != alt || images[1].R2ObjectKey != created[0].R2ObjectKey || images[1].OriginalFilename != created[0].OriginalFilename || images[1].ContentType != created[0].ContentType {
+		t.Fatalf("metadata changed: %+v", images)
+	}
+}
+
+func TestPostgresIntegrationPrimaryImageSelection(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	imageService, err := productimages.NewService(f.image)
+	if err != nil {
+		t.Fatal(err)
+	}
+	created, err := imageService.AddProductImages(ctx, productimages.AddProductImagesInput{
+		ProductID: f.productID,
+		Images: []productimages.NewProductImage{
+			{R2ObjectKey: "integration/primary-" + uuid.NewString(), OriginalFilename: "first.webp", ContentType: "image/webp", FileSizeBytes: 1, IsPrimary: true},
+			{R2ObjectKey: "integration/secondary-" + uuid.NewString(), OriginalFilename: "second.webp", ContentType: "image/webp", FileSizeBytes: 1, DisplayOrder: 1},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	selectedPrimary := func(wantID string) {
+		t.Helper()
+		images, err := f.image.GetByProductID(ctx, f.productID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		count := 0
+		for _, image := range images {
+			if image.IsPrimary {
+				count++
+				if image.ID != wantID {
+					t.Fatalf("primary image = %s, want %s", image.ID, wantID)
+				}
+			}
+		}
+		if count != 1 {
+			t.Fatalf("primary count = %d, want 1", count)
+		}
+	}
+	selectedPrimary(created[0].ID)
+	if err := f.image.SetPrimary(ctx, f.productID, created[1].ID); err != nil {
+		t.Fatal(err)
+	}
+	selectedPrimary(created[1].ID)
+	if err := f.image.SetPrimary(ctx, f.productID, created[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	selectedPrimary(created[0].ID)
+	var concurrent sync.WaitGroup
+	selectionErrors := make(chan error, 8)
+	for i := 0; i < 8; i++ {
+		concurrent.Add(1)
+		go func(imageID string) {
+			defer concurrent.Done()
+			selectionErrors <- f.image.SetPrimary(ctx, f.productID, imageID)
+		}(created[i%2].ID)
+	}
+	concurrent.Wait()
+	close(selectionErrors)
+	for err := range selectionErrors {
+		if err != nil {
+			t.Fatalf("concurrent selection: %v", err)
+		}
+	}
+	imagesAfterConcurrent, err := f.image.GetByProductID(ctx, f.productID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	primaryCount := 0
+	for _, image := range imagesAfterConcurrent {
+		if image.IsPrimary {
+			primaryCount++
+		}
+	}
+	if primaryCount != 1 {
+		t.Fatalf("concurrent primary count = %d, want 1", primaryCount)
+	}
+	if err := f.image.SetPrimary(ctx, f.productID, created[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.image.SetPrimary(ctx, f.productID, uuid.NewString()); !errors.Is(err, productimages.ErrImageNotFound) {
+		t.Fatalf("missing image error = %v", err)
+	}
+	if err := f.image.SetPrimary(ctx, uuid.NewString(), created[1].ID); !errors.Is(err, productimages.ErrReferenceNotFound) {
+		t.Fatalf("missing product error = %v", err)
+	}
+	other, err := f.product.CreateProduct(ctx, products.CreateProductInput{Title: "Other fixture", Slug: "integration-" + uuid.NewString(), Price: "1.00", Status: products.StatusDraft})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := f.product.DeleteProduct(context.Background(), other.ID); err != nil {
+			t.Errorf("delete other product: %v", err)
+		}
+	})
+	if err := f.image.SetPrimary(ctx, other.ID, created[1].ID); !errors.Is(err, productimages.ErrImageNotFound) {
+		t.Fatalf("other product image error = %v", err)
+	}
+	selectedPrimary(created[0].ID)
+	if err := f.image.DeleteByIDAndProduct(ctx, f.productID, created[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	selectedPrimary(created[1].ID)
+	if err := f.image.SetPrimary(ctx, f.productID, created[0].ID); !errors.Is(err, productimages.ErrImageNotFound) {
+		t.Fatalf("deleted image error = %v", err)
+	}
+	if err := f.image.DeleteByIDAndProduct(ctx, f.productID, created[1].ID); err != nil {
+		t.Fatal(err)
+	}
+	images, err := f.image.GetByProductID(ctx, f.productID)
+	if err != nil || len(images) != 0 {
+		t.Fatalf("images after deleting last = %v, %v", images, err)
+	}
+}
+
+func TestPostgresIntegrationAltTextUpdate(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	imageService, err := productimages.NewService(f.image)
+	if err != nil {
+		t.Fatal(err)
+	}
+	initial := "Initial alt"
+	created, err := imageService.AddProductImages(ctx, productimages.AddProductImagesInput{
+		ProductID: f.productID,
+		Images:    []productimages.NewProductImage{{R2ObjectKey: "integration/alt-" + uuid.NewString(), OriginalFilename: "alt.webp", ContentType: "image/webp", FileSizeBytes: 1, AltText: &initial}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	imageID := created[0].ID
+	readAlt := func() (*string, time.Time) {
+		t.Helper()
+		images, err := f.image.GetByProductID(ctx, f.productID)
+		if err != nil || len(images) != 1 {
+			t.Fatalf("read images: %v, %v", images, err)
+		}
+		return images[0].AltText, images[0].UpdatedAt
+	}
+	before, beforeUpdatedAt := readAlt()
+	if before == nil || *before != initial {
+		t.Fatalf("initial alt = %v", before)
+	}
+	if err := f.image.UpdateAltText(ctx, productimages.AltTextUpdate{ProductID: f.productID, ImageID: imageID}); err != nil {
+		t.Fatal(err)
+	}
+	unchanged, unchangedAt := readAlt()
+	if unchanged == nil || *unchanged != initial || !unchangedAt.Equal(beforeUpdatedAt) {
+		t.Fatalf("omitted field changed row: %v %v", unchanged, unchangedAt)
+	}
+	if err := f.image.UpdateAltText(ctx, productimages.AltTextUpdate{ProductID: f.productID, ImageID: imageID, Present: true}); err != nil {
+		t.Fatal(err)
+	}
+	cleared, _ := readAlt()
+	if cleared != nil {
+		t.Fatalf("null was not stored: %q", *cleared)
+	}
+	empty := ""
+	if err := f.image.UpdateAltText(ctx, productimages.AltTextUpdate{ProductID: f.productID, ImageID: imageID, Present: true, AltText: &empty}); err != nil {
+		t.Fatal(err)
+	}
+	explicitEmpty, _ := readAlt()
+	if explicitEmpty == nil || *explicitEmpty != "" {
+		t.Fatalf("empty string was not stored: %v", explicitEmpty)
+	}
+	updated := "New alt"
+	if err := f.image.UpdateAltText(ctx, productimages.AltTextUpdate{ProductID: f.productID, ImageID: imageID, Present: true, AltText: &updated}); err != nil {
+		t.Fatal(err)
+	}
+	stored, _ := readAlt()
+	if stored == nil || *stored != updated {
+		t.Fatalf("updated alt = %v", stored)
+	}
+	if err := f.image.UpdateAltText(ctx, productimages.AltTextUpdate{ProductID: f.productID, ImageID: uuid.NewString(), Present: true, AltText: &updated}); !errors.Is(err, productimages.ErrImageNotFound) {
+		t.Fatalf("missing image error = %v", err)
+	}
+	if err := f.image.UpdateAltText(ctx, productimages.AltTextUpdate{ProductID: uuid.NewString(), ImageID: imageID, Present: true, AltText: &updated}); !errors.Is(err, productimages.ErrReferenceNotFound) {
+		t.Fatalf("missing product error = %v", err)
+	}
+	other, err := f.product.CreateProduct(ctx, products.CreateProductInput{Title: "Other alt fixture", Slug: "integration-" + uuid.NewString(), Price: "1.00", Status: products.StatusDraft})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := f.product.DeleteProduct(context.Background(), other.ID); err != nil {
+			t.Errorf("delete other product: %v", err)
+		}
+	})
+	if err := f.image.UpdateAltText(ctx, productimages.AltTextUpdate{ProductID: other.ID, ImageID: imageID, Present: true, AltText: &updated}); !errors.Is(err, productimages.ErrImageNotFound) {
+		t.Fatalf("other product image error = %v", err)
+	}
+	if f.store.puts != 0 || f.store.heads != 0 || f.store.reads != 0 {
+		t.Fatalf("alt update touched R2: %+v", f.store)
+	}
+}
+
 func TestPostgresIntegrationSchema(t *testing.T) {
 	_, provider := testDatabase(t)
 	requireMigrations(t, provider)

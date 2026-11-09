@@ -6,6 +6,10 @@ export interface ProductImage {
   id: string;
   url: string;
   displayOrder: number;
+  isPrimary?: boolean;
+  altText?: string | null;
+  widthPx?: number | null;
+  heightPx?: number | null;
 }
 
 export interface ProductFile {

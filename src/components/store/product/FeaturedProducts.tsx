@@ -1,5 +1,6 @@
 import type { Product } from "@/types/product";
 import { Skeleton } from "@/components/ui/skeleton";
+import PhotoCard from "@/components/store/ui/PhotoCard";
 
 interface FeaturedProductsProps {
   products: Product[];
@@ -13,18 +14,12 @@ const FeaturedProducts = ({ products }: FeaturedProductsProps) => {
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
       {products.map((product) => {
-        const image = product.images[0];
+        const image = product.images.find((item) => item.isPrimary) ?? product.images[0];
 
         return (
           <article className="group relative text-center" key={product.id}>
             <div className="overflow-hidden rounded-md">
-              <img
-                src={image?.url || "/images/Listing_1_SVG_Piggies_16oz_Christmas_4_Candy_Canes.jpg"}
-                width={312}
-                height={269}
-                alt={product.title}
-                className="h-[150px] w-full rounded-md border border-border-main object-cover transition duration-300 group-hover:scale-105 md:h-[269px]"
-              />
+              <PhotoCard image={image} title={product.title} slug={product.slug} />
             </div>
 
             <div className="py-4 text-center">

@@ -39,7 +39,7 @@ const ProductGrid = ({
 
       <div className="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8">
         {initialProducts.map((product) => {
-          const image = product.images[0];
+          const image = product.images.find((item) => item.isPrimary) ?? product.images[0];
 
           return (
             <div
@@ -47,7 +47,7 @@ const ProductGrid = ({
               className="relative flex w-full flex-col items-center gap-2 hover:bg-muted rounded-lg duration-300"
             >
               <div className="group relative flex w-full flex-col items-center gap-1 lg:gap-2 h-full">
-                <PhotoCard image={image} title={product.title} />
+                <PhotoCard image={image} title={product.title} slug={product.slug} />
                 <a
                   className="after:absolute after:inset-0 text-center font-medium lg:text-xl line-clamp-2 hover:text-primary duration-300"
                   href={`/products/${product.slug}`}

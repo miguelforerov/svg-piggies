@@ -34,6 +34,10 @@ func newHandler(
 		dependencies.productCollections,
 		dependencies.productImageUploads,
 		dependencies.productImageReads,
+		dependencies.productImageDeletes,
+		dependencies.productImagePrimary,
+		dependencies.productImageAltText,
+		dependencies.productImageOrder,
 		dependencies.productProductTypes,
 		dependencies.productRelationships,
 		dependencies.products,
@@ -69,7 +73,7 @@ func newHandler(
 
 func withCORS(next http.Handler, allowedOrigin string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/api/admin/") {
+		if strings.HasPrefix(r.URL.Path, "/api/admin/") || (strings.HasPrefix(r.URL.Path, "/api/products/") && strings.HasSuffix(r.URL.Path, "/images")) {
 			w.Header().Set("Cache-Control", "no-store")
 		}
 		w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)

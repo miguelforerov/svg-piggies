@@ -37,6 +37,10 @@ type dependencies struct {
 	productCollections   handlers.ProductCollectionService
 	productImageUploads  handlers.ProductImageUploadService
 	productImageReads    handlers.ProductImageReadService
+	productImageDeletes  handlers.ProductImageDeleteService
+	productImagePrimary  handlers.ProductImagePrimaryService
+	productImageAltText  handlers.ProductImageAltTextService
+	productImageOrder    handlers.ProductImageOrderService
 	productProductTypes  handlers.ProductProductTypeService
 	productRelationships handlers.ProductRelationshipService
 	products             handlers.ProductService
@@ -143,6 +147,22 @@ func buildDependencies(provider database.Provider, cfg config.Config) (dependenc
 	if err != nil {
 		return dependencies{}, fmt.Errorf("create product image read service: %w", err)
 	}
+	imageDeleteService, err := productimages.NewDeleteService(productService, productImageRepository, storageClient)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create product image delete service: %w", err)
+	}
+	imagePrimaryService, err := productimages.NewPrimaryService(productImageRepository)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create product image primary service: %w", err)
+	}
+	imageAltTextService, err := productimages.NewAltTextService(productImageRepository)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create product image alternative text service: %w", err)
+	}
+	imageOrderService, err := productimages.NewOrderService(productImageRepository)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create product image order service: %w", err)
+	}
 
 	productTypeRepository, err := producttypespostgres.NewRepository(provider)
 	if err != nil {
@@ -162,6 +182,10 @@ func buildDependencies(provider database.Provider, cfg config.Config) (dependenc
 		productCollections:   productCollectionService,
 		productImageUploads:  imageUploadService,
 		productImageReads:    imageReadService,
+		productImageDeletes:  imageDeleteService,
+		productImagePrimary:  imagePrimaryService,
+		productImageAltText:  imageAltTextService,
+		productImageOrder:    imageOrderService,
 		productProductTypes:  productProductTypeService,
 		productRelationships: productRelationshipService,
 		products:             productService,

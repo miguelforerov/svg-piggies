@@ -48,7 +48,7 @@ func TestGetByProductIDQuery(t *testing.T) {
 	}
 	query = normalizeSQL(query)
 	if !strings.Contains(query, `FROM product_images WHERE ("product_id" = $1)`) ||
-		!strings.Contains(query, `ORDER BY "is_primary" DESC, "display_order", "created_at"`) {
+		!strings.Contains(query, `ORDER BY "display_order", "created_at", "id"`) {
 		t.Fatalf("query = %q", query)
 	}
 	if !reflect.DeepEqual(args, []any{"product-id"}) {

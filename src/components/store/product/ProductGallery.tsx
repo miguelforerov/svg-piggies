@@ -6,6 +6,8 @@ import {
   type MouseEvent,
   type TouchEvent,
 } from "react";
+import { refreshPublicProductImages } from "@/lib/public-product-images";
+import { refreshedImageFor } from "@/lib/product-image-mapping";
 import { FiZoomIn, FiX } from "react-icons/fi";
 import {
   HiOutlineArrowNarrowLeft,
@@ -13,6 +15,7 @@ import {
 } from "react-icons/hi";
 
 export interface ImageItem {
+  id?: string;
   url: string;
   altText: string;
   width: number;
@@ -30,6 +33,7 @@ interface CustomZoomImageProps {
   width: number;
   height: number;
   onOpenLightbox: () => void;
+  onError: () => void;
 }
 
 const CustomZoomImage = ({
@@ -38,6 +42,7 @@ const CustomZoomImage = ({
   width,
   height,
   onOpenLightbox,
+  onError,
 }: CustomZoomImageProps): JSX.Element => {
   const [position, setPosition] = useState<Position>({ x: 0.5, y: 0.5 });
   const [showMagnifier, setShowMagnifier] = useState(false);
@@ -116,6 +121,7 @@ const CustomZoomImage = ({
     >
       <img
         src={src}
+        onError={onError}
         alt={alt}
         width={width}
         height={height}
@@ -144,11 +150,29 @@ const CustomZoomImage = ({
 
 interface ProductGalleryProps {
   images: ImageItem[];
+  slug: string;
 }
 
-const ProductGallery = ({ images }: ProductGalleryProps): JSX.Element => {
+const ProductGallery = ({ images: initialImages, slug }: ProductGalleryProps): JSX.Element => {
+  const [images, setImages] = useState(initialImages);
   const [lightboxOpen, setLightboxOpen] = useState<boolean>(false);
   const [lightboxIndex, setLightboxIndex] = useState<number>(0);
+
+  async function recover(index: number) {
+    const failed = images[index];
+    if (!failed || failed.url === "/images/product-placeholder.jpg") return;
+    try {
+      const refreshed = await refreshPublicProductImages(slug);
+      const next = refreshedImageFor(refreshed, failed.id, index);
+      setImages((current) => current.map((item, position) => position === index ? {
+        ...item,
+        url: next?.url && next.url !== failed.url ? next.url : "/images/product-placeholder.jpg",
+        altText: next?.altText ?? item.altText,
+      } : item));
+    } catch {
+      setImages((current) => current.map((item, position) => position === index ? { ...item, url: "/images/product-placeholder.jpg" } : item));
+    }
+  }
 
   useEffect(() => {
     if (!lightboxOpen) return;
@@ -217,6 +241,7 @@ const ProductGallery = ({ images }: ProductGalleryProps): JSX.Element => {
               width={item.width}
               height={item.height}
               onOpenLightbox={() => openLightbox(index)}
+              onError={() => void recover(index)}
             />
           </div>
         ))}
@@ -273,6 +298,7 @@ const ProductGallery = ({ images }: ProductGalleryProps): JSX.Element => {
           >
             <img
               src={images[lightboxIndex].url}
+              onError={() => void recover(lightboxIndex)}
               alt={images[lightboxIndex].altText}
               className="max-h-full max-w-full object-contain"
               draggable={false}

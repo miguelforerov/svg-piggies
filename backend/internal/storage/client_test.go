@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/smithy-go"
 	"github.com/zdenaforero/svg-piggies/backend/internal/config"
 )
 
@@ -232,6 +233,25 @@ func (f *fakeObjectClient) DeleteObject(ctx context.Context, input *s3.DeleteObj
 		return nil, f.err
 	}
 	return &s3.DeleteObjectOutput{}, nil
+}
+
+func TestDeleteObjectTreatsOnlyMissingKeyAsSuccess(t *testing.T) {
+	for _, tc := range []struct {
+		code      string
+		wantError bool
+	}{
+		{code: "NoSuchKey"},
+		{code: "AccessDenied", wantError: true},
+		{code: "NoSuchBucket", wantError: true},
+	} {
+		t.Run(tc.code, func(t *testing.T) {
+			client := &Client{s3Client: &fakeObjectClient{err: &smithy.GenericAPIError{Code: tc.code, Message: "internal detail"}}, assetsBucket: "assets"}
+			err := client.DeleteObject(context.Background(), AssetsBucket, "products/product/image.webp")
+			if (err != nil) != tc.wantError {
+				t.Fatalf("error = %v; want error = %v", err, tc.wantError)
+			}
+		})
+	}
 }
 
 func TestOperationsSelectBucketsAndBuildInputs(t *testing.T) {

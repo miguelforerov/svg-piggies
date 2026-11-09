@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -9,6 +11,67 @@ import (
 	generated "github.com/zdenaforero/svg-piggies/backend/api/generated"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productimages"
 )
+
+func (s *Server) ReorderProductImages(ctx context.Context, request generated.ReorderProductImagesRequestObject) (generated.ReorderProductImagesResponseObject, error) {
+	if request.Body == nil || request.Body.ImageIds == nil {
+		return generated.ReorderProductImages400JSONResponse{BadRequestJSONResponse: generated.BadRequestJSONResponse(generated.Error{Code: generated.ErrorCodeInvalidRequest, Message: "imageIds is required"})}, nil
+	}
+	ids := make([]string, len(request.Body.ImageIds))
+	for i, id := range request.Body.ImageIds {
+		ids[i] = id.String()
+	}
+	err := s.productImageOrder.ReorderImages(ctx, request.ProductId.String(), ids)
+	if err != nil {
+		if errors.Is(err, productimages.ErrInvalidInput) {
+			return generated.ReorderProductImages400JSONResponse{BadRequestJSONResponse: generated.BadRequestJSONResponse(generated.Error{Code: generated.ErrorCodeInvalidRequest, Message: "imageIds must contain every current image exactly once"})}, nil
+		}
+		if errors.Is(err, productimages.ErrReferenceNotFound) {
+			return generated.ReorderProductImages404JSONResponse{NotFoundJSONResponse: generated.NotFoundJSONResponse(productImageProductNotFoundError())}, nil
+		}
+		return nil, err
+	}
+	return generated.ReorderProductImages204Response{}, nil
+}
+
+func (s *Server) UpdateProductImageAltText(
+	ctx context.Context,
+	request generated.UpdateProductImageAltTextRequestObject,
+) (generated.UpdateProductImageAltTextResponseObject, error) {
+	if request.Body == nil {
+		return generated.UpdateProductImageAltText400JSONResponse{BadRequestJSONResponse: generated.BadRequestJSONResponse(generated.Error{
+			Code: generated.ErrorCodeInvalidRequest, Message: "request body is required",
+		})}, nil
+	}
+	input := productimages.AltTextUpdate{ProductID: request.ProductId.String(), ImageID: request.ImageId.String()}
+	raw := request.Body.AltText
+	if len(raw) > 0 {
+		input.Present = true
+		if !bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+			var value string
+			if err := json.Unmarshal(raw, &value); err != nil {
+				return generated.UpdateProductImageAltText400JSONResponse{BadRequestJSONResponse: generated.BadRequestJSONResponse(generated.Error{
+					Code: generated.ErrorCodeInvalidRequest, Message: "altText must be a string or null",
+				})}, nil
+			}
+			input.AltText = &value
+		}
+	}
+	if err := s.productImageAltText.UpdateAltText(ctx, input); err != nil {
+		switch {
+		case errors.Is(err, productimages.ErrInvalidInput):
+			return generated.UpdateProductImageAltText400JSONResponse{BadRequestJSONResponse: generated.BadRequestJSONResponse(generated.Error{
+				Code: generated.ErrorCodeInvalidRequest, Message: "alternative text is invalid or exceeds 500 characters",
+			})}, nil
+		case errors.Is(err, productimages.ErrReferenceNotFound), errors.Is(err, productimages.ErrImageNotFound):
+			return generated.UpdateProductImageAltText404JSONResponse{NotFoundJSONResponse: generated.NotFoundJSONResponse(generated.Error{
+				Code: generated.ErrorCodeNotFound, Message: "product image not found",
+			})}, nil
+		default:
+			return nil, err
+		}
+	}
+	return generated.UpdateProductImageAltText204Response{}, nil
+}
 
 func (s *Server) GetProductImages(
 	ctx context.Context,
@@ -42,6 +105,52 @@ func (s *Server) GetProductImages(
 		response = append(response, apiImage)
 	}
 	return response, nil
+}
+
+func (s *Server) DeleteProductImage(
+	ctx context.Context,
+	request generated.DeleteProductImageRequestObject,
+) (generated.DeleteProductImageResponseObject, error) {
+	err := s.productImageDeletes.DeleteProductImage(ctx, request.ProductId.String(), request.ImageId.String())
+	if err != nil {
+		switch {
+		case errors.Is(err, productimages.ErrInvalidInput):
+			return generated.DeleteProductImage400JSONResponse{BadRequestJSONResponse: generated.BadRequestJSONResponse(generated.Error{
+				Code: generated.ErrorCodeInvalidRequest, Message: "invalid product image id",
+			})}, nil
+		case errors.Is(err, productimages.ErrReferenceNotFound), errors.Is(err, productimages.ErrImageNotFound):
+			return generated.DeleteProductImage404JSONResponse{NotFoundJSONResponse: generated.NotFoundJSONResponse(generated.Error{
+				Code: generated.ErrorCodeNotFound, Message: "product image not found",
+			})}, nil
+		case errors.Is(err, productimages.ErrStorageFailure):
+			return generated.DeleteProductImage502JSONResponse{BadGatewayJSONResponse: generated.BadGatewayJSONResponse(storageUnavailableError())}, nil
+		default:
+			return nil, err
+		}
+	}
+	return generated.DeleteProductImage204Response{}, nil
+}
+
+func (s *Server) SetPrimaryProductImage(
+	ctx context.Context,
+	request generated.SetPrimaryProductImageRequestObject,
+) (generated.SetPrimaryProductImageResponseObject, error) {
+	err := s.productImagePrimary.SetPrimaryImage(ctx, request.ProductId.String(), request.ImageId.String())
+	if err != nil {
+		switch {
+		case errors.Is(err, productimages.ErrInvalidInput):
+			return generated.SetPrimaryProductImage400JSONResponse{BadRequestJSONResponse: generated.BadRequestJSONResponse(generated.Error{
+				Code: generated.ErrorCodeInvalidRequest, Message: "invalid product image id",
+			})}, nil
+		case errors.Is(err, productimages.ErrReferenceNotFound), errors.Is(err, productimages.ErrImageNotFound):
+			return generated.SetPrimaryProductImage404JSONResponse{NotFoundJSONResponse: generated.NotFoundJSONResponse(generated.Error{
+				Code: generated.ErrorCodeNotFound, Message: "product image not found",
+			})}, nil
+		default:
+			return nil, err
+		}
+	}
+	return generated.SetPrimaryProductImage204Response{}, nil
 }
 
 func toAPIAdminProductImage(image productimages.ProductImageWithURL) (generated.AdminProductImage, error) {

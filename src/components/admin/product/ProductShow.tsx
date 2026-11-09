@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import type { Product } from "@/components/admin/product/ProductFormContainer"
 import { ProductDialog } from "@/components/admin/product/ProductDialog"
+import { ProductImages } from "@/components/admin/product/ProductImages"
 import { ProductStatusBadge } from "@/components/admin/product/ProductStatusBadge"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -493,6 +494,8 @@ export function ProductShow({
           </p>
         </div>
       </div>
+
+      <ProductImages productId={productId} />
 
       {/* Information */}
       <div className="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
