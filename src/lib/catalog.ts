@@ -144,3 +144,21 @@ export async function getCatalog(requestHeaders?: Headers): Promise<CatalogData>
 
   return { products, collections, productTypes };
 }
+
+export async function getRelatedProducts(
+  product: Product,
+  requestHeaders?: Headers,
+): Promise<Product[]> {
+  const relatedIds = await getJson<string[]>(
+    `/api/products/${encodeURIComponent(product.slug)}/relationships`,
+    requestHeaders,
+  );
+  if (relatedIds.length === 0) return [];
+
+  const { products } = await getCatalog(requestHeaders);
+  const productsById = new Map(products.map((item) => [item.id, item]));
+  return relatedIds.flatMap((id) => {
+    const related = productsById.get(id);
+    return related && related.id !== product.id ? [related] : [];
+  });
+}

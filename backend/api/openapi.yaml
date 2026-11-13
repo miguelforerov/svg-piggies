@@ -250,6 +250,33 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /api/products/{slug}/relationships:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getPublicProductRelationships
+      summary: List active related product IDs in display order
+      tags: [products]
+      security: []
+      responses:
+        "200":
+          description: Active related product IDs in display order.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /api/collections/{slug}:
     parameters:
       - name: slug

@@ -897,6 +897,9 @@ type ServerInterface interface {
 	// GetPublicProductImages List images of an active product with temporary URLs
 	// (GET /api/products/{slug}/images)
 	GetPublicProductImages(w http.ResponseWriter, r *http.Request, slug string)
+	// GetPublicProductRelationships List active related product IDs in display order
+	// (GET /api/products/{slug}/relationships)
+	GetPublicProductRelationships(w http.ResponseWriter, r *http.Request, slug string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -2424,6 +2427,32 @@ func (siw *ServerInterfaceWrapper) GetPublicProductImages(w http.ResponseWriter,
 	handler.ServeHTTP(w, r)
 }
 
+// GetPublicProductRelationships operation middleware
+func (siw *ServerInterfaceWrapper) GetPublicProductRelationships(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", r.PathValue("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "slug", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPublicProductRelationships(w, r, slug)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -2555,6 +2584,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/checkout/orders", wrapper.CreateCheckoutOrder)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/products/{slug}", wrapper.GetProductBySlug)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/products/{slug}/images", wrapper.GetPublicProductImages)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/products/{slug}/relationships", wrapper.GetPublicProductRelationships)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/collections/{slug}", wrapper.GetCollectionBySlug)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/product-types/{slug}", wrapper.GetProductTypeBySlug)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/admin/collections", wrapper.GetCollections)
@@ -7258,6 +7288,58 @@ func (response GetPublicProductImages502JSONResponse) VisitGetPublicProductImage
 	return err
 }
 
+type GetPublicProductRelationshipsRequestObject struct {
+	Slug string `json:"slug"`
+}
+
+type GetPublicProductRelationshipsResponseObject interface {
+	VisitGetPublicProductRelationshipsResponse(w http.ResponseWriter) error
+}
+
+type GetPublicProductRelationships200JSONResponse []openapi_types.UUID
+
+func (response GetPublicProductRelationships200JSONResponse) VisitGetPublicProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPublicProductRelationships404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetPublicProductRelationships404JSONResponse) VisitGetPublicProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPublicProductRelationships500JSONResponse struct {
+	InternalServerErrorJSONResponse
+}
+
+func (response GetPublicProductRelationships500JSONResponse) VisitGetPublicProductRelationshipsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// GetCollections List collections
@@ -7428,6 +7510,9 @@ type StrictServerInterface interface {
 	// GetPublicProductImages List images of an active product with temporary URLs
 	// (GET /api/products/{slug}/images)
 	GetPublicProductImages(ctx context.Context, request GetPublicProductImagesRequestObject) (GetPublicProductImagesResponseObject, error)
+	// GetPublicProductRelationships List active related product IDs in display order
+	// (GET /api/products/{slug}/relationships)
+	GetPublicProductRelationships(ctx context.Context, request GetPublicProductRelationshipsRequestObject) (GetPublicProductRelationshipsResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -9058,6 +9143,32 @@ func (sh *strictHandler) GetPublicProductImages(w http.ResponseWriter, r *http.R
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetPublicProductImagesResponseObject); ok {
 		if err := validResponse.VisitGetPublicProductImagesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPublicProductRelationships operation middleware
+func (sh *strictHandler) GetPublicProductRelationships(w http.ResponseWriter, r *http.Request, slug string) {
+	var request GetPublicProductRelationshipsRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPublicProductRelationships(ctx, request.(GetPublicProductRelationshipsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPublicProductRelationships")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPublicProductRelationshipsResponseObject); ok {
+		if err := validResponse.VisitGetPublicProductRelationshipsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

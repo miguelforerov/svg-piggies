@@ -12,7 +12,7 @@ import { AddToCart } from "@/components/store/cart/AddToCart";
 import ProductGalery from "@/components/store/product/ProductGallery";
 import SocialShare from "@/components/store/ui/SocialShare";
 import MaxWidthContainer from "@/components/store/layout/MaxWidthContainer.astro";
-import { getCatalog, getProductBySlug } from "@/lib/catalog";
+import { getProductBySlug, getRelatedProducts } from "@/lib/catalog";
 import ProductFeature from "@/components/store/ui/ProductFeature.astro";
 import FileType from "@/components/store/ui/FileType.astro";
 import Price from "@/components/store/product/Price"
@@ -81,19 +81,7 @@ let relatedProducts: Product[] = [];
 
 if (product) {
   try {
-    const { products } = await getCatalog(Astro.request.headers);
-    const current = products.find((item) => item.id === product.id);
-    const collectionIds = new Set(current?.collections.map((item) => item.id) ?? []);
-    const productTypeIds = new Set(current?.productTypes.map((item) => item.id) ?? []);
-    const otherProducts = products.filter((item) => item.id !== product.id);
-    const sharesCollectionOrType = (item: (typeof products)[number]) =>
-      item.collections.some((collection) => collectionIds.has(collection.id)) ||
-      item.productTypes.some((type) => productTypeIds.has(type.id));
-
-    relatedProducts = [
-      ...otherProducts.filter(sharesCollectionOrType),
-      ...otherProducts.filter((item) => !sharesCollectionOrType(item)),
-    ].slice(0, 8);
+    relatedProducts = await getRelatedProducts(product, Astro.request.headers);
   } catch (error) {
     console.error(`Unable to load related products for ${slug}:`, error);
   }
