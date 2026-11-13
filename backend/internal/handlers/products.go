@@ -61,14 +61,18 @@ func (s *Server) GetProductBySlug(
 	ctx context.Context,
 	request generated.GetProductBySlugRequestObject,
 ) (generated.GetProductBySlugResponseObject, error) {
+	notFound := generated.GetProductBySlug404JSONResponse{
+		NotFoundJSONResponse: generated.NotFoundJSONResponse(productNotFoundError()),
+	}
 	product, err := s.products.GetProductBySlug(ctx, request.Slug)
 	if err != nil {
 		if errors.Is(err, products.ErrNotFound) {
-			return generated.GetProductBySlug404JSONResponse{
-				NotFoundJSONResponse: generated.NotFoundJSONResponse(productNotFoundError()),
-			}, nil
+			return notFound, nil
 		}
 		return nil, err
+	}
+	if product.Status != products.StatusActive {
+		return notFound, nil
 	}
 
 	response, err := toAPIProduct(product)

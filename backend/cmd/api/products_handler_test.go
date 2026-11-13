@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -193,6 +194,101 @@ func TestProductRouteMapsNotFound(t *testing.T) {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusNotFound)
 	}
 	assertErrorCode(t, response, "not_found")
+}
+
+func TestPublicProductBySlugOnlyReturnsActiveProducts(t *testing.T) {
+	timestamp := time.Date(2026, time.August, 31, 10, 0, 0, 0, time.UTC)
+	tests := []struct {
+		name   string
+		status products.Status
+		found  bool
+	}{
+		{name: "missing"},
+		{name: "active", status: products.StatusActive, found: true},
+		{name: "draft", status: products.StatusDraft, found: true},
+		{name: "archived", status: products.StatusArchived, found: true},
+	}
+	var missingResponse *httptest.ResponseRecorder
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			handler := newProductTestHandler(&productServiceStub{
+				getProductBySlug: func(_ context.Context, slug string) (products.Product, error) {
+					if slug != "party-pig" {
+						t.Fatalf("slug = %q", slug)
+					}
+					if !test.found {
+						return products.Product{}, products.ErrNotFound
+					}
+					return products.Product{
+						ID: testProductID, Title: "Party Pig", Slug: slug,
+						Description: "Printable party pig", Price: "19.95",
+						Status: test.status, CreatedAt: timestamp, UpdatedAt: timestamp,
+					}, nil
+				},
+			})
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/products/party-pig", nil))
+
+			if test.status == products.StatusActive {
+				if response.Code != http.StatusOK {
+					t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body)
+				}
+				var body struct {
+					Status string `json:"status"`
+					Title  string `json:"title"`
+				}
+				if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+					t.Fatal(err)
+				}
+				if body.Status != "active" || body.Title != "Party Pig" {
+					t.Fatalf("unexpected active product response: %s", response.Body)
+				}
+				return
+			}
+
+			if response.Code != http.StatusNotFound {
+				t.Fatalf("status = %d, want 404; body = %s", response.Code, response.Body)
+			}
+			if missingResponse == nil {
+				missingResponse = response
+				assertErrorCode(t, response, "not_found")
+				return
+			}
+			if response.Body.String() != missingResponse.Body.String() ||
+				!reflect.DeepEqual(response.Header(), missingResponse.Header()) {
+				t.Fatalf("%s response differs from missing product response", test.name)
+			}
+		})
+	}
+}
+
+func TestAdminProductByIDStillReturnsUnpublishedProducts(t *testing.T) {
+	for _, status := range []products.Status{products.StatusDraft, products.StatusArchived} {
+		t.Run(string(status), func(t *testing.T) {
+			handler := newProductTestHandler(&productServiceStub{
+				get: func(_ context.Context, id string) (products.Product, error) {
+					return products.Product{
+						ID: id, Title: "Party Pig", Slug: "party-pig", Price: "19.95",
+						Status: status,
+					}, nil
+				},
+			})
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/admin/products/"+testProductID, nil))
+			if response.Code != http.StatusOK {
+				t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body)
+			}
+			var body struct {
+				Status string `json:"status"`
+			}
+			if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+				t.Fatal(err)
+			}
+			if body.Status != string(status) {
+				t.Fatalf("admin product status = %q, want %q", body.Status, status)
+			}
+		})
+	}
 }
 
 func newProductTestHandler(service *productServiceStub) http.Handler {
