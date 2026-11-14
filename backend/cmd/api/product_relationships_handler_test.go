@@ -311,6 +311,33 @@ func TestProductRelationshipRouteMapsMissingReference(t *testing.T) {
 	assertErrorCode(t, response, "not_found")
 }
 
+func TestProductRelationshipRoutesRequireAdmin(t *testing.T) {
+	service := &productRelationshipServiceStub{}
+	cfg := config.Config{
+		Environment: "production", AuthMode: auth.ModeCloudflareAccess,
+		CloudflareAccessTeamDomain: "https://example.cloudflareaccess.com",
+		CloudflareAccessAudience:   "test-audience",
+		AdminEmails:                []string{"admin@example.com"},
+	}
+	handler, err := newHandler(cfg, dependencies{productRelationships: service}, allowImageUploadVerifier{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := "/api/admin/products/" + testRelationshipProductID + "/relationships"
+	for _, method := range []string{http.MethodGet, http.MethodPut, http.MethodPost} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(method, path, nil))
+		if response.Code != http.StatusUnauthorized {
+			t.Fatalf("%s status = %d, want 401", method, response.Code)
+		}
+	}
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodDelete, path+"/"+testRelationshipID, nil))
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("DELETE status = %d, want 401", response.Code)
+	}
+}
+
 func newProductRelationshipTestHandler(service *productRelationshipServiceStub) http.Handler {
 	handler, err := newHandler(config.Config{
 		Environment:       "test",

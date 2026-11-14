@@ -12,6 +12,7 @@ import {
 import type { Product } from "@/components/admin/product/ProductFormContainer"
 import { ProductDialog } from "@/components/admin/product/ProductDialog"
 import { ProductImages } from "@/components/admin/product/ProductImages"
+import { ProductRelationships } from "@/components/admin/product/ProductRelationships"
 import { ProductStatusBadge } from "@/components/admin/product/ProductStatusBadge"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -496,6 +497,7 @@ export function ProductShow({
       </div>
 
       <ProductImages productId={productId} />
+      <ProductRelationships productId={productId} />
 
       {/* Information */}
       <div className="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
