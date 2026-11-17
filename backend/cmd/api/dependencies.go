@@ -16,6 +16,8 @@ import (
 	orderspostgres "github.com/zdenaforero/svg-piggies/backend/internal/orders/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productcollections"
 	productcollectionspostgres "github.com/zdenaforero/svg-piggies/backend/internal/productcollections/postgres"
+	"github.com/zdenaforero/svg-piggies/backend/internal/productfiles"
+	productfilespostgres "github.com/zdenaforero/svg-piggies/backend/internal/productfiles/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productimages"
 	productimagespostgres "github.com/zdenaforero/svg-piggies/backend/internal/productimages/postgres"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productproducttypes"
@@ -30,6 +32,7 @@ import (
 )
 
 type dependencies struct {
+	productFiles         handlers.ProductFileService
 	carts                handlers.CartService
 	collections          handlers.CollectionService
 	customers            handlers.CustomerService
@@ -139,6 +142,18 @@ func buildDependencies(provider database.Provider, cfg config.Config) (dependenc
 	if err != nil {
 		return dependencies{}, fmt.Errorf("create R2 storage client: %w", err)
 	}
+	fileRepository, err := productfilespostgres.NewRepository(provider)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create product files repository: %w", err)
+	}
+	fileKeys := make(map[int]productfiles.KeyPair, len(cfg.ProductFileKeys))
+	for version, key := range cfg.ProductFileKeys {
+		fileKeys[version] = productfiles.KeyPair{Signing: key.Signing, Fingerprint: key.Fingerprint}
+	}
+	fileService, err := productfiles.NewService(productService, fileRepository, storageClient, fileKeys, cfg.ProductFileActiveKeyVersion)
+	if err != nil {
+		return dependencies{}, fmt.Errorf("create product files service: %w", err)
+	}
 	imageUploadService, err := productimages.NewUploadService(productService, productImageService, productImageRepository, storageClient, cfg.R2SecretAccessKey)
 	if err != nil {
 		return dependencies{}, fmt.Errorf("create product image upload service: %w", err)
@@ -175,6 +190,7 @@ func buildDependencies(provider database.Provider, cfg config.Config) (dependenc
 	}
 
 	return dependencies{
+		productFiles:         fileService,
 		carts:                cartService,
 		collections:          service,
 		customers:            customerService,

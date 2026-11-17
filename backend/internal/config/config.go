@@ -1,6 +1,8 @@
 package config
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -22,29 +24,40 @@ const (
 
 type LookupFunc func(string) string
 
+type ProductFileKeyPair struct {
+	Signing     []byte
+	Fingerprint []byte
+}
+
 type Config struct {
-	Environment                string
-	AuthMode                   auth.Mode
-	CloudflareAccessTeamDomain string
-	CloudflareAccessAudience   string
-	AdminEmails                []string
-	DatabaseURL                string
-	DatabaseName               string
-	CORSAllowedOrigin          string
-	DownloadURLTTL             time.Duration
-	StripeSecretKey            string
-	StripeWebhookSecret        string
-	R2AccessKeyID              string
-	R2SecretAccessKey          string
-	R2Endpoint                 string
-	R2Region                   string
-	ProductFilesBucket         string
-	ProductAssetsBucket        string
+	Environment                 string
+	AuthMode                    auth.Mode
+	CloudflareAccessTeamDomain  string
+	CloudflareAccessAudience    string
+	AdminEmails                 []string
+	DatabaseURL                 string
+	DatabaseName                string
+	CORSAllowedOrigin           string
+	DownloadURLTTL              time.Duration
+	StripeSecretKey             string
+	StripeWebhookSecret         string
+	R2AccessKeyID               string
+	R2SecretAccessKey           string
+	R2Endpoint                  string
+	R2Region                    string
+	ProductFilesBucket          string
+	ProductAssetsBucket         string
+	ProductFileActiveKeyVersion int
+	ProductFileKeys             map[int]ProductFileKeyPair
 }
 
 func Load(lookup LookupFunc) (Config, error) {
 	if lookup == nil {
 		return Config{}, errors.New("config lookup function is required")
+	}
+	fileKeys, activeFileKey, err := parseProductFileKeys(lookup)
+	if err != nil {
+		return Config{}, err
 	}
 
 	ttlSeconds, err := positiveInt(lookup, "DOWNLOAD_URL_TTL_SECONDS", 900)
@@ -72,25 +85,65 @@ func Load(lookup LookupFunc) (Config, error) {
 		CloudflareAccessTeamDomain: strings.TrimRight(strings.TrimSpace(
 			lookup("CLOUDFLARE_ACCESS_TEAM_DOMAIN"),
 		), "/"),
-		CloudflareAccessAudience: strings.TrimSpace(lookup("CLOUDFLARE_ACCESS_AUD")),
-		AdminEmails:              parseAdminEmails(lookup("ADMIN_EMAILS")),
-		DatabaseURL:              lookup("DATABASE_URL"),
-		DatabaseName:             valueOrDefault(lookup("DATABASE_NAME"), DatabaseNameForEnvironment(environment)),
-		CORSAllowedOrigin:        valueOrDefault(lookup("CORS_ALLOWED_ORIGIN"), "http://localhost:4321"),
-		DownloadURLTTL:           time.Duration(ttlSeconds) * time.Second,
-		StripeSecretKey:          lookup("STRIPE_SECRET_KEY"),
-		StripeWebhookSecret:      lookup("STRIPE_WEBHOOK_SECRET"),
-		R2AccessKeyID:            strings.TrimSpace(lookup("R2_ACCESS_KEY_ID")),
-		R2SecretAccessKey:        lookup("R2_SECRET_ACCESS_KEY"),
-		R2Endpoint:               strings.TrimRight(strings.TrimSpace(lookup("R2_ENDPOINT")), "/"),
-		R2Region:                 valueOrDefault(strings.TrimSpace(lookup("R2_REGION")), "auto"),
-		ProductFilesBucket:       strings.TrimSpace(lookup("PRODUCT_FILES_BUCKET")),
-		ProductAssetsBucket:      strings.TrimSpace(lookup("PRODUCT_ASSETS_BUCKET")),
+		CloudflareAccessAudience:    strings.TrimSpace(lookup("CLOUDFLARE_ACCESS_AUD")),
+		AdminEmails:                 parseAdminEmails(lookup("ADMIN_EMAILS")),
+		DatabaseURL:                 lookup("DATABASE_URL"),
+		DatabaseName:                valueOrDefault(lookup("DATABASE_NAME"), DatabaseNameForEnvironment(environment)),
+		CORSAllowedOrigin:           valueOrDefault(lookup("CORS_ALLOWED_ORIGIN"), "http://localhost:4321"),
+		DownloadURLTTL:              time.Duration(ttlSeconds) * time.Second,
+		StripeSecretKey:             lookup("STRIPE_SECRET_KEY"),
+		StripeWebhookSecret:         lookup("STRIPE_WEBHOOK_SECRET"),
+		R2AccessKeyID:               strings.TrimSpace(lookup("R2_ACCESS_KEY_ID")),
+		R2SecretAccessKey:           lookup("R2_SECRET_ACCESS_KEY"),
+		R2Endpoint:                  strings.TrimRight(strings.TrimSpace(lookup("R2_ENDPOINT")), "/"),
+		R2Region:                    valueOrDefault(strings.TrimSpace(lookup("R2_REGION")), "auto"),
+		ProductFilesBucket:          strings.TrimSpace(lookup("PRODUCT_FILES_BUCKET")),
+		ProductAssetsBucket:         strings.TrimSpace(lookup("PRODUCT_ASSETS_BUCKET")),
+		ProductFileActiveKeyVersion: activeFileKey,
+		ProductFileKeys:             fileKeys,
 	}
 	if err := config.ValidateAuth(); err != nil {
 		return Config{}, err
 	}
 	return config, nil
+}
+
+func parseProductFileKeys(lookup LookupFunc) (map[int]ProductFileKeyPair, int, error) {
+	raw := lookup("PRODUCT_FILE_KEYS_JSON")
+	if raw == "" {
+		if lookup("PRODUCT_FILE_ACTIVE_KEY_VERSION") != "" {
+			return nil, 0, errors.New("PRODUCT_FILE_KEYS_JSON is required when PRODUCT_FILE_ACTIVE_KEY_VERSION is set")
+		}
+		return nil, 0, nil
+	}
+	var entries map[string]struct {
+		Signing     string `json:"signing"`
+		Fingerprint string `json:"fingerprint"`
+	}
+	if err := json.Unmarshal([]byte(raw), &entries); err != nil {
+		return nil, 0, fmt.Errorf("PRODUCT_FILE_KEYS_JSON: %w", err)
+	}
+	active, err := strconv.Atoi(lookup("PRODUCT_FILE_ACTIVE_KEY_VERSION"))
+	if err != nil || active <= 0 || uint64(active) > (1<<31-1) {
+		return nil, 0, errors.New("PRODUCT_FILE_ACTIVE_KEY_VERSION must be positive")
+	}
+	keys := make(map[int]ProductFileKeyPair, len(entries))
+	for version, entry := range entries {
+		v, err := strconv.Atoi(version)
+		if err != nil || v <= 0 || uint64(v) > (1<<31-1) {
+			return nil, 0, errors.New("PRODUCT_FILE_KEYS_JSON contains an invalid version")
+		}
+		signing, signingErr := base64.StdEncoding.DecodeString(entry.Signing)
+		fingerprint, fingerprintErr := base64.StdEncoding.DecodeString(entry.Fingerprint)
+		if signingErr != nil || fingerprintErr != nil || len(signing) != 32 || len(fingerprint) != 32 || entry.Signing == entry.Fingerprint {
+			return nil, 0, errors.New("PRODUCT_FILE_KEYS_JSON requires distinct base64 encoded 32-byte keys")
+		}
+		keys[v] = ProductFileKeyPair{Signing: signing, Fingerprint: fingerprint}
+	}
+	if _, ok := keys[active]; !ok {
+		return nil, 0, errors.New("PRODUCT_FILE_ACTIVE_KEY_VERSION is missing from PRODUCT_FILE_KEYS_JSON")
+	}
+	return keys, active, nil
 }
 
 func (c Config) ValidateAuth() error {

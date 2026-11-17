@@ -32,6 +32,7 @@ func newHandler(
 		dependencies.orders,
 		dependencies.collections,
 		dependencies.productCollections,
+		dependencies.productFiles,
 		dependencies.productImageUploads,
 		dependencies.productImageReads,
 		dependencies.productImageDeletes,

@@ -9,6 +9,7 @@ import (
 	"github.com/zdenaforero/svg-piggies/backend/internal/customers"
 	"github.com/zdenaforero/svg-piggies/backend/internal/orders"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productcollections"
+	"github.com/zdenaforero/svg-piggies/backend/internal/productfiles"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productimages"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productproducttypes"
 	"github.com/zdenaforero/svg-piggies/backend/internal/productrelationships"
@@ -121,6 +122,15 @@ type ProductImageUploadService interface {
 	ConfirmUpload(context.Context, productimages.ConfirmUploadInput) (productimages.ProductImage, error)
 }
 
+type ProductFileService interface {
+	RequestUpload(context.Context, productfiles.RequestUploadInput) (productfiles.UploadAuthorization, error)
+	ConfirmUpload(context.Context, productfiles.ConfirmUploadInput) (productfiles.ProductFile, error)
+	List(context.Context, string) ([]productfiles.ProductFile, error)
+	UpdateMetadata(context.Context, productfiles.UpdateMetadataInput) (productfiles.ProductFile, error)
+	Delete(context.Context, string, string) error
+	Reorder(context.Context, string, []string) error
+}
+
 type ProductImageReadService interface {
 	GetProductImages(context.Context, string) ([]productimages.ProductImageWithURL, error)
 }
@@ -185,6 +195,7 @@ type ProductRelationshipService interface {
 }
 
 type Server struct {
+	productFiles         ProductFileService
 	carts                CartService
 	customers            CustomerService
 	environment          string
@@ -212,6 +223,7 @@ func NewServer(
 	orderService OrderService,
 	collectionService CollectionService,
 	productCollectionService ProductCollectionService,
+	productFileService ProductFileService,
 	productImageUploadService ProductImageUploadService,
 	productImageReadService ProductImageReadService,
 	productImageDeleteService ProductImageDeleteService,
@@ -230,6 +242,7 @@ func NewServer(
 		orders:               orderService,
 		collections:          collectionService,
 		productCollections:   productCollectionService,
+		productFiles:         productFileService,
 		productImageUploads:  productImageUploadService,
 		productImageReads:    productImageReadService,
 		productImageDeletes:  productImageDeleteService,

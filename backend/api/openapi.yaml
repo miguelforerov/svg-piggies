@@ -857,6 +857,150 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /api/admin/products/{productId}/files:
+    parameters:
+      - $ref: "#/components/parameters/ProductId"
+    get:
+      operationId: getProductFiles
+      summary: List private product files for administration
+      tags: [admin-product-files]
+      security:
+        - CloudflareAccess: []
+      responses:
+        "200":
+          description: Ordered product file metadata.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminProductFile"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    post:
+      operationId: confirmProductFileUpload
+      summary: Confirm a private product file upload
+      tags: [admin-product-files]
+      security:
+        - CloudflareAccess: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConfirmProductFileUploadInput" }
+      responses:
+        "201":
+          description: File confirmed or previously confirmed with the same authorization.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminProductFile" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "410": { $ref: "#/components/responses/Gone" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+        "502": { $ref: "#/components/responses/BadGateway" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+
+  /api/admin/products/{productId}/files/upload-authorization:
+    parameters:
+      - $ref: "#/components/parameters/ProductId"
+    post:
+      operationId: requestProductFileUpload
+      summary: Authorize a direct upload to the private files bucket
+      tags: [admin-product-files]
+      security:
+        - CloudflareAccess: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RequestProductFileUploadInput" }
+      responses:
+        "201":
+          description: Temporary upload authorization.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductFileUploadAuthorization" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+        "502": { $ref: "#/components/responses/BadGateway" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+
+  /api/admin/products/{productId}/files/order:
+    parameters:
+      - $ref: "#/components/parameters/ProductId"
+    put:
+      operationId: reorderProductFiles
+      summary: Replace the complete file display order
+      tags: [admin-product-files]
+      security:
+        - CloudflareAccess: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReorderProductFilesInput" }
+      responses:
+        "204": { description: File order saved. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+
+  /api/admin/products/{productId}/files/{fileId}:
+    parameters:
+      - $ref: "#/components/parameters/ProductId"
+      - name: fileId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      operationId: updateProductFileMetadata
+      summary: Update administrative display metadata
+      tags: [admin-product-files]
+      security:
+        - CloudflareAccess: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateProductFileMetadataInput" }
+      responses:
+        "200":
+          description: Updated file.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminProductFile" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+    delete:
+      operationId: deleteProductFile
+      summary: Delete a private file and its metadata
+      tags: [admin-product-files]
+      security:
+        - CloudflareAccess: []
+      responses:
+        "204": { description: File deleted. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalServerError" }
+        "502": { $ref: "#/components/responses/BadGateway" }
+
   /api/admin/products/{productId}/images:
     parameters:
       - $ref: "#/components/parameters/ProductId"
@@ -2103,6 +2247,71 @@ components:
           example: "19.95"
         status:
           $ref: "#/components/schemas/ProductStatus"
+
+    AdminProductFile:
+      type: object
+      required: [id, productId, fileName, displayName, format, contentType, fileSizeBytes, availabilityStatus, displayOrder, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        productId: { type: string, format: uuid }
+        fileName: { type: string }
+        displayName: { type: string }
+        format: { type: string, enum: [svg, png, dxf, pdf] }
+        contentType: { type: string }
+        fileSizeBytes: { type: integer, format: int64 }
+        availabilityStatus: { type: string, enum: [active, retired, blocked] }
+        displayOrder: { type: integer, minimum: 0 }
+        createdAt: { type: string, format: date-time, readOnly: true }
+        updatedAt: { type: string, format: date-time, readOnly: true }
+
+    RequestProductFileUploadInput:
+      type: object
+      additionalProperties: false
+      required: [fileName, format, contentType, fileSizeBytes]
+      properties:
+        fileName: { type: string, minLength: 1, maxLength: 255 }
+        format: { type: string, enum: [svg, png, dxf, pdf] }
+        contentType: { type: string }
+        fileSizeBytes: { type: integer, format: int64, minimum: 1, maximum: 50000000 }
+
+    ProductFileUploadAuthorization:
+      type: object
+      required: [uploadToken, uploadUrl, headers, expiresAt]
+      properties:
+        uploadToken: { type: string }
+        uploadUrl: { type: string, format: uri }
+        headers:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+        expiresAt: { type: string, format: date-time }
+
+    ConfirmProductFileUploadInput:
+      type: object
+      additionalProperties: false
+      required: [uploadToken]
+      properties:
+        uploadToken: { type: string }
+        displayName: { type: string, maxLength: 500 }
+        displayOrder: { type: integer, minimum: 0, default: 0 }
+
+    UpdateProductFileMetadataInput:
+      type: object
+      additionalProperties: false
+      required: [displayName, displayOrder]
+      properties:
+        displayName: { type: string, minLength: 1, maxLength: 500 }
+        displayOrder: { type: integer, minimum: 0 }
+
+    ReorderProductFilesInput:
+      type: object
+      additionalProperties: false
+      required: [fileIds]
+      properties:
+        fileIds:
+          type: array
+          items: { type: string, format: uuid }
 
     AdminProductImage:
       type: object
