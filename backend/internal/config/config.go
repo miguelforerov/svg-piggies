@@ -198,9 +198,27 @@ func (c Config) ValidateWorker() error {
 	if err := c.ValidateAuth(); err != nil {
 		return err
 	}
+	if c.DatabaseName != ProductionDatabaseName ||
+		c.ProductFilesBucket != "svgpiggies-files" || c.ProductAssetsBucket != "svgpiggies-assets" {
+		return errors.New("production Worker requires the production database and R2 buckets")
+	}
 	if strings.Contains(c.CloudflareAccessTeamDomain, "replace-me") ||
 		strings.Contains(c.CloudflareAccessAudience, "replace-with") {
 		return errors.New("Worker Cloudflare Access configuration contains placeholders")
+	}
+	return nil
+}
+
+func (c Config) ValidateLocalWorker() error {
+	if c.Environment != "development" || c.AuthMode != auth.ModeDevelopment {
+		return errors.New("local Worker requires APP_ENV=development and AUTH_MODE=development")
+	}
+	if err := c.ValidateAuth(); err != nil {
+		return err
+	}
+	if c.DatabaseName != DevelopmentDatabaseName ||
+		c.ProductFilesBucket != "svgpiggies-files-development" || c.ProductAssetsBucket != "svgpiggies-assets-development" {
+		return errors.New("local Worker requires the development database and R2 buckets")
 	}
 	return nil
 }

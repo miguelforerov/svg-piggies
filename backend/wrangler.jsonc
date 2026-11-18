@@ -14,8 +14,8 @@
     "CORS_ALLOWED_ORIGIN": "http://localhost:4321",
     "DOWNLOAD_URL_TTL_SECONDS": "900",
     "R2_REGION": "auto",
-    "PRODUCT_FILES_BUCKET": "svgpiggies-files-dev",
-    "PRODUCT_ASSETS_BUCKET": "svgpiggies-assets-dev"
+    "PRODUCT_FILES_BUCKET": "svgpiggies-files-development",
+    "PRODUCT_ASSETS_BUCKET": "svgpiggies-assets-development"
   },
   "secrets": {
     "required": [
@@ -23,7 +23,9 @@
       "STRIPE_WEBHOOK_SECRET",
       "R2_ACCESS_KEY_ID",
       "R2_SECRET_ACCESS_KEY",
-      "R2_ENDPOINT"
+      "R2_ENDPOINT",
+      "PRODUCT_FILE_KEYS_JSON",
+      "PRODUCT_FILE_ACTIVE_KEY_VERSION"
     ]
   },
   "hyperdrive": [
@@ -37,11 +39,11 @@
   "r2_buckets": [
     {
       "binding": "PRODUCT_FILES",
-      "bucket_name": "svgpiggies-files-dev",
+      "bucket_name": "svgpiggies-files-development",
     },
     {
       "binding": "PRODUCT_ASSETS",
-      "bucket_name": "svgpiggies-assets-dev",
+      "bucket_name": "svgpiggies-assets-development",
     }
   ],
   "observability": {

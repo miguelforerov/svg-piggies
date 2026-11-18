@@ -90,6 +90,16 @@ func validateConfig(cfg config.Config) error {
 	if cfg.ProductFilesBucket == cfg.ProductAssetsBucket {
 		return errors.New("PRODUCT_FILES_BUCKET and PRODUCT_ASSETS_BUCKET must be different")
 	}
+	switch cfg.Environment {
+	case "development", "test":
+		if cfg.ProductFilesBucket != "svgpiggies-files-development" || cfg.ProductAssetsBucket != "svgpiggies-assets-development" {
+			return errors.New("development and test require the development R2 files and assets buckets")
+		}
+	case "production":
+		if cfg.ProductFilesBucket != "svgpiggies-files" || cfg.ProductAssetsBucket != "svgpiggies-assets" {
+			return errors.New("production requires the production R2 files and assets buckets")
+		}
+	}
 
 	endpoint, err := url.Parse(cfg.R2Endpoint)
 	if err != nil || endpoint.Scheme != "https" || endpoint.Hostname() == "" || endpoint.User != nil ||

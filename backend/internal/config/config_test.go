@@ -93,7 +93,9 @@ func TestLoadCloudflareAccessAuth(t *testing.T) {
 func TestValidateWorkerFailsClosed(t *testing.T) {
 	base := Config{Environment: "production", AuthMode: auth.ModeCloudflareAccess,
 		CloudflareAccessTeamDomain: "https://shop.cloudflareaccess.com",
-		CloudflareAccessAudience:   "audience", AdminEmails: []string{"admin@example.com"}}
+		CloudflareAccessAudience:   "audience", AdminEmails: []string{"admin@example.com"},
+		DatabaseName:       ProductionDatabaseName,
+		ProductFilesBucket: "svgpiggies-files", ProductAssetsBucket: "svgpiggies-assets"}
 	if err := base.ValidateWorker(); err != nil {
 		t.Fatal(err)
 	}
@@ -103,6 +105,10 @@ func TestValidateWorkerFailsClosed(t *testing.T) {
 	}{
 		{"development Worker", func(c *Config) { c.Environment, c.AuthMode = "development", auth.ModeDevelopment }},
 		{"production with development auth", func(c *Config) { c.AuthMode = auth.ModeDevelopment }},
+		{"unknown environment", func(c *Config) { c.Environment = "unknown" }},
+		{"development files bucket", func(c *Config) { c.ProductFilesBucket = "svgpiggies-files-development" }},
+		{"development assets bucket", func(c *Config) { c.ProductAssetsBucket = "svgpiggies-assets-development" }},
+		{"development database", func(c *Config) { c.DatabaseName = DevelopmentDatabaseName }},
 		{"empty admins", func(c *Config) { c.AdminEmails = nil }},
 		{"placeholder Access", func(c *Config) { c.CloudflareAccessAudience = "replace-with-audience" }},
 	} {
@@ -111,6 +117,34 @@ func TestValidateWorkerFailsClosed(t *testing.T) {
 			test.edit(&cfg)
 			if err := cfg.ValidateWorker(); err == nil {
 				t.Fatal("insecure Worker configuration accepted")
+			}
+		})
+	}
+}
+
+func TestValidateLocalWorkerFailsClosed(t *testing.T) {
+	base := Config{Environment: "development", AuthMode: auth.ModeDevelopment,
+		DatabaseName:       DevelopmentDatabaseName,
+		ProductFilesBucket: "svgpiggies-files-development", ProductAssetsBucket: "svgpiggies-assets-development"}
+	if err := base.ValidateLocalWorker(); err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name string
+		edit func(*Config)
+	}{
+		{"production environment", func(c *Config) { c.Environment = "production" }},
+		{"unknown environment", func(c *Config) { c.Environment = "unknown" }},
+		{"production auth", func(c *Config) { c.AuthMode = auth.ModeCloudflareAccess }},
+		{"production files bucket", func(c *Config) { c.ProductFilesBucket = "svgpiggies-files" }},
+		{"production assets bucket", func(c *Config) { c.ProductAssetsBucket = "svgpiggies-assets" }},
+		{"production database", func(c *Config) { c.DatabaseName = ProductionDatabaseName }},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := base
+			test.edit(&cfg)
+			if err := cfg.ValidateLocalWorker(); err == nil {
+				t.Fatal("unsafe local Worker configuration accepted")
 			}
 		})
 	}
@@ -183,8 +217,8 @@ func TestLoadR2Configuration(t *testing.T) {
 		"R2_SECRET_ACCESS_KEY":  "test-secret-key",
 		"R2_ENDPOINT":           "https://example.r2.cloudflarestorage.com/",
 		"R2_REGION":             "auto",
-		"PRODUCT_FILES_BUCKET":  "svgpiggies-files-dev",
-		"PRODUCT_ASSETS_BUCKET": "svgpiggies-assets-dev",
+		"PRODUCT_FILES_BUCKET":  "svgpiggies-files-development",
+		"PRODUCT_ASSETS_BUCKET": "svgpiggies-assets-development",
 	}
 
 	got, err := Load(func(name string) string {

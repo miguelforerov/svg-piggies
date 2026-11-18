@@ -56,6 +56,44 @@ func TestValidateConfig(t *testing.T) {
 	}
 }
 
+func TestValidateConfigRestrictsBucketsByEnvironment(t *testing.T) {
+	for _, environment := range []string{"development", "test"} {
+		cfg := validConfig()
+		cfg.Environment = environment
+		cfg.ProductFilesBucket = "svgpiggies-files-development"
+		cfg.ProductAssetsBucket = "svgpiggies-assets-development"
+		if err := validateConfig(cfg); err != nil {
+			t.Fatalf("%s development buckets: %v", environment, err)
+		}
+		cfg.ProductFilesBucket = "svgpiggies-files"
+		if err := validateConfig(cfg); err == nil {
+			t.Fatalf("%s accepted the production files bucket", environment)
+		}
+		cfg.ProductFilesBucket = "svgpiggies-files-development"
+		cfg.ProductAssetsBucket = "svgpiggies-assets"
+		if err := validateConfig(cfg); err == nil {
+			t.Fatalf("%s accepted the production assets bucket", environment)
+		}
+	}
+
+	cfg := validConfig()
+	cfg.Environment = "production"
+	cfg.ProductFilesBucket = "svgpiggies-files"
+	cfg.ProductAssetsBucket = "svgpiggies-assets"
+	if err := validateConfig(cfg); err != nil {
+		t.Fatalf("production buckets: %v", err)
+	}
+	cfg.ProductFilesBucket = "svgpiggies-files-development"
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("production accepted the development files bucket")
+	}
+	cfg.ProductFilesBucket = "svgpiggies-files"
+	cfg.ProductAssetsBucket = "svgpiggies-assets-development"
+	if err := validateConfig(cfg); err == nil {
+		t.Fatal("production accepted the development assets bucket")
+	}
+}
+
 func TestNewClientReusesClients(t *testing.T) {
 	c, err := NewClient(validConfig())
 	if err != nil {

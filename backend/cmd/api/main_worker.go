@@ -14,7 +14,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := cfg.ValidateWorker(); err != nil {
+	if cloudflare.Getenv("WORKER_LOCAL_DEV") == "true" {
+		err = cfg.ValidateLocalWorker()
+	} else {
+		err = cfg.ValidateWorker()
+	}
+	if err != nil {
 		panic(err)
 	}
 	authVerifier, err := newAuthVerifier(cfg)
