@@ -25,9 +25,14 @@ type Client struct {
 }
 
 func NewClient(cfg config.Config) (*Client, error) {
-	// Unlike the SDK's BuildableClient, the standard client leaves DialContext
-	// unset in js/wasm, allowing Go's net/http to use the Worker fetch API.
-	return newClient(cfg, &http.Client{Timeout: 30 * time.Second})
+	return newClient(cfg, newR2HTTPClient())
+}
+
+const r2HTTPTimeout = 30 * time.Second
+
+// Do not follow redirects: a SigV4 request is signed for its original target.
+func rejectR2Redirect(_ *http.Request, _ []*http.Request) error {
+	return http.ErrUseLastResponse
 }
 
 func newClient(cfg config.Config, httpClient aws.HTTPClient) (*Client, error) {

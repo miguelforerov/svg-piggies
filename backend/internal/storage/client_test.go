@@ -69,6 +69,19 @@ func TestNewClientReusesClients(t *testing.T) {
 	}
 }
 
+func TestR2HTTPClientPolicy(t *testing.T) {
+	client := newR2HTTPClient()
+	if client.Timeout != 30*time.Second {
+		t.Fatalf("R2 timeout = %s, want 30s", client.Timeout)
+	}
+	if client.CheckRedirect == nil {
+		t.Fatal("R2 redirect policy is missing")
+	}
+	if err := client.CheckRedirect(nil, nil); !errors.Is(err, http.ErrUseLastResponse) {
+		t.Fatalf("R2 redirect policy = %v, want ErrUseLastResponse", err)
+	}
+}
+
 func TestSDKPresignsR2PathStyleRequests(t *testing.T) {
 	c, err := NewClient(validConfig())
 	if err != nil {
@@ -400,13 +413,13 @@ func TestSDKUsesInjectedHTTPClientForObjectOperations(t *testing.T) {
 	if len(httpClient.requests) != 3 {
 		t.Fatalf("HTTP requests = %d, want 3", len(httpClient.requests))
 	}
-	if req := httpClient.requests[0]; req.Method != http.MethodHead || req.URL.EscapedPath() != "/private-files/orders/123/download.zip" || req.Header.Get("Authorization") == "" {
+	if req := httpClient.requests[0]; req.Method != http.MethodHead || req.URL.Host != "example.r2.cloudflarestorage.com" || req.URL.EscapedPath() != "/private-files/orders/123/download.zip" || req.Header.Get("Authorization") == "" || req.Header.Get("X-Amz-Date") == "" {
 		t.Fatalf("unexpected HEAD request: %s %s", req.Method, req.URL)
 	}
-	if req := httpClient.requests[1]; req.Method != http.MethodGet || req.Header.Get("If-Match") != "etag" || req.Header.Get("Authorization") == "" {
+	if req := httpClient.requests[1]; req.Method != http.MethodGet || req.Header.Get("If-Match") != "etag" || req.Header.Get("Authorization") == "" || req.Header.Get("X-Amz-Date") == "" {
 		t.Fatalf("unexpected GET request: %s %s", req.Method, req.URL)
 	}
-	if req := httpClient.requests[2]; req.Method != http.MethodDelete || req.URL.EscapedPath() != "/public-assets/products/123/image.webp" || req.Header.Get("Authorization") == "" {
+	if req := httpClient.requests[2]; req.Method != http.MethodDelete || req.URL.EscapedPath() != "/public-assets/products/123/image.webp" || req.Header.Get("Authorization") == "" || req.Header.Get("X-Amz-Date") == "" {
 		t.Fatalf("unexpected DELETE request: %s %s", req.Method, req.URL)
 	}
 }
