@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react"
 import { Package } from "lucide-react"
 import type { Product } from "@/components/admin/product/ProductFormContainer"
 import { ProductStatusBadge } from "@/components/admin/product/ProductStatusBadge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { getProductImages } from "@/lib/product-images"
 
 interface ProductCardProps {
   product: Product
@@ -11,13 +13,30 @@ interface ProductCardProps {
 export function ProductCard({
   product,
 }: ProductCardProps) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setImageUrl(null)
+    getProductImages(product.id)
+      .then((images) => {
+        if (!cancelled) setImageUrl((images.find((image) => image.isPrimary) ?? images[0])?.imageUrl ?? null)
+      })
+      .catch(() => {
+        if (!cancelled) setImageUrl(null)
+      })
+    return () => { cancelled = true }
+  }, [product.id])
+
   return (
     <Card className="shadow-sm">
       <CardContent>
         <div className="flex gap-4">
           {/* Thumbnail */}
-          <div className="flex size-24 shrink-0 items-center justify-center rounded-lg bg-muted">
-            <Package className="size-8 text-muted-foreground" />
+          <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
+            {imageUrl
+              ? <img src={imageUrl} alt="" className="size-full object-cover" onError={() => setImageUrl(null)} />
+              : <Package className="size-8 text-muted-foreground" />}
           </div>
 
           {/* Product information */}
