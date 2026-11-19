@@ -25,7 +25,7 @@ CREATE TABLE public.product_files (
     CONSTRAINT product_files_file_name_check CHECK (btrim(file_name) <> ''),
     CONSTRAINT product_files_display_name_check CHECK (btrim(display_name) <> ''),
     CONSTRAINT product_files_format_check
-        CHECK (format IN ('svg', 'png', 'dxf', 'pdf')),
+        CHECK (format IN ('svg', 'png', 'dxf', 'pdf', 'zip')),
     CONSTRAINT product_files_content_type_check CHECK (btrim(content_type) <> ''),
     CONSTRAINT product_files_file_size_bytes_check CHECK (file_size_bytes >= 0),
     CONSTRAINT product_files_availability_status_check

@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { afterEach, test } from "node:test";
+import formatConfig from "../../config/product-file-formats.json" with { type: "json" };
 import {
-  ProductFileApiError, deleteProductFile, getProductFiles, uploadProductFile, validateProductFile,
+  ProductFileApiError, acceptedProductFileExtensions, deleteProductFile, getProductFiles,
+  supportedProductFileLabel, uploadProductFile, validateProductFile,
 } from "./product-files.ts";
 
 const originalFetch = globalThis.fetch;
@@ -18,19 +21,36 @@ const record = { id: "file-id", productId: "product-id", fileName: "pig.svg", di
   format: "svg", contentType: "image/svg+xml", fileSizeBytes: 11, availabilityStatus: "active",
   displayOrder: 0, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" };
 
-test("accepts only the supported extension and MIME combinations, including DXF variants", () => {
+test("shared JSON defines the five format identifiers, extensions, and MIME types", () => {
+  assert.equal(typeof formatConfig._comment, "string");
+  assert.deepEqual(formatConfig.formats, [
+    { format: "svg", extension: ".svg", contentTypes: ["image/svg+xml"] },
+    { format: "png", extension: ".png", contentTypes: ["image/png"] },
+    { format: "dxf", extension: ".dxf", contentTypes: ["image/vnd.dxf", "application/dxf"] },
+    { format: "pdf", extension: ".pdf", contentTypes: ["application/pdf"] },
+    { format: "zip", extension: ".zip", contentTypes: ["application/zip", "application/x-zip-compressed", "application/octet-stream"] },
+  ]);
+  assert.equal(acceptedProductFileExtensions, formatConfig.formats.map(({ extension }) => extension).join(","));
+  assert.equal(supportedProductFileLabel, "SVG, PNG, DXF, PDF, or ZIP");
+  const generatedType = `// Code generated from config/product-file-formats.json; DO NOT EDIT.\nexport type ProductFileFormat = ${formatConfig.formats.map(({ format }) => JSON.stringify(format)).join(" | ")};\n`;
+  assert.equal(readFileSync(new URL("./product-file-formats.generated.ts", import.meta.url), "utf8"), generatedType);
+});
+
+test("accepts supported extensions and MIME types, including ZIP variants", () => {
   for (const [name, type] of [
     ["pig.svg", "image/svg+xml"], ["pig.png", "image/png"],
     ["pig.dxf", "image/vnd.dxf"], ["pig.dxf", "application/dxf"],
     ["pig.pdf", "application/pdf"], ["PIG.SVG", "image/svg+xml"],
     ["pig.dxf", ""],
+    ["bundle.zip", "application/zip"], ["bundle.zip", "application/x-zip-compressed"],
+    ["bundle.zip", "application/octet-stream"], ["bundle.zip", ""],
   ]) assert.equal(validateProductFile(file(name, type)), null, `${name} ${type}`);
   for (const [name, type] of [
-    ["pig.zip", "application/zip"], ["pig.exe", "application/octet-stream"],
+    ["pig.exe", "application/octet-stream"], ["bundle.zip", "application/pdf"],
     ["pig.svg", "application/pdf"], ["pig.pdf", "image/png"],
     ["pig.dxf", "application/octet-stream"], ["svg", "image/svg+xml"],
   ]) assert.ok(validateProductFile(file(name, type)), `${name} ${type}`);
-  assert.match(validateProductFile(file("pig.zip", "application/zip")), /ZIP is not supported/);
+  assert.match(validateProductFile(file("pig.exe", "application/octet-stream")), /SVG, PNG, DXF, PDF, or ZIP/);
 });
 
 test("enforces the exact byte-size and filename boundaries before a network request", async () => {
@@ -40,11 +60,33 @@ test("enforces the exact byte-size and filename boundaries before a network requ
   for (const size of [0, 50_000_001]) {
     assert.match(validateProductFile({ name: "pig.svg", type: "image/svg+xml", size }), /size/);
   }
+  for (const size of [1, 50_000_000]) {
+    assert.equal(validateProductFile({ name: "bundle.zip", type: "application/zip", size }), null);
+  }
+  for (const size of [0, 50_000_001]) {
+    assert.match(validateProductFile({ name: "bundle.zip", type: "application/zip", size }), /size/);
+  }
   for (const name of [" pig.svg", "pig.svg ", "bad/name.svg", "bad\\name.svg", "bad\nname.svg", "🐷".repeat(64) + ".svg"]) {
     assert.match(validateProductFile({ name, type: "image/svg+xml", size: 1 }), /Filename/);
   }
   globalThis.fetch = () => { throw new Error("fetch must not run"); };
-  await assert.rejects(uploadProductFile("product-id", file("pig.zip", "application/zip"), () => {}), /ZIP/);
+  await assert.rejects(uploadProductFile("product-id", file("pig.exe", "application/octet-stream"), () => {}), /SVG, PNG, DXF, PDF, or ZIP/);
+});
+
+test("ZIP authorization uses its format and canonical MIME when the browser MIME is empty", async () => {
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init });
+    if (calls.length === 1) return Response.json({ ...authorization(), headers: { "Content-Type": ["application/zip"], "If-None-Match": ["*"] } }, { status: 201 });
+    if (calls.length === 2) return new Response(null, { status: 200 });
+    return Response.json({ ...record, fileName: "bundle.zip", format: "zip", contentType: "application/zip" }, { status: 201 });
+  };
+  const archive = file("bundle.zip", "");
+  const confirmed = await uploadProductFile("product", archive, () => {});
+  assert.deepEqual(JSON.parse(calls[0].init.body), { fileName: "bundle.zip", format: "zip", contentType: "application/zip", fileSizeBytes: archive.size });
+  assert.equal(calls[1].init.body, archive);
+  assert.equal(calls[1].init.headers.get("Content-Type"), "application/zip");
+  assert.equal(confirmed.format, "zip");
 });
 
 test("authorizes, PUTs original bytes with every signed header, then confirms", async () => {

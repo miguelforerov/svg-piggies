@@ -51,6 +51,9 @@ func NewService(products ProductLookup, repo Repository, store Storage, keys map
 	if products == nil || repo == nil || store == nil {
 		return nil, errors.New("product lookup, file repository, and storage are required")
 	}
+	if formatConfigurationError != nil {
+		return nil, fmt.Errorf("load product file formats: %w", formatConfigurationError)
+	}
 	if len(keys) > 0 {
 		if err := validateKeys(keys, activeVersion); err != nil {
 			return nil, err
@@ -63,18 +66,21 @@ func NewService(products ProductLookup, repo Repository, store Storage, keys map
 	return &Service{products: products, repo: repo, storage: store, keys: copyKeys, activeVersion: activeVersion, now: time.Now}, nil
 }
 
-var formats = map[string]map[string]bool{
-	"svg": {"image/svg+xml": true},
-	"png": {"image/png": true},
-	"dxf": {"image/vnd.dxf": true, "application/dxf": true},
-	"pdf": {"application/pdf": true},
-}
-
 func validateFile(name, format, contentType string, size int64) error {
+	definition, supported := formats[format]
+	validContentType := false
+	if supported {
+		for _, allowed := range definition.ContentTypes {
+			if contentType == allowed {
+				validContentType = true
+				break
+			}
+		}
+	}
 	if len(name) == 0 || len(name) > 255 || name != strings.TrimSpace(name) ||
 		strings.ContainsAny(name, `/\`) || filepath.Base(name) != name ||
 		strings.IndexFunc(name, func(r rune) bool { return unicode.IsControl(r) }) >= 0 ||
-		strings.ToLower(filepath.Ext(name)) != "."+format || !formats[format][contentType] ||
+		!supported || strings.ToLower(filepath.Ext(name)) != definition.Extension || !validContentType ||
 		size <= 0 || size > MaxFileBytes {
 		return ErrInvalidUpload
 	}
@@ -250,6 +256,8 @@ func validFileBytes(format string, data []byte) bool {
 		return bytes.HasPrefix(head, []byte("<svg>")) || bytes.HasPrefix(head, []byte("<svg ")) || bytes.HasPrefix(head, []byte("<svg\n"))
 	case "dxf":
 		return bytes.HasPrefix(data, []byte("AutoCAD Binary DXF")) || bytes.HasPrefix(bytes.TrimSpace(data), []byte("0\nSECTION")) || bytes.HasPrefix(bytes.TrimSpace(data), []byte("0\r\nSECTION"))
+	case "zip":
+		return bytes.HasPrefix(data, []byte("PK\x03\x04")) || bytes.HasPrefix(data, []byte("PK\x05\x06")) || bytes.HasPrefix(data, []byte("PK\x07\x08"))
 	default:
 		return false
 	}

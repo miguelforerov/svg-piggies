@@ -1,0 +1,10 @@
+{
+  "_comment": "IMPORTANT: When changing file formats, also update the CHECK constraint in migrations/0003_create_product_files.sql, the RequestProductFileUploadInput and AdminProductFile schemas in backend/api/openapi.yaml, and synchronize existing databases.",
+  "formats": [
+    { "format": "svg", "extension": ".svg", "contentTypes": ["image/svg+xml"] },
+    { "format": "png", "extension": ".png", "contentTypes": ["image/png"] },
+    { "format": "dxf", "extension": ".dxf", "contentTypes": ["image/vnd.dxf", "application/dxf"] },
+    { "format": "pdf", "extension": ".pdf", "contentTypes": ["application/pdf"] },
+    { "format": "zip", "extension": ".zip", "contentTypes": ["application/zip", "application/x-zip-compressed", "application/octet-stream"] }
+  ]
+}

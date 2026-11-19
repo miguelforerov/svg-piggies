@@ -58,6 +58,8 @@ function harness({ initialFiles = [fileRecord], getRequest, uploadRequest, delet
     "@/components/ui/badge": { Badge: ui.Badge },
     "@/components/ui/alert-dialog": ui,
     "@/lib/product-files": {
+      acceptedProductFileExtensions: ".svg,.png,.dxf,.pdf,.zip",
+      supportedProductFileLabel: "SVG, PNG, DXF, PDF, or ZIP",
       getProductFiles: async (...args) => { getCalls++; return getRequest ? getRequest(...args) : files; },
       uploadProductFile: async (...args) => {
         uploadCalls++;
@@ -70,7 +72,7 @@ function harness({ initialFiles = [fileRecord], getRequest, uploadRequest, delet
         await deleteRequest?.(...args);
         files = files.filter((item) => item.id !== args[1]);
       },
-      validateProductFile: (file) => file.name.endsWith(".zip") ? "ZIP is not supported." : null,
+      validateProductFile: (file) => file.name.endsWith(".exe") ? "Unsupported format." : null,
     },
   };
   const source = readFileSync(new URL("./ProductFiles.tsx", import.meta.url), "utf8");
@@ -131,22 +133,24 @@ test("lists only returned metadata and offers a file-specific delete action", as
   assert.ok(!JSON.stringify(tree).includes("uploadUrl"));
 });
 
-test("drag and selection queue valid files, reject ZIP, and avoid duplicates", async () => {
+test("drag and selection queue ZIP and other valid files, reject unsupported files, and avoid duplicates", async () => {
   const app = harness({ initialFiles: [] });
   app.render(); await app.flush();
   const valid = selected();
-  const invalid = selected("pig.zip");
+  const zip = new File(["PK\x03\x04"], "bundle.zip", { type: "application/zip" });
+  const invalid = selected("pig.exe");
   const drop = app.all(app.render(), (node) => typeof node.props?.onDrop === "function")[0];
-  drop.props.onDrop({ preventDefault() {}, dataTransfer: { files: [valid, invalid] } });
+  drop.props.onDrop({ preventDefault() {}, dataTransfer: { files: [valid, zip, invalid] } });
   let tree = app.render();
-  assert.ok(app.all(tree, (node) => node.props?.role === "alert").some((node) => JSON.stringify(node).includes("ZIP")));
+  assert.ok(app.all(tree, (node) => node.props?.role === "alert").some((node) => JSON.stringify(node).includes("Unsupported format")));
   assert.equal(app.byName(tree, "Button").filter((node) => node.props.children === "Retry").length, 0);
   const input = app.byLabel(tree, "Select product files")[0];
-  assert.equal(input.props.accept.includes(".zip"), false);
+  assert.equal(input.props.accept.includes(".zip"), true);
   input.props.onChange({ target: { files: [valid], value: "fake" } });
   tree = app.render();
   assert.equal(app.byLabel(tree, "Remove pig.svg from selection").length, 1);
-  assert.equal(app.byLabel(tree, "Remove pig.zip from selection").length, 1);
+  assert.equal(app.byLabel(tree, "Remove bundle.zip from selection").length, 1);
+  assert.equal(app.byLabel(tree, "Remove pig.exe from selection").length, 1);
 });
 
 test("uploads sequentially, blocks duplicate clicks, and updates the list after success", async () => {

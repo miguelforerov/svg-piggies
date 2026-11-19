@@ -2256,7 +2256,7 @@ components:
         productId: { type: string, format: uuid }
         fileName: { type: string }
         displayName: { type: string }
-        format: { type: string, enum: [svg, png, dxf, pdf] }
+        format: { type: string, enum: [svg, png, dxf, pdf, zip] }
         contentType: { type: string }
         fileSizeBytes: { type: integer, format: int64 }
         availabilityStatus: { type: string, enum: [active, retired, blocked] }
@@ -2270,7 +2270,7 @@ components:
       required: [fileName, format, contentType, fileSizeBytes]
       properties:
         fileName: { type: string, minLength: 1, maxLength: 255 }
-        format: { type: string, enum: [svg, png, dxf, pdf] }
+        format: { type: string, enum: [svg, png, dxf, pdf, zip] }
         contentType: { type: string }
         fileSizeBytes: { type: integer, format: int64, minimum: 1, maximum: 50000000 }
 

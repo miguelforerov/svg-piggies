@@ -7,7 +7,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  deleteProductFile, getProductFiles, uploadProductFile, validateProductFile,
+  acceptedProductFileExtensions, deleteProductFile, getProductFiles, supportedProductFileLabel, uploadProductFile, validateProductFile,
   type AdminProductFile,
 } from "@/lib/product-files";
 
@@ -166,7 +166,7 @@ export function ProductFiles({ productId }: { productId: string }) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold">Files</h3>
-          <p className="text-sm text-muted-foreground">SVG, PNG, DXF, or PDF · maximum 50 MB per file · ZIP is not supported</p>
+          <p className="text-sm text-muted-foreground">{supportedProductFileLabel} · maximum 50 MB per file</p>
         </div>
         <Button type="button" variant="outline" size="sm" disabled={isBatchActive || deletingId !== null} onClick={() => void refresh()} aria-label="Refresh product files">
           <RefreshCw className="size-4" /> Refresh
@@ -177,7 +177,7 @@ export function ProductFiles({ productId }: { productId: string }) {
         className={`mt-5 flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-8 text-center ${dragging ? "border-primary bg-muted" : "border-border"}`}>
         <FileUp className="size-8 text-muted-foreground" />
         <p className="text-sm">Drag files here or select them from your computer.</p>
-        <input ref={inputRef} type="file" accept=".svg,.png,.dxf,.pdf" multiple disabled={isBatchActive || deletingId !== null}
+        <input ref={inputRef} type="file" accept={acceptedProductFileExtensions} multiple disabled={isBatchActive || deletingId !== null}
           className="sr-only" onChange={onInput} aria-label="Select product files" />
         <Button type="button" variant="secondary" disabled={isBatchActive || deletingId !== null} onClick={() => inputRef.current?.click()}>
           Select files

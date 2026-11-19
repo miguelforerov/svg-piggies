@@ -44,6 +44,7 @@ const (
 	AdminProductFileFormatPdf AdminProductFileFormat = "pdf"
 	AdminProductFileFormatPng AdminProductFileFormat = "png"
 	AdminProductFileFormatSvg AdminProductFileFormat = "svg"
+	AdminProductFileFormatZip AdminProductFileFormat = "zip"
 )
 
 // Valid indicates whether the value is a known member of the AdminProductFileFormat enum.
@@ -56,6 +57,8 @@ func (e AdminProductFileFormat) Valid() bool {
 	case AdminProductFileFormatPng:
 		return true
 	case AdminProductFileFormatSvg:
+		return true
+	case AdminProductFileFormatZip:
 		return true
 	default:
 		return false
@@ -203,6 +206,7 @@ const (
 	RequestProductFileUploadInputFormatPdf RequestProductFileUploadInputFormat = "pdf"
 	RequestProductFileUploadInputFormatPng RequestProductFileUploadInputFormat = "png"
 	RequestProductFileUploadInputFormatSvg RequestProductFileUploadInputFormat = "svg"
+	RequestProductFileUploadInputFormatZip RequestProductFileUploadInputFormat = "zip"
 )
 
 // Valid indicates whether the value is a known member of the RequestProductFileUploadInputFormat enum.
@@ -215,6 +219,8 @@ func (e RequestProductFileUploadInputFormat) Valid() bool {
 	case RequestProductFileUploadInputFormatPng:
 		return true
 	case RequestProductFileUploadInputFormatSvg:
+		return true
+	case RequestProductFileUploadInputFormatZip:
 		return true
 	default:
 		return false

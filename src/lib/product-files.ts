@@ -1,4 +1,7 @@
-export type ProductFileFormat = "svg" | "png" | "dxf" | "pdf";
+import formatConfig from "../../config/product-file-formats.json" with { type: "json" };
+import type { ProductFileFormat } from "./product-file-formats.generated";
+
+export type { ProductFileFormat } from "./product-file-formats.generated";
 export type ProductFileAvailability = "active" | "retired" | "blocked";
 
 export interface AdminProductFile {
@@ -23,12 +26,12 @@ interface UploadAuthorization {
 }
 
 const maxFileBytes = 50_000_000;
-const allowedMime: Record<ProductFileFormat, readonly string[]> = {
-  svg: ["image/svg+xml"],
-  png: ["image/png"],
-  dxf: ["image/vnd.dxf", "application/dxf"],
-  pdf: ["application/pdf"],
-};
+const definitions = formatConfig.formats;
+const byFormat = new Map(definitions.map((definition) => [definition.format, definition]));
+export const acceptedProductFileExtensions = definitions.map((definition) => definition.extension).join(",");
+const formatLabels = definitions.map((definition) => definition.format.toUpperCase());
+export const supportedProductFileLabel = formatLabels.length === 1 ? formatLabels[0]
+  : `${formatLabels.slice(0, -1).join(", ")}, or ${formatLabels.at(-1)}`;
 
 export class ProductFileApiError extends Error {
   readonly status: number;
@@ -75,16 +78,14 @@ async function jsonRequest<T>(path: string, expectedStatus: number, init?: Reque
 }
 
 function fileFormat(fileName: string): ProductFileFormat | null {
-  const dot = fileName.lastIndexOf(".");
-  if (dot < 0) return null;
-  const extension = fileName.slice(dot + 1).toLowerCase();
-  return Object.hasOwn(allowedMime, extension) ? extension as ProductFileFormat : null;
+  const name = fileName.toLowerCase();
+  return (definitions.find((definition) => name.endsWith(definition.extension))?.format as ProductFileFormat | undefined) ?? null;
 }
 
 function fileContentType(file: File, format: ProductFileFormat): string {
   // Browsers often leave DXF (and occasionally other formats) without a MIME type.
   // An explicit, incompatible MIME type is never replaced.
-  return file.type || allowedMime[format][0];
+  return file.type || byFormat.get(format)!.contentTypes[0];
 }
 
 export function validateProductFile(file: File): string | null {
@@ -94,8 +95,8 @@ export function validateProductFile(file: File): string | null {
     return "Filename must be 1–255 bytes with no surrounding spaces, path separators, or control characters.";
   }
   const format = fileFormat(name);
-  if (!format) return "Use an SVG, PNG, DXF, or PDF file. ZIP is not supported.";
-  if (!allowedMime[format].includes(fileContentType(file, format))) {
+  if (!format) return `Use an ${supportedProductFileLabel} file.`;
+  if (!byFormat.get(format)!.contentTypes.includes(fileContentType(file, format))) {
     return "The file extension and MIME type do not match an allowed format.";
   }
   if (file.size < 1 || file.size > maxFileBytes) {

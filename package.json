@@ -12,7 +12,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "backend:dev": "cd backend && set -a && . ../.env && set +a && go run ./cmd/api",
-    "backend:generate": "cd backend && go generate ./api",
+    "backend:generate": "cd backend && go generate ./api ./internal/productfiles",
     "backend:test": "cd backend && go test ./...",
     "worker:build": "cd backend && go run github.com/syumai/workers/cmd/workers-assets-gen -mode=go && GOOS=js GOARCH=wasm go build -ldflags='-s -w' -o ./build/app.wasm ./cmd/api",
     "worker:dev": "node --env-file=.env scripts/worker-dev.mjs",

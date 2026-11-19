@@ -41,6 +41,19 @@ func (s *fileServiceStub) Reorder(context.Context, string, []string) error { s.c
 const fileProductID = "b6140bec-35f1-4e68-b54c-d4c8070bb987"
 const fileID = "a6140bec-35f1-4e68-b54c-d4c8070bb987"
 
+func TestProductFileZIPUploadAuthorizationRoute(t *testing.T) {
+	service := &fileServiceStub{}
+	h := fileTestHandler(t, service)
+	request := httptest.NewRequest(http.MethodPost, "/api/admin/products/"+fileProductID+"/files/upload-authorization",
+		strings.NewReader(`{"fileName":"bundle.zip","format":"zip","contentType":"application/zip","fileSizeBytes":123}`))
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	h.ServeHTTP(response, request)
+	if response.Code != http.StatusCreated || service.calls != 1 {
+		t.Fatalf("ZIP authorization route: status %d, service calls %d", response.Code, service.calls)
+	}
+}
+
 func fileTestHandler(t *testing.T, service *fileServiceStub) http.Handler {
 	t.Helper()
 	h, err := newHandler(config.Config{Environment: "test", AuthMode: auth.ModeDevelopment, CORSAllowedOrigin: "http://localhost:4321"}, dependencies{productFiles: service}, nil)

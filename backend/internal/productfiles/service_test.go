@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"os"
+	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -16,6 +18,65 @@ import (
 )
 
 const testProduct = "b6140bec-35f1-4e68-b54c-d4c8070bb987"
+
+func TestSharedProductFileFormatConfiguration(t *testing.T) {
+	source, err := os.ReadFile("../../../config/product-file-formats.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := parseFormatConfiguration(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	embedded, err := parseFormatConfiguration([]byte(embeddedProductFileFormatsJSON))
+	if err != nil || !reflect.DeepEqual(parsed, embedded) {
+		t.Fatalf("generated Go format configuration is out of sync with shared JSON: %v", err)
+	}
+	want := map[string]formatDefinition{
+		"svg": {"svg", ".svg", []string{"image/svg+xml"}},
+		"png": {"png", ".png", []string{"image/png"}},
+		"dxf": {"dxf", ".dxf", []string{"image/vnd.dxf", "application/dxf"}},
+		"pdf": {"pdf", ".pdf", []string{"application/pdf"}},
+		"zip": {"zip", ".zip", []string{"application/zip", "application/x-zip-compressed", "application/octet-stream"}},
+	}
+	if !reflect.DeepEqual(parsed, want) || !reflect.DeepEqual(formats, want) {
+		t.Fatalf("unexpected product file format configuration: %+v", parsed)
+	}
+	withoutComment := `{"formats":[{"format":"zip","extension":".zip","contentTypes":["application/zip"]}]}`
+	withComment := `{"_comment":"documentation only","formats":[{"format":"zip","extension":".zip","contentTypes":["application/zip"]}]}`
+	plainFormats, plainErr := parseFormatConfiguration([]byte(withoutComment))
+	commentedFormats, commentedErr := parseFormatConfiguration([]byte(withComment))
+	if plainErr != nil || commentedErr != nil || !reflect.DeepEqual(plainFormats, commentedFormats) {
+		t.Fatal("documentation comment changed format validation")
+	}
+	migration, err := os.ReadFile("../../../migrations/0003_create_product_files.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(migration), "CHECK (format IN ('svg', 'png', 'dxf', 'pdf', 'zip'))") {
+		t.Fatal("product_files CHECK is out of sync with shared formats")
+	}
+	openapi, err := os.ReadFile("../../api/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(string(openapi), "enum: [svg, png, dxf, pdf, zip]") != 2 {
+		t.Fatal("Product Files OpenAPI enums are out of sync with shared formats")
+	}
+	for _, input := range []string{
+		`{}`, `{"formats":[]}`, `{"formats":[{"format":"zip","extension":".exe","contentTypes":["application/zip"]}]}`,
+		`{"formats":[{"format":"zip","extension":".zip","contentTypes":[]}]}`,
+		`{"formats":[{"format":"zip","extension":".zip","contentTypes":["application/zip"]},{"format":"zip","extension":".zip","contentTypes":["application/zip"]}]}`,
+		`{"formats":[{"format":"zip","extension":".zip","contentTypes":["application/zip","application/zip"]}]}`,
+		`{"formats":[{"format":"zip","extension":".zip","contentTypes":["application/zip"]}],"unknown":true}`,
+		`{"_comment":123,"formats":[{"format":"zip","extension":".zip","contentTypes":["application/zip"]}]}`,
+		`{"_comment":null,"formats":[{"format":"zip","extension":".zip","contentTypes":["application/zip"]}]}`,
+	} {
+		if _, err := parseFormatConfiguration([]byte(input)); err == nil {
+			t.Fatalf("malformed format configuration accepted: %s", input)
+		}
+	}
+}
 
 type productStub struct{ err error }
 
@@ -201,14 +262,14 @@ func authorize(t *testing.T, s *Service, format, mime, name string, size int64) 
 }
 
 func TestRequestUploadFormatsAndValidation(t *testing.T) {
-	for _, tc := range []struct{ format, mime, name string }{{"svg", "image/svg+xml", "pig.svg"}, {"png", "image/png", "pig.png"}, {"dxf", "image/vnd.dxf", "pig.dxf"}, {"pdf", "application/pdf", "pig.pdf"}} {
+	for _, tc := range []struct{ format, mime, name string }{{"svg", "image/svg+xml", "pig.svg"}, {"png", "image/png", "pig.png"}, {"dxf", "image/vnd.dxf", "pig.dxf"}, {"pdf", "application/pdf", "pig.pdf"}, {"zip", "application/zip", "bundle.zip"}, {"zip", "application/x-zip-compressed", "bundle.zip"}, {"zip", "application/octet-stream", "bundle.zip"}} {
 		s, _, _ := fixture(t)
 		a := authorize(t, s, tc.format, tc.mime, tc.name, 123)
 		if a.UploadToken == "" || a.UploadURL == "" || len(a.Headers["If-None-Match"]) != 1 || a.Headers["If-None-Match"][0] != "*" {
 			t.Fatalf("bad authorization: %+v", a)
 		}
 	}
-	for _, tc := range []RequestUploadInput{{ProductID: testProduct, FileName: "pig.exe", Format: "exe", ContentType: "application/octet-stream", FileSizeBytes: 1}, {ProductID: testProduct, FileName: "pig.svg", Format: "svg", ContentType: "application/pdf", FileSizeBytes: 1}, {ProductID: testProduct, FileName: "pig.svg", Format: "svg", ContentType: "image/svg+xml", FileSizeBytes: MaxFileBytes + 1}} {
+	for _, tc := range []RequestUploadInput{{ProductID: testProduct, FileName: "pig.exe", Format: "exe", ContentType: "application/octet-stream", FileSizeBytes: 1}, {ProductID: testProduct, FileName: "pig.svg", Format: "svg", ContentType: "application/pdf", FileSizeBytes: 1}, {ProductID: testProduct, FileName: "bundle.zip", Format: "zip", ContentType: "application/pdf", FileSizeBytes: 1}, {ProductID: testProduct, FileName: "bundle.pdf", Format: "zip", ContentType: "application/zip", FileSizeBytes: 1}, {ProductID: testProduct, FileName: "pig.svg", Format: "svg", ContentType: "image/svg+xml", FileSizeBytes: MaxFileBytes + 1}} {
 		s, _, _ := fixture(t)
 		if _, err := s.RequestUpload(context.Background(), tc); !errors.Is(err, ErrInvalidUpload) {
 			t.Fatalf("want invalid upload, got %v", err)
@@ -248,6 +309,21 @@ func TestConfirmIdempotencyAndExpiry(t *testing.T) {
 	_ = payload
 	if _, err := s.ConfirmUpload(context.Background(), ConfirmUploadInput{ProductID: testProduct, UploadToken: other.UploadToken}); !errors.Is(err, ErrConflict) {
 		t.Fatalf("want conflict, got %v", err)
+	}
+}
+
+func TestConfirmZIPPreservesFormatAndContentType(t *testing.T) {
+	s, r, st := fixture(t)
+	st.data = []byte("PK\x03\x04archive")
+	st.metadata = storage.ObjectMetadata{ContentLength: int64(len(st.data)), ContentType: "application/zip", ETag: "etag"}
+	a := authorize(t, s, "zip", "application/zip", "bundle.zip", int64(len(st.data)))
+	file, err := s.ConfirmUpload(context.Background(), ConfirmUploadInput{ProductID: testProduct, UploadToken: a.UploadToken})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if file.Format != "zip" || file.ContentType != "application/zip" || file.FileName != "bundle.zip" ||
+		r.file == nil || r.file.Format != "zip" || r.file.ContentType != "application/zip" {
+		t.Fatalf("ZIP metadata was not preserved: %+v", file)
 	}
 }
 
@@ -546,7 +622,7 @@ func TestFileSignatures(t *testing.T) {
 	for _, tc := range []struct {
 		format string
 		valid  []byte
-	}{{"svg", []byte("<svg></svg>")}, {"png", []byte("\x89PNG\r\n\x1a\n")}, {"dxf", []byte("0\nSECTION")}, {"pdf", []byte("%PDF-1.7")}} {
+	}{{"svg", []byte("<svg></svg>")}, {"png", []byte("\x89PNG\r\n\x1a\n")}, {"dxf", []byte("0\nSECTION")}, {"pdf", []byte("%PDF-1.7")}, {"zip", []byte("PK\x03\x04archive")}, {"zip", []byte("PK\x05\x06")}} {
 		if !validFileBytes(tc.format, tc.valid) || validFileBytes(tc.format, []byte("wrong")) {
 			t.Fatalf("signature validation for %s", tc.format)
 		}
