@@ -15,7 +15,7 @@ interface ShellProps {
 
 export function Shell({ title, children }: ShellProps) {
   return (
-    <SidebarProvider>
+    <SidebarProvider mobileBreakpoint={1024}>
       <Sidebar />
 
       <SidebarInset>

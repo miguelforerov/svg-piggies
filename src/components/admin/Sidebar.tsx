@@ -50,7 +50,7 @@ export function Sidebar() {
   }, [])
 
   return (
-    <ShadcnSidebar>
+    <ShadcnSidebar desktopBreakpoint="lg">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
