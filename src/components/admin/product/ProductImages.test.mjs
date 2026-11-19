@@ -28,6 +28,13 @@ function harness(deleteRequest, primaryRequest = async () => {}, altRequest = as
   let orderCalls = 0;
   let lastOrder;
   let lastAltArgs;
+  let previewCount = 0;
+  const revokedPreviews = [];
+  const uploadedNames = [];
+  const previewURL = {
+    createObjectURL: () => `blob:image-${++previewCount}`,
+    revokeObjectURL: (url) => { revokedPreviews.push(url); },
+  };
   const react = {
     useState(initial) {
       const slot = index++;
@@ -74,14 +81,14 @@ function harness(deleteRequest, primaryRequest = async () => {}, altRequest = as
       setPrimaryProductImage: async (...args) => { primaryCalls++; return primaryRequest(...args); },
       updateProductImageAltText: async (...args) => { altCalls++; lastAltArgs = args; return altRequest(...args); },
       reorderProductImages: async (...args) => { orderCalls++; lastOrder = args; return orderRequest(...args); },
-      uploadProductImage: async () => {},
+      uploadProductImage: async (_productId, file) => { uploadedNames.push(file.name); },
       validateImage: () => null,
     },
   };
   vm.runInNewContext(compiled, { module, exports: module.exports, require: (name) => {
     if (!(name in imports)) throw new Error(`Unexpected import ${name}`);
     return imports[name];
-  }, URL, Set, console });
+  }, URL: previewURL, Set, console });
   const ProductImages = module.exports.ProductImages;
   function render() {
     index = 0;
@@ -100,8 +107,35 @@ function harness(deleteRequest, primaryRequest = async () => {}, altRequest = as
   const byName = (tree, name) => all(tree, (node) => node.type?.displayName === name);
   const byLabel = (tree, label) => all(tree, (node) => node.props?.["aria-label"] === label);
   const flush = async () => { await new Promise((resolve) => setImmediate(resolve)); };
-  return { render, byName, byLabel, all, flush, calls: () => deleteCalls, primaryCalls: () => primaryCalls, altCalls: () => altCalls, lastAltArgs: () => lastAltArgs, orderCalls: () => orderCalls, lastOrder: () => lastOrder, setList: (value) => { list = value; } };
+  return { render, byName, byLabel, all, flush, calls: () => deleteCalls, primaryCalls: () => primaryCalls, altCalls: () => altCalls, lastAltArgs: () => lastAltArgs, orderCalls: () => orderCalls, lastOrder: () => lastOrder, revokedPreviews, uploadedNames, setList: (value) => { list = value; } };
 }
+
+test("removes a pending image from the queue and releases only its preview", async () => {
+  const app = harness(async () => {});
+  app.render();
+  await app.flush();
+  const input = app.byLabel(app.render(), "Select product images")[0];
+  input.props.onChange({ target: { files: [
+    new File(["first"], "first.png", { type: "image/png" }),
+    new File(["second"], "second.png", { type: "image/png" }),
+  ] } });
+
+  let tree = app.render();
+  assert.equal(app.byLabel(tree, "Remove first.png from selection").length, 1);
+  assert.equal(app.byLabel(tree, "Remove second.png from selection").length, 1);
+  assert.equal(app.byLabel(tree, "Alternative text for first.png").length, 1);
+  app.byLabel(tree, "Remove first.png from selection")[0].props.onClick();
+
+  tree = app.render();
+  assert.equal(app.byLabel(tree, "Remove first.png from selection").length, 0);
+  assert.equal(app.byLabel(tree, "Remove second.png from selection").length, 1);
+  assert.deepEqual(app.revokedPreviews, ["blob:image-1"]);
+  assert.equal(app.byName(tree, "Button").find((node) => node.props.children === "Upload").props.disabled, false);
+  app.byName(tree, "Button").find((node) => node.props.children === "Upload").props.onClick();
+  await app.flush();
+  assert.deepEqual(app.uploadedNames, ["second.png"]);
+  assert.equal(app.calls(), 0);
+});
 
 test("shows an image-specific delete action and confirmation; cancel sends no request", async () => {
   const app = harness(async () => {});

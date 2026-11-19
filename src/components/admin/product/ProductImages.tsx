@@ -208,6 +208,15 @@ export function ProductImages({ productId }: { productId: string }) {
     setQueue((current) => current.map((item) => item.id === id ? { ...item, ...patch } : item));
   }
 
+  function removeQueuedImage(item: QueuedImage) {
+    if (batchActive.current || activeUploads.current.has(item.id)) return;
+    setQueue((current) => current.filter((image) => image.id !== item.id));
+    if (previews.current.includes(item.preview)) {
+      previews.current = previews.current.filter((preview) => preview !== item.preview);
+      URL.revokeObjectURL(item.preview);
+    }
+  }
+
   async function process(item: QueuedImage, placement: { isPrimary: boolean; displayOrder: number }): Promise<boolean> {
     if (validateImage(item.file)) return false;
     if (activeUploads.current.has(item.id)) return false;
@@ -281,7 +290,7 @@ export function ProductImages({ productId }: { productId: string }) {
 
       {queue.length > 0 && <div className="mt-5 space-y-3">
         <div className="flex items-center justify-between"><h4 className="font-medium">Selected images</h4>
-          <Button type="button" disabled={isBatchActive || loading || !!loadError || orderPending || orderSaving || !queue.some((item) => item.stage === "pending")} onClick={() => void uploadPending()}>Upload pending</Button>
+          <Button type="button" disabled={isBatchActive || loading || !!loadError || orderPending || orderSaving || !queue.some((item) => item.stage === "pending")} onClick={() => void uploadPending()}>Upload</Button>
         </div>
         {queue.map((item) => <div key={item.id} className="flex flex-wrap items-center gap-3 rounded-lg border p-3 sm:flex-nowrap">
           <img src={item.preview} alt="Selected preview" className="size-16 rounded object-cover" />
@@ -291,6 +300,8 @@ export function ProductImages({ productId }: { productId: string }) {
             {item.stage === "pending" && <Input className="mt-2" value={item.altText} placeholder="Alternative text (optional)" aria-label={`Alternative text for ${item.file.name}`} onChange={(event) => changeItem(item.id, { altText: event.target.value })} />}
           </div>
           {item.stage === "error" && !validateImage(item.file) && <Button type="button" variant="outline" size="sm" disabled={isBatchActive || loading || !!loadError || orderPending || orderSaving} onClick={() => void retry(item)}>Retry</Button>}
+          {!activeUploads.current.has(item.id) && <Button type="button" variant="ghost" size="sm" disabled={isBatchActive}
+            onClick={() => removeQueuedImage(item)} aria-label={`Remove ${item.file.name} from selection`}>Remove</Button>}
         </div>)}
       </div>}
 
