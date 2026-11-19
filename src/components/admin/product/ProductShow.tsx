@@ -12,6 +12,7 @@ import {
 import type { Product } from "@/components/admin/product/ProductFormContainer"
 import { ProductDialog } from "@/components/admin/product/ProductDialog"
 import { ProductImages } from "@/components/admin/product/ProductImages"
+import { ProductFiles } from "@/components/admin/product/ProductFiles"
 import { ProductRelationships } from "@/components/admin/product/ProductRelationships"
 import { ProductStatusBadge } from "@/components/admin/product/ProductStatusBadge"
 import { Button } from "@/components/ui/button"
@@ -497,6 +498,7 @@ export function ProductShow({
       </div>
 
       <ProductImages productId={productId} />
+      <ProductFiles productId={productId} />
       <ProductRelationships productId={productId} />
 
       {/* Information */}
