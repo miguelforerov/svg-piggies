@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FileUp, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AttachmentFile } from "@/components/ui/AttachmentFile";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -10,9 +11,17 @@ import {
   acceptedProductFileExtensions, deleteProductFile, getProductFiles, supportedProductFileLabel, uploadProductFile, validateProductFile,
   type AdminProductFile,
 } from "@/lib/product-files";
+import {
+  SectionPanel,
+  SectionPanelContent,
+  SectionPanelDescription,
+  SectionPanelFooter,
+  SectionPanelHeader,
+  SectionPanelTitle,
+} from "@/components/ui/SectionPanel"
 
 type Stage = "pending" | "authorizing" | "uploading" | "confirming" | "completed" | "failed";
-type QueuedFile = { id: number; file: File; stage: Stage; error?: string };
+type QueuedFile = { id: number; file: File; preview?: string | null; stage: Stage; error?: string };
 
 const labels: Record<Stage, string> = {
   pending: "Pending", authorizing: "Requesting authorization", uploading: "Uploading to R2",
@@ -34,12 +43,10 @@ export function ProductFiles({ productId }: { productId: string }) {
   const [queue, setQueue] = useState<QueuedFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
   const [isBatchActive, setIsBatchActive] = useState(false);
   const batchActive = useRef(false);
   const activeUploads = useRef(new Set<number>());
   const nextId = useRef(0);
-  const inputRef = useRef<HTMLInputElement>(null);
   const [fileToDelete, setFileToDelete] = useState<AdminProductFile | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const deleting = useRef(false);
@@ -150,18 +157,65 @@ export function ProductFiles({ productId }: { productId: string }) {
     }
   }
 
-  function onInput(event: ChangeEvent<HTMLInputElement>) {
-    if (event.target.files) addFiles(event.target.files);
-    event.target.value = "";
-  }
-
-  function onDrop(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    setDragging(false);
-    addFiles(event.dataTransfer.files);
-  }
-
   return (
+    <>
+    <SectionPanel>
+      <SectionPanelHeader>
+        <SectionPanelTitle
+          tailButton={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isBatchActive || deletingId !== null}
+              onClick={() => void refresh()}
+              aria-label="Refresh product files"
+            >
+              <RefreshCw className="size-4" />
+              Refresh
+            </Button>
+          }>
+            Files
+        </SectionPanelTitle>
+          <SectionPanelDescription>
+            {supportedProductFileLabel} · maximum 50 MB per file
+          </SectionPanelDescription>
+      </SectionPanelHeader>
+
+      <SectionPanelContent>
+        <AttachmentFile
+          accept={acceptedProductFileExtensions}
+          buttonLabel="Select files"
+          description="Drag files here or select them from your computer."
+          disabled={isBatchActive || deletingId !== null}
+          icon={<FileUp className="size-8 text-muted-foreground" />}
+          onFiles={addFiles}
+          onUpload={() => void uploadPending()}
+          uploadDisabled={isBatchActive || deletingId !== null || loading || !!loadError || !queue.some((item) => item.stage === "pending")}
+          queue={queue}
+          preview={(item) => item.preview}
+          statusLabel={(item) => labels[item.stage]}
+          sizeLabel={(item) => formatSize(item.file.size)}
+          retry={{
+            show: (item) => item.stage === "failed" && !validateProductFile(item.file),
+            disabled: () => isBatchActive || deletingId !== null || loading || !!loadError,
+            onClick: (item) => void retry(item),
+          }}
+          remove={{
+            show: (item) => !activeUploads.current.has(item.id),
+            disabled: () => isBatchActive,
+            onClick: (item) => setQueue((current) => current.filter((queued) => queued.id !== item.id)),
+          }}
+        />
+      </SectionPanelContent>
+
+
+
+
+
+
+    </SectionPanel>
+
     <section className="rounded-xl border bg-card p-6 text-card-foreground shadow-sm" aria-label="Product files">
       <div className="flex items-center justify-between gap-3">
         <div>
@@ -173,36 +227,30 @@ export function ProductFiles({ productId }: { productId: string }) {
         </Button>
       </div>
 
-      <div onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={onDrop}
-        className={`mt-5 flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-8 text-center ${dragging ? "border-primary bg-muted" : "border-border"}`}>
-        <FileUp className="size-8 text-muted-foreground" />
-        <p className="text-sm">Drag files here or select them from your computer.</p>
-        <input ref={inputRef} type="file" accept={acceptedProductFileExtensions} multiple disabled={isBatchActive || deletingId !== null}
-          className="sr-only" onChange={onInput} aria-label="Select product files" />
-        <Button type="button" variant="secondary" disabled={isBatchActive || deletingId !== null} onClick={() => inputRef.current?.click()}>
-          Select files
-        </Button>
-      </div>
-
-      {queue.length > 0 && <div className="mt-5 space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h4 className="font-medium">Selected files</h4>
-          <Button type="button" disabled={isBatchActive || deletingId !== null || loading || !!loadError || !queue.some((item) => item.stage === "pending")}
-            onClick={() => void uploadPending()}>Upload</Button>
-        </div>
-        {queue.map((item) => <div key={item.id} className="flex flex-wrap items-center gap-3 rounded-lg border p-3 sm:flex-nowrap">
-          <FileUp className="size-6 text-muted-foreground" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium" title={item.file.name}>{item.file.name}</p>
-            <p className="text-xs text-muted-foreground" role="status">{labels[item.stage]} · {formatSize(item.file.size)}</p>
-            {item.error && <p className="text-xs text-destructive" role="alert">{item.error}</p>}
-          </div>
-          {item.stage === "failed" && !validateProductFile(item.file) && <Button type="button" variant="outline" size="sm"
-            disabled={isBatchActive || deletingId !== null || loading || !!loadError} onClick={() => void retry(item)}>Retry</Button>}
-          {!activeUploads.current.has(item.id) && <Button type="button" variant="ghost" size="sm" disabled={isBatchActive}
-            onClick={() => setQueue((current) => current.filter((queued) => queued.id !== item.id))} aria-label={`Remove ${item.file.name} from selection`}>Remove</Button>}
-        </div>)}
-      </div>}
+      <AttachmentFile
+        accept={acceptedProductFileExtensions}
+        buttonLabel="Select files"
+        description="Drag files here or select them from your computer."
+        disabled={isBatchActive || deletingId !== null}
+        icon={<FileUp className="size-8 text-muted-foreground" />}
+        onFiles={addFiles}
+        onUpload={() => void uploadPending()}
+        uploadDisabled={isBatchActive || deletingId !== null || loading || !!loadError || !queue.some((item) => item.stage === "pending")}
+        className="text-center"
+        queue={queue}
+        statusLabel={(item) => labels[item.stage]}
+        sizeLabel={(item) => formatSize(item.file.size)}
+        retry={{
+          show: (item) => item.stage === "failed" && !validateProductFile(item.file),
+          disabled: () => isBatchActive || deletingId !== null || loading || !!loadError,
+          onClick: (item) => void retry(item),
+        }}
+        remove={{
+          show: (item) => !activeUploads.current.has(item.id),
+          disabled: () => isBatchActive,
+          onClick: (item) => setQueue((current) => current.filter((queued) => queued.id !== item.id)),
+        }}
+      />
 
       <div className="mt-6">
         <h4 className="font-medium">Product files</h4>
@@ -241,5 +289,6 @@ export function ProductFiles({ productId }: { productId: string }) {
         </AlertDialogContent>
       </AlertDialog>
     </section>
+    </>
   );
 }

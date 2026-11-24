@@ -37,6 +37,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  SectionPanel,
+  SectionPanelContent,
+  SectionPanelDescription,
+  SectionPanelFooter,
+  SectionPanelHeader,
+  SectionPanelTitle,
+} from "@/components/ui/SectionPanel"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { ItemSectionPanel } from "@/components/ui/ItemSectionPanel"
 
 interface ProductShowProps {
   productId: string
@@ -353,149 +364,140 @@ export function ProductShow({
       )}
 
       {/* General */}
-      <div className="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-lg font-semibold">
-            General
-          </h3>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  aria-label="Product actions"
-                />
-              }
-            >
-              <EllipsisVertical />
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent>
-              {product.status !== "archived" && (
-                <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                  <Pencil />
-                  Edit
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                disabled={pendingAction !== null}
-                onClick={() =>
-                  updateStatus(
-                    product.status === "draft" ? "active" : "draft"
-                  )
+      <SectionPanel>
+        <SectionPanelHeader>
+          <SectionPanelTitle
+            tailButton={
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    aria-label="Product actions"
+                  />
                 }
               >
-                {product.status !== "draft" ? <FilePenLine /> : <Send />}
-                {product.status !== "draft"
-                  ? pendingAction === "draft"
-                    ? "Moving to draft..."
-                    : "Move to draft"
-                  : pendingAction === "publish"
-                    ? "Publishing..."
-                    : "Publish"}
-              </DropdownMenuItem>
-              {product.status !== "archived" && (
+                <EllipsisVertical />
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent>
+                {product.status !== "archived" && (
+                  <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                    <Pencil />
+                    Edit
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   disabled={pendingAction !== null}
-                  onClick={() => updateStatus("archived")}
+                  onClick={() =>
+                    updateStatus(
+                      product.status === "draft" ? "active" : "draft"
+                    )
+                  }
                 >
-                  <Archive />
-                  {pendingAction === "archive"
-                    ? "Archiving..."
-                    : "Archive"}
+                  {product.status !== "draft" ? <FilePenLine /> : <Send />}
+                  {product.status !== "draft"
+                    ? pendingAction === "draft"
+                      ? "Moving to draft..."
+                      : "Move to draft"
+                    : pendingAction === "publish"
+                      ? "Publishing..."
+                      : "Publish"}
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                variant="destructive"
-                disabled={pendingAction !== null}
-                onClick={() => {
-                  setActionError(null)
-                  setIsDeleteDialogOpen(true)
-                }}
-              >
-                <Trash2 />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          {/* Left column */}
-          <div className="space-y-6">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Title
-              </p>
-              <p className="mt-1 font-medium">
-                {product.title}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Price
-              </p>
-              <p className="mt-1 font-medium">
-                ${product.price}
-              </p>
-            </div>
-          </div>
-
-          {/* Right column */}
-          <div className="space-y-6">
-
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Slug
-              </p>
-              <p className="mt-1">
-                {product.slug}
-              </p>
-            </div>
-          </div>
-
-          <div>
+                {product.status !== "archived" && (
+                  <DropdownMenuItem
+                    disabled={pendingAction !== null}
+                    onClick={() => updateStatus("archived")}
+                  >
+                    <Archive />
+                    {pendingAction === "archive"
+                      ? "Archiving..."
+                      : "Archive"}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  variant="destructive"
+                  disabled={pendingAction !== null}
+                  onClick={() => {
+                    setActionError(null)
+                    setIsDeleteDialogOpen(true)
+                  }}
+                >
+                  <Trash2 />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            }
+          >
+            General
+          </SectionPanelTitle>
+          {/* <SectionPanelDescription>
+            Enter your email below to login to your account
+          </SectionPanelDescription> */}
+        </SectionPanelHeader>
+        <SectionPanelContent>
+          <ItemSectionPanel Title="Title" Value={product.title} />
+        </SectionPanelContent>
+        <SectionPanelContent
+          leftColumn={
+            <>
+              <ItemSectionPanel Title="Price" Value={`$${product.price}`} />
+              <div>
+                <p className="text-sm text-muted-foreground">Product Types</p>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {productTypes.length > 0
+                    ? productTypes.map((productType) => (
+                        <Badge variant="secondary" key={productType.id}>
+                          {productType.name}
+                        </Badge>
+                      ))
+                    : "No product types assigned."}
+                </div>
+              </div>
+            </>
+          }
+          rightColumn={
+            <>
+              <div>
+                <p className="text-sm text-muted-foreground">Slug</p>
+                <p className="mt-1">{product.slug}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Collections</p>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {collections.length > 0
+                    ? collections.map((collection) => (
+                        <Badge variant="secondary" key={collection.id}>
+                          {collection.name}
+                        </Badge>
+                      ))
+                    : "No collections assigned."}
+                </div>
+              </div>
+            </>
+          }
+        >
+          <div className="mt-6">
             <p className="text-sm text-muted-foreground">
-              Product Types
+              Description
             </p>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {productTypes.length > 0
-                ? productTypes.map((productType) => (
-                    <Badge variant="secondary" key={productType.id}>
-                      {productType.name}
-                    </Badge>
-                  ))
-                : "No product types assigned."}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm text-muted-foreground">
-              Collections
+            <p className="mt-1 whitespace-pre-wrap">
+              {product.description}
             </p>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {collections.length > 0
-                ? collections.map((collection) => (
-                    <Badge variant="secondary" key={collection.id}>
-                      {collection.name}
-                    </Badge>
-                  ))
-                : "No collections assigned."}
-            </div>
           </div>
+        </SectionPanelContent>
+        {/* <SectionPanelFooter className="flex-col gap-2">
+          <Button type="submit" className="w-full">
+            Login
+          </Button>
+          <Button variant="outline" className="w-full">
+            Login with Google
+          </Button>
+        </SectionPanelFooter> */}
+      </SectionPanel>
 
-        </div>
-        <div className="mt-6">
-          <p className="text-sm text-muted-foreground">
-            Description
-          </p>
-          <p className="mt-1 whitespace-pre-wrap">
-            {product.description}
-          </p>
-        </div>
-      </div>
 
       <ProductImages productId={productId} />
       <ProductFiles productId={productId} />
